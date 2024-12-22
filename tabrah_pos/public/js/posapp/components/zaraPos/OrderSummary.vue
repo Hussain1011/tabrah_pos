@@ -21,7 +21,7 @@
       <!-- Image to show when items are empty -->
       <!-- <div v-else class="image-container">
         <img
-          src="/assets/lucrum_layers_pos/js/posapp/components/pos/layerlogo.png"
+          src="/assets/tabrah_pos/js/posapp/components/pos/layerlogo.png"
           alt="No items"
           class="animated-image"
           style=""
