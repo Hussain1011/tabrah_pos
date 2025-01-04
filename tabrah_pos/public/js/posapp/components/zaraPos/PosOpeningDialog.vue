@@ -50,6 +50,7 @@
                       outlined
                       dense
                       hide-details="auto"
+                      readonly
                     ></v-text-field>
                   </template>
                 </v-data-table>

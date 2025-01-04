@@ -714,25 +714,25 @@ def get_customer_by_mobile(pos_profile, mobile_no):
 
 @frappe.whitelist()
 def get_Table_names(pos_profile):
-    _pos_profile = json.loads(pos_profile)
-    ttl = _pos_profile.get("posa_server_cache_duration")
-    if ttl:
-        ttl = int(ttl) * 60
+    _pos_profile = 'Test'
+    # ttl = _pos_profile.get("posa_server_cache_duration")
+    # if ttl:
+    #     ttl = int(ttl) * 60
 
-    @redis_cache(ttl=ttl or 1800)
-    def __get_Table_names(pos_profile):
-        return _get_Table_names(pos_profile)
+    # @redis_cache(ttl=ttl or 1800)
+    # def __get_Table_names(pos_profile):
+    #     return _get_Table_names(pos_profile)
 
-    def _get_Table_names(pos_profile):
-        pos_profile = json.loads(pos_profile)
-        tables= frappe.get_all("Table Management", fields=["name","status","floor_no","table_no","no_of_seats"],filters={"status":"Available"},
-        order_by="name")
-        return tables
+    # def _get_Table_names(pos_profile):
+    pos_profile = 'Test'
+    tables= frappe.get_all("Table Management", fields=["name","status","floor_no","table_no","no_of_seats"],filters={"status":"Available"},
+    order_by="name")
+    return tables
 
-    if _pos_profile.get("posa_use_server_cache"):
-        return __get_Table_names(pos_profile)
-    else:
-        return _get_Table_names(pos_profile)
+    # if _pos_profile.get("posa_use_server_cache"):
+    #     return __get_Table_names(pos_profile)
+    # else:
+    #     return _get_Table_names(pos_profile)
 @frappe.whitelist()
 def get_all_Table_names(pos_profile):
     _pos_profile = json.loads(pos_profile)
@@ -907,7 +907,6 @@ def get_invoice_by_table(table):
 
 @frappe.whitelist()
 def submit_invoice(invoice, data,taxvalue):
-    fbr_tax = 1
     data = json.loads(data)
     invoice = json.loads(invoice)
     invoice_doc = frappe.get_doc("Sales Invoice", invoice.get("name"))
@@ -1016,15 +1015,6 @@ def submit_invoice(invoice, data,taxvalue):
             data.get("due_date"),
             update_modified=False,
         )
-
-    # if fbr_tax:
-    #     branch = frappe.db.get_value("Branch", filters={"pos_profile": invoice_doc.pos_profile}, fieldname={"enable_fbr","include_fbr_charges_in_cash","fbr_pos_id","fbr_host","fbr_charges_account","authority"})
-    #     if branch.enable_fbr:
-    #         if branch.authority == "PRA":
-    #             sync_pra_tax(invoice_doc,branch)
-
-
-
     if frappe.get_value(
         "POS Profile",
         invoice_doc.pos_profile,
@@ -1058,6 +1048,226 @@ def submit_invoice(invoice, data,taxvalue):
         redeeming_customer_credit(
             invoice_doc, data, is_payment_entry, total_cash, cash_account, payments
         )
+
+    return {"name": invoice_doc.name, "status": invoice_doc.docstatus}
+
+@frappe.whitelist()
+def sales_invoice(data, invoice=None, taxvalue=None):
+    data = json.loads(invoice)
+    invoice_doc = None
+
+    # Update or create the invoice
+    if data.get("name"):
+        invoice_doc = frappe.get_doc("Sales Invoice", data.get("name"))
+        invoice_doc.update(data)
+    else:
+        if data.get("pos_referrence"):
+            existing_invoice = frappe.db.exists("Sales Invoice", {"pos_referrence": data.get("pos_referrence")})
+            if existing_invoice:
+                invoice_doc = frappe.get_doc("Sales Invoice", existing_invoice)
+                
+                if invoice_doc.docstatus == 1:  # If the invoice is submitted/paid
+                    return {"name": invoice_doc.name, "status": invoice_doc.docstatus}
+                
+                invoice_doc.update(data)
+            else:
+                invoice_doc = frappe.get_doc(data)
+        else:
+            invoice_doc = frappe.get_doc(data)
+
+    invoice_doc.set_missing_values()
+    invoice_doc.flags.ignore_permissions = True
+    frappe.flags.ignore_account_permission = True
+
+    # Handle returns
+    if invoice_doc.is_return and invoice_doc.return_against:
+        ref_doc = frappe.get_cached_doc(invoice_doc.doctype, invoice_doc.return_against)
+        if not ref_doc.update_stock:
+            invoice_doc.update_stock = 0
+        if len(invoice_doc.payments) == 0:
+            invoice_doc.payments = ref_doc.payments
+        invoice_doc.paid_amount = (
+            invoice_doc.rounded_total or invoice_doc.grand_total or invoice_doc.total
+        )
+        for payment in invoice_doc.payments:
+            if payment.default:
+                payment.amount = invoice_doc.paid_amount
+
+    allow_zero_rated_items = frappe.get_cached_value(
+        "POS Profile", invoice_doc.pos_profile, "posa_allow_zero_rated_items"
+    )
+
+    for item in invoice_doc.items:
+        if not item.rate or item.rate == 0:
+            if allow_zero_rated_items:
+                item.price_list_rate = 0.00
+                item.is_free_item = 1
+            else:
+                frappe.throw(
+                    _(f"Rate cannot be zero for item {item.item_code}")
+                )
+        else:
+            item.is_free_item = 0
+        add_taxes_from_tax_template(item, invoice_doc)
+
+    if frappe.get_cached_value(
+        "POS Profile", invoice_doc.pos_profile, "posa_tax_inclusive"
+    ):
+        if invoice_doc.get("taxes"):
+            for tax in invoice_doc.taxes:
+                tax.included_in_print_rate = 1
+
+    today_date = getdate()
+    if (
+        invoice_doc.get("posting_date")
+        and getdate(invoice_doc.posting_date) != today_date
+    ):
+        invoice_doc.set_posting_time = 1
+    invoice_doc.order_summery_for_pos = json.dumps(invoice_doc.order_summery_for_pos)
+
+    # Process submission if invoice data exists
+    if invoice:
+        invoice = json.loads(invoice)
+        invoice_doc.update(invoice)
+
+        if invoice.get("posa_delivery_date"):
+            invoice_doc.update_stock = 0
+
+        mop_cash_list = [
+            i.mode_of_payment
+            for i in invoice_doc.payments
+            if "cash" in i.mode_of_payment.lower() and i.type == "Cash"
+        ]
+
+        cash_account = (
+            get_bank_cash_account(mop_cash_list[0], invoice_doc.company)
+            if mop_cash_list
+            else {
+                "account": frappe.get_value(
+                    "Company", invoice_doc.company, "default_cash_account"
+                )
+            }
+        )
+
+        if data.get("credit_change"):
+            advance_payment_entry = frappe.get_doc(
+                {
+                    "doctype": "Payment Entry",
+                    "mode_of_payment": "Cash",
+                    "paid_to": cash_account["account"],
+                    "payment_type": "Receive",
+                    "party_type": "Customer",
+                    "party": invoice_doc.get("customer"),
+                    "paid_amount": invoice_doc.get("credit_change"),
+                    "received_amount": invoice_doc.get("credit_change"),
+                    "company": invoice_doc.get("company"),
+                }
+            )
+            advance_payment_entry.flags.ignore_permissions = True
+            frappe.flags.ignore_account_permission = True
+            advance_payment_entry.save()
+            advance_payment_entry.submit()
+
+        total_cash = (
+            invoice_doc.total - float(data.get("redeemed_customer_credit"))
+            if data.get("redeemed_customer_credit")
+            else 0
+        )
+
+        is_payment_entry = 0
+        if data.get("redeemed_customer_credit"):
+            for row in data.get("customer_credit_dict"):
+                if row["type"] == "Advance" and row["credit_to_redeem"]:
+                    advance = frappe.get_doc("Payment Entry", row["credit_origin"])
+
+                    advance_payment = {
+                        "reference_type": "Payment Entry",
+                        "reference_name": advance.name,
+                        "remarks": advance.remarks,
+                        "advance_amount": advance.unallocated_amount,
+                        "allocated_amount": row["credit_to_redeem"],
+                    }
+
+                    invoice_doc.append("advances", advance_payment)
+                    invoice_doc.is_pos = 0
+                    is_payment_entry = 1
+
+        payments = invoice_doc.payments
+
+        if frappe.get_value("POS Profile", invoice_doc.pos_profile, "posa_auto_set_batch"):
+            make_batch(invoice_doc, "warehouse", throw=True)
+        set_batch_nos_for_bundels(invoice_doc, "warehouse", throw=True)
+
+        invoice_doc.posa_is_printed = 1
+
+        if taxvalue:
+            invoice_doc.taxes_and_charges = taxvalue
+            taxes_template_details = frappe.get_all(
+                "Sales Taxes and Charges",
+                filters={"parent": taxvalue},
+                fields=["*"],
+            )
+            invoice_doc.taxes = []
+            if taxes_template_details:
+                for tax_detail in taxes_template_details:
+                    tax_row = invoice_doc.append("taxes", {})
+                    tax_row.update(
+                        {
+                            "description": tax_detail.get("description").split(" - ")[0],
+                            "charge_type": tax_detail.get("charge_type"),
+                            "account_head": tax_detail.get("account_head"),
+                            "rate": tax_detail.get("rate"),
+                        }
+                    )
+
+                    if invoice_doc.doctype == "Purchase Order":
+                        tax_row.update({"category": "Total", "add_deduct_tax": "Add"})
+                    tax_row.db_insert()
+
+        invoice_doc.save()
+
+        if data.get("due_date"):
+            frappe.db.set_value(
+                "Sales Invoice",
+                invoice_doc.name,
+                "due_date",
+                data.get("due_date"),
+                update_modified=False,
+            )
+
+        if frappe.get_value(
+            "POS Profile",
+            invoice_doc.pos_profile,
+            "posa_allow_submissions_in_background_job",
+        ):
+            invoices_list = frappe.get_all(
+                "Sales Invoice",
+                filters={
+                    "posa_pos_opening_shift": invoice_doc.posa_pos_opening_shift,
+                    "docstatus": 0,
+                    "posa_is_printed": 1,
+                },
+            )
+            for invoice in invoices_list:
+                enqueue(
+                    method=submit_in_background_job,
+                    queue="short",
+                    timeout=1000,
+                    is_async=True,
+                    kwargs={
+                        "invoice": invoice.name,
+                        "data": data,
+                        "is_payment_entry": is_payment_entry,
+                        "total_cash": total_cash,
+                        "cash_account": cash_account,
+                        "payments": payments,
+                    },
+                )
+        else:
+            invoice_doc.submit()
+            redeeming_customer_credit(
+                invoice_doc, data, is_payment_entry, total_cash, cash_account, payments
+            )
 
     return {"name": invoice_doc.name, "status": invoice_doc.docstatus}
 

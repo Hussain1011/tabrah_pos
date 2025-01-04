@@ -3063,6 +3063,7 @@ export default {
             pos_profile: this.pos_profile,
           },
         });
+        console.log("tri behn ka naki saka");
         this.orderTypes = response.message;
         this.ordertype = response.message[0];
         evntBus.$emit("send_order_type", this.ordertype);

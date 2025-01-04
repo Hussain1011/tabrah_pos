@@ -116,6 +116,7 @@ export default {
             pos_profile: this.pos_profile,
           },
         });
+        console.log("tri maaaaa ka naki saka");
         this.orderTypes = response.message;
         this.ordertype = response.message[0];
         // this.selectedType = response.message[0];

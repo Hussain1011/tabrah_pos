@@ -6,7 +6,12 @@
         <p class="pt-6 pl-6 title-h">Categories</p>
         <v-row
           class="px-4 ml-1 category-row"
-          style="overflow-x: auto; white-space: nowrap"
+          style="
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+          "
         >
           <v-col
             v-for="category in categories"
@@ -50,7 +55,6 @@
         md="4"
         lg="3"
         xl="3"
-
         class="mb-4 pt-0"
       >
         <v-card class="hover-card" elevation="0" @click="openDialog(product)">
@@ -58,7 +62,6 @@
             :src="product.image ? product.image : defaultImg"
             class="white--text align-end item-img"
           />
-
 
           <div style="display: flex; justify-content: space-between">
             <div style="width: 140px">
@@ -75,14 +78,12 @@
             </div>
             <div>
               <div class="stock-div">
-
                 <p
                   class="stock-count"
                   :class="{ 'negative-stock': product.actual_qty < 0 }"
                 >
                   {{ product.actual_qty }}
                 </p>
-
               </div>
             </div>
           </div>
@@ -138,7 +139,6 @@ const getAllItems = ref(false);
 const offlineMode = ref(false);
 const unsyncInvoice = ref(0);
 
-
 const products = ref([
   // {
   //   name: "GUL-BAHAAR2",
@@ -154,7 +154,7 @@ const filteredProducts = computed(() => {
   }
   // Otherwise, filter products that match the search value (case insensitive)
   return products.value.filter((product) =>
-    product.item_name.toLowerCase().includes(searchValue.value.toLowerCase())
+    product.item_code.toLowerCase().includes(searchValue.value.toLowerCase())
   );
 });
 const handleOffline = () => {
@@ -172,7 +172,7 @@ const handleOffline = () => {
       return indexedDBService.getGroupItems();
     })
     .then((data) => {
-      categories.value=[]
+      categories.value = [];
       categories.value = data;
       selectedCategory.value = categories.value[0];
       const allItems =
@@ -226,11 +226,6 @@ const syncSalesInvoicesFromIndexedDB = async () => {
     const db = await indexedDBService.openDatabase();
     //console.log("Database opened successfully.");
 
-    // eventBus.emit("show_message", {
-    //   text: "Syncing Sales Invoice Data!",
-    //   color: "info",
-    // });
-
     // Fetch unsynced records
     const allRecords = await fetchUnsyncedSalesInvoiceRecords(db);
     console.log("Fetched unsynced records:", allRecords);
@@ -240,6 +235,17 @@ const syncSalesInvoicesFromIndexedDB = async () => {
 
     if (allRecords.length == 0) {
       console.log("no data availabe for syning");
+      // indexedDBService
+      //   .openDatabase()
+      //   .then(() => {
+      //     return indexedDBService.clearCreateInvoice();
+      //   })
+      //   .then(() => {
+      //     console.log("get response create_invoice table cleared successfully");
+      //   })
+      //   .catch((error) => {
+      //     console.error("Error get offers:", error);
+      //   });
       clearInterval(intervalId.value);
       intervalId.value = null;
       return;
@@ -251,30 +257,33 @@ const syncSalesInvoicesFromIndexedDB = async () => {
     if (!requestComplete.value) {
       for (const record of allRecords) {
         //console.log("Syncing record:", record);
-        if (record.invoice.name) {
-          console.log("Invoice name", record.invoice.name);
-          // checkConnection();
-          await syncSalesInvoiceRecord(db, record); // Await each sync operation
-        } else {
-          // checkConnection();
-          record.invoice = await updateInvoice(record);
+        // if (record.invoice.name) {
+        //   console.log("Invoice name", record.invoice.name);
+        //   // checkConnection();
+        //   await syncSalesInvoiceRecord(db, record); // Await each sync operation
+        // }
+        //  else {
+        //   // checkConnection();
+        //   record.invoice = await updateInvoice(record);
 
-          // try {
-          //   const db = await indexedDBService.openDatabase();
-          //   // Update the invoice with the provided invoice data (record.invoice)
-          //   record.invoice = await indexedDBService.updateSalesInvoice(
-          //     record.id,
-          //     record
-          //   );
-          //   console.log("Record ID after calling the update invoice:", record.id);
-          // } catch (error) {
-          //   console.error("Error updating or syncing invoice:", error);
-          // }
+        //   // try {
+        //   //   const db = await indexedDBService.openDatabase();
+        //   //   // Update the invoice with the provided invoice data (record.invoice)
+        //   //   record.invoice = await indexedDBService.updateSalesInvoice(
+        //   //     record.id,
+        //   //     record
+        //   //   );
+        //   //   console.log("Record ID after calling the update invoice:", record.id);
+        //   // } catch (error) {
+        //   //   console.error("Error updating or syncing invoice:", error);
+        //   // }
 
-          // checkConnection();
-          await syncSalesInvoiceRecord(db, record); // Await each sync operation
-          console.log("Sync Invoice Record ID:", record.id);
-        }
+        //   // checkConnection();
+        //   await syncSalesInvoiceRecord(db, record); // Await each sync operation
+        //   console.log("Sync Invoice Record ID:", record.id);
+        // }
+        await syncSalesInvoiceRecord(db, record); // Await each sync operation
+        console.log("Sync Invoice Record ID:", record.id);
       }
     }
   } catch (error) {
@@ -327,17 +336,11 @@ const fetchUnsyncedSalesInvoiceRecords = async (db) => {
 };
 
 const syncSalesInvoiceRecord = async (db, record) => {
-  /**
-   * Function to sync a sales invoice record with the backend.
-   *
-   * @param {Object} record - Sales_invoice Object retrieved from IndexedDB.
-   * @returns {Promise<Object>} - Resolves with API response from Submit API or rejects with an error.
-   */
   let load = JSON.parse(JSON.stringify(record));
   // console.log("load offline invoice", load);
 
   // Fetch the offline invoice log before submitting
-  await getInvoiceLog();
+  // await getInvoiceLog();
 
   // load.invoice.payments.forEach((payment) => {
   //   if (payment.mode_of_payment === load.mode_of_payment) {
@@ -349,13 +352,13 @@ const syncSalesInvoiceRecord = async (db, record) => {
   // });
 
   try {
-    // console.log("Rounded Total =", load.invoice.rounded_total);
     console.log("Making submit API call with payload:", load);
+    requestComplete.value = true;
     const response = await new Promise((resolve, reject) => {
       // console.log("inPromises", load);
       // checkConnection();
       frappe.call({
-        method: "tabrah_pos.tabrah_pos.api.posapp.submit_invoice",
+        method: "tabrah_pos.tabrah_pos.api.posapp.sales_invoice",
         args: {
           data: load.data,
           invoice: load.invoice,
@@ -384,7 +387,7 @@ const syncSalesInvoiceRecord = async (db, record) => {
       });
     });
 
-   // console.log("Marking record as synced with ID:", load.id);
+    // console.log("Marking record as synced with ID:", load.id);
     await markRecordAsSynced(db, load);
     console.log("Record marked as synced successfully.");
 
@@ -501,7 +504,7 @@ async function markRecordAsSynced(db, record) {
 
 // Event handling
 const openDialog = (product, flag = false) => {
-  console.log("Product clicked:", product);
+  // console.log("Product clicked:", product);
   product.qty = 1;
   const obj = {
     product,
@@ -535,6 +538,28 @@ const changeCategory = (category) => {
     get_items(pos_profile.value, selectedCategory.value);
   }
 };
+const scanItem = (category) => {
+  const allItems = JSON.parse(localStorage.getItem("All-items_storage")) || [];
+
+  // Check for an exact match with item_code
+  const exactMatchItem = allItems.find(
+    (item) => item.item_code.toLowerCase() == searchValue.value.toLowerCase()
+  );
+  if(searchValue.value){
+  if (exactMatchItem) {
+    // Emit an event for the exact match
+    console.log("Exact match found:", exactMatchItem);
+    exactMatchItem.qty = 1;
+    eventBus.emit("add-to-cart", exactMatchItem);
+  } else {
+    eventBus.emit("show_mesage", {
+      text: "No item found",
+      color: "error",
+    });
+  }
+}
+  eventBus.emit("clear-search");
+};
 const get_items = async (pos_profile, groupItem) => {
   // console.log("groupItem", selectedCategory.value);
 
@@ -557,7 +582,6 @@ const get_items = async (pos_profile, groupItem) => {
         products.value = [];
         products.value = response.message;
         itemloading.value = false;
-
         // Store in localStorage
         localStorage.setItem("items_storage", JSON.stringify(response.message));
 
@@ -669,6 +693,24 @@ const loadAllItems = async (pos_profile) => {
     //     // handleOffline();
   }
 };
+const offlineProfileData = async () => {
+  try {
+    // Wait for the IndexedDBService to open the database and get the pos_profile
+    const data = await indexedDBService
+      .openDatabase()
+      .then(() => indexedDBService.getPosProfile());
+
+    // console.log("offline pos profile from order summary", data);
+
+    if (data && data.length > 0) {
+      pos_profile.value = data[0];
+    } else {
+      console.error("No profile data found in IndexedDB.");
+    }
+  } catch (error) {
+    console.error("Error with IndexedDB operation getting profile:", error);
+  }
+};
 
 const checkInternetConnection = async () => {
   try {
@@ -685,6 +727,7 @@ const checkInternetConnection = async () => {
 watch(offlineMode, (newStatus) => {
   if (newStatus) {
     handleOffline();
+    offlineProfileData();
   } else {
     handleOnline();
   }
@@ -703,12 +746,16 @@ onMounted(() => {
   handleOnline();
   // checkConnectionInterval = setInterval(checkInternetConnection, 5000);  // Every 5 seconds
   eventBus.on("sync-offline-invoice", () => {
-    syncSalesInvoicesFromIndexedDB();
+    if (navigator.onLine) {
+      syncSalesInvoicesFromIndexedDB();
+    }
   });
 
   eventBus.on("search-item", (value) => {
     // console.log("receive-search", value);
-    searchValue.value = value; // Update search value when event is triggered
+    searchValue.value = value; 
+    scanItem();
+
   });
   eventBus.on("send_order_type", (data) => {
     orderType.value = data;
@@ -743,7 +790,7 @@ onMounted(() => {
           console.error("Error saving to IndexedDB:", error);
         });
     }
-    get_items(profile, selectedCategory.value);
+    // get_items(profile, selectedCategory.value);
   });
 
   eventBus.on("update_get_item", (data) => {
@@ -767,13 +814,10 @@ onMounted(() => {
   });
   eventBus.on("app-internet-status", (newStatus) => {
     offlineMode.value = !newStatus;
-
   });
-  eventBus.on("open-product-menu", () => {
-    get_items(pos_profile.value, selectedCategory.value);
+  // eventBus.on('sync-offline-invoice',()=>{
 
-  });
-  
+  // })
 });
 onUnmounted(() => {
   window.removeEventListener("offline", handleOffline);
@@ -806,24 +850,22 @@ onUnmounted(() => {
 .stock-div {
   border: 1px solid #fcdfd3;
   width: 26px;
-  border-radius: 65px;
+  border-radius: 4px;
   height: 25px;
   margin-top: 20px;
   /* margin-right: 14px; */
   padding-left: 8px;
   padding-top: 1px;
-
   background: #fcdfd3;
   position: relative;
   right: 7px;
 }
 .stock-count {
-  color: #f05d23;
+  color: black;
   font-size: 12px;
   width: 80px !important;
   position: relative;
   right: 0px;
-
 }
 .item-img {
   border-top-left-radius: 13px !important;
@@ -866,4 +908,3 @@ onUnmounted(() => {
   right: 4px;
 }
 </style>
-

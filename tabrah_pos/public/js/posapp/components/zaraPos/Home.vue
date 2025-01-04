@@ -10,7 +10,7 @@
         <ProductList v-show="screen === 0" />
         <Payment v-show="screen === 1" />
         <OrderHistory v-if="screen === 2" />
-        <!-- <HoldOrder v-show="screen === 3" /> -->
+        <HoldOrder v-show="screen === 3" />
       </v-col>
       <v-col cols="4">
         <OrderSummary />
@@ -26,7 +26,7 @@ import ProductList from "./ProductList.vue";
 import OrderSummary from "./OrderSummary.vue";
 import Payment from "./Payment.vue";
 import OrderHistory from "./OrderHistory.vue";
-// import HoldOrder from "./HoldOrders.vue";
+import HoldOrder from "./HoldOrders.vue";
 
 import ProductDialog from "./ProductDialog.vue";
 import eventBus from "../../bus.js";

@@ -3,12 +3,12 @@
   <!-- App Bar (Navbar) -->
   <div>
     <v-app-bar app color="white" height="55" class="elevation-0">
-      <v-app-bar-nav-icon @click="drawer = !drawer" />
+      <!-- <v-app-bar-nav-icon @click="drawer = !drawer" /> -->
       <v-img
         src="/assets/tabrah_pos/js/posapp/components/pos/logo.png"
         alt="POS"
         max-width="32"
-        class="mr-2"
+        class="mx-3"
         @click="go_desk"
       ></v-img>
       <v-toolbar-title
@@ -20,14 +20,17 @@
         <span class="ml-2 primary--text">pos</span>
       </v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-switch
+      <!-- <v-btn color="#21A0A0" dark text @click="openCustomerScreen">
+        Customer screen
+      </v-btn> -->
+      <!-- <v-switch
         v-model="isInternet"
         :label="isInternet ? 'System is Online' : 'System is Offline'"
         hide-details
         inset
         class="switch-btn"
         color="#21A0A0"
-      ></v-switch>
+      ></v-switch> -->
       <v-btn style="cursor: unset" text color="#21A0A0">
         <span right>{{ pos_profile.name }}</span>
       </v-btn>
@@ -53,65 +56,86 @@
           </v-list>
         </v-menu>
       </div>
-      <!-- <div class="text-center">
-        <v-menu offset-y>
-          <template v-slot:activator="{ on, attrs }">
-            <v-btn color="primary" dark text v-bind="attrs" v-on="on"
-              >Menu</v-btn
-            >
-          </template>
-          <v-card class="mx-auto" max-width="300" tile>
-            <v-list dense>
-              <v-list-item-group v-model="menu_item" color="primary">
-                <v-list-item
-                >
-                  <v-list-item-icon>
-                    <v-icon>mdi-content-save-move-outline</v-icon>
-                  </v-list-item-icon>
-                  <v-list-item-content>
-                    <v-list-item-title>{{
-                      __("Close Shift")
-                    }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-                <v-list-item
-                  @click="print_last_invoice"
-                >
-                  <v-list-item-icon>
-                    <v-icon>mdi-printer</v-icon>
-                  </v-list-item-icon>
-                  <v-list-item-content>
-                    <v-list-item-title>{{
-                      __("Print Last Invoice")
-                    }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-                <v-divider class="my-0"></v-divider>
-                <v-list-item @click="logOut">
-                  <v-list-item-icon>
-                    <v-icon>mdi-logout</v-icon>
-                  </v-list-item-icon>
-                  <v-list-item-content>
-                    <v-list-item-title>{{ __("Logout") }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-                <v-list-item @click="go_about">
-                  <v-list-item-icon>
-                    <v-icon>mdi-information-outline</v-icon>
-                  </v-list-item-icon>
-                  <v-list-item-content>
-                    <v-list-item-title>{{ __("About") }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list-item-group>
-            </v-list>
-          </v-card>
-        </v-menu>
-      </div> -->
     </v-app-bar>
 
     <!-- Navigation Drawer -->
     <v-navigation-drawer
+      style="background-color: #0d1821; width: 65px"
+      permanent
+      rail
+    >
+      <v-list-item>
+        <!-- <v-img
+          src="/assets/tabrah_pos/js/posapp/components/pos/logo.png"
+          alt="POS"
+          max-width="70"
+          @click="go_desk"
+          class="ml-1 pt-3"
+        ></v-img> -->
+      </v-list-item>
+
+      <v-divider></v-divider>
+
+      <v-list
+        density="compact"
+        nav
+        class="px-0 curser-pointer"
+        style="padding-top: 124px"
+      >
+        <v-list-item @click="goToDashboard()">
+          <v-img
+            class="img pl-1"
+            src="/assets/tabrah_pos/js/posapp/components/pos/dashboard.png"
+            alt=""
+            cover
+            style="width: 38px; height: 40px"
+          ></v-img>
+          <p style="color: white" class="mb-0 pl-1">Dash</p>
+          <p style="color: white" class="pt-0">board</p>
+        </v-list-item>
+        <v-list-item class="mt-4" @click="goToHoldOrder()">
+          <v-img
+            class="img pl-1"
+            src="/assets/tabrah_pos/js/posapp/components/pos/receipt.png"
+            alt=""
+            cover
+            style="width: 38px; height: 40px"
+          ></v-img>
+          <p style="color: white" class="ml-1 mb-0">Hold</p>
+          <p style="color: white" class="pt-0">Orders</p>
+        </v-list-item>
+        <v-list-item class="mt-4" @click="goToOrderHistory()">
+          <v-img
+            class="img pl-1"
+            src="/assets/tabrah_pos/js/posapp/components/pos/store.png"
+            alt=""
+            cover
+            style="width: 38px; height: 40px"
+          ></v-img>
+          <p style="color: white" class="ml-1 mb-0">Sale</p>
+          <p style="color: white" class="pt-0">Orders</p>
+        </v-list-item>
+      </v-list>
+      <!-- <div style="padding-top: 300px">
+        <v-tooltip bottom style="" theme="black">
+          <template #activator="{ props }">
+            <v-badge color="error" :content="unsyncInvoice" class="">
+              <v-icon
+                v-bind="props"
+                size="32"
+                color="white"
+                class="pl-7 curser-pointer"
+              >
+                mdi-sync-off
+              </v-icon>
+            </v-badge>
+          </template>
+          <!-- <span>Unsync Invoice: {{ unsyncInvoice }} </span> -->
+        </v-tooltip>
+      </div> -->
+    </v-navigation-drawer>
+
+    <!-- <v-navigation-drawer
       app
       expand-on-hover
       rail
@@ -131,7 +155,6 @@
               <v-icon size="36" color="white" class="pr-3"
                 >mdi-view-dashboard</v-icon
               >
-              <!-- Adjust size here -->
             </template>
           </v-list-item>
           <v-list-item
@@ -142,19 +165,18 @@
           >
             <template v-slot:prepend>
               <v-icon size="36" color="white" class="pr-3">mdi-receipt</v-icon>
-              <!-- Adjust size here -->
             </template>
           </v-list-item>
-          <!-- <v-list-item
-          title="Hold Order"
-          value="Hold Order"
-          style="color: white"
-          @click="goToHoldOrder()"
-        >
-          <template v-slot:prepend>
-            <v-icon size="36" color="white" class="pr-3">mdi-receipt</v-icon>
-          </template>
-        </v-list-item> -->
+          <v-list-item
+            title="Hold Order"
+            value="Hold Order"
+            style="color: white"
+            @click="goToHoldOrder()"
+          >
+            <template v-slot:prepend>
+              <v-icon size="36" color="white" class="pr-3">mdi-receipt</v-icon>
+            </template>
+          </v-list-item>
           <v-list-item style="color: white">
             <template v-slot:prepend>
               <v-icon size="36" color="white" class="pr-3">mdi-sync-off</v-icon>
@@ -164,24 +186,10 @@
             </template>
           </v-list-item>
         </v-list>
-        <!-- Unsync Records Button -->
-        <!-- <v-row justify="center" class="pb-4">
-      <v-tooltip text="Unsync Records" location="top">
-        <template v-slot:activator="{ props }">
-          <v-btn
-            v-bind="props"
-            icon
-            variant="tonal"
-            color="white"
-            @click="unsyncRecords"
-          >
-            <v-icon color="#ffffff">mdi-sync-off</v-icon>
-          </v-btn>
-        </template>
-      </v-tooltip>
-    </v-row> -->
+    
       </div>
-    </v-navigation-drawer>
+    </v-navigation-drawer> -->
+
     <div>
       <v-snackbar
         v-model="snack"
@@ -226,8 +234,9 @@
   </div>
   <!-- </v-app> -->
 </template>
+
 <script>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, onUnmounted } from "vue";
 import POS from "./zaraPos/Home.vue";
 import eventBus from "../bus";
 
@@ -250,12 +259,34 @@ export default {
     const speedMbps = ref(null); // Measured internet speed in Mbps
     let intervalId = null; // Interval ID for clearing later
     const punching = ref("completed");
+    const test = ref(false);
 
     const goToOrderHistory = () => {
       eventBus.emit("go-to-order-history");
     };
+    const openCustomerScreen = () => {
+      console.log("oopenCustomerScreen", window.location.pathname);
+      const customerScreenUrl = `${window.location.origin}/app/customerscreen`; // Update the path if using Vue Router
+      window.open(customerScreenUrl, "_blank");
+    };
+
+    const getHoldOrders = async () => {
+      try {
+        // Retrieve hold orders from local storage
+        // orders.value = [];
+        const heldOrders =
+          (await JSON.parse(localStorage.getItem("heldOrders"))) || [];
+        eventBus.emit("go-to-hold-order", heldOrders);
+
+        console.log("Hold orders retrieved successfully:", heldOrders);
+      } catch (error) {
+        console.error("Failed to retrieve hold orders:", error);
+      }
+    };
     const goToHoldOrder = () => {
-      eventBus.emit("go-to-hold-order");
+      getHoldOrders();
+
+      // eventBus.emit("go-to-hold-order");
     };
     const goToDashboard = () => {
       eventBus.emit("open-product-menu");
@@ -336,7 +367,7 @@ export default {
               isInternet.value = true;
             } else {
               console.log("offline mode on");
-                isInternet.value = false;
+              isInternet.value = false;
             }
 
             console.log(
@@ -376,7 +407,7 @@ export default {
     });
     watch(drawer, (newStatus) => {
       if (newStatus) {
-        syncSalesInvoicesFromIndexedDB;
+        // syncSalesInvoicesFromIndexedDB;
       }
     });
     onMounted(() => {
@@ -391,6 +422,14 @@ export default {
       } else {
         isInternet.value = false;
       }
+      window.addEventListener("offline", () => {
+        isInternet.value = false;
+      });
+
+      window.addEventListener("online", () => {
+        isInternet.value = true;
+      });
+
       eventBus.on("punching-status", (data) => {
         punching.value = data;
       });
@@ -413,6 +452,15 @@ export default {
         unsyncInvoice.value = data;
       });
     });
+    onUnmounted(() => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+      eventBus.off("punching-status");
+      eventBus.off("internet-status");
+      eventBus.off("logout-pos");
+      eventBus.off("send_pos_profile");
+      eventBus.off("Unsync-record");
+    });
 
     return {
       drawer,
@@ -433,11 +481,14 @@ export default {
       checkInternetSpeed,
       syncSalesInvoicesFromIndexedDB,
       punching,
+      // getHoldOrders,
+      openCustomerScreen,
     };
   },
 };
 </script>
- <style scoped>
+
+<style scoped>
 /* Add custom styling as necessary */
 .custom-snackbar {
   position: fixed !important;
@@ -513,5 +564,8 @@ export default {
 .v-snackbar--variant-elevated {
   position: fixed !important;
   top: 40px !important;
+}
+.curser-pointer {
+  cursor: pointer;
 }
 </style>

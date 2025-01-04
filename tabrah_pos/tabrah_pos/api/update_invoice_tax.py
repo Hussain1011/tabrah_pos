@@ -33,6 +33,7 @@ def get_qr_data(fbr_invoice_no, sales_invoice_name):
         sales_invoice.fbr_invoice_id = fbr_invoice_no
         sales_invoice.qr_code = encoded
         
+        sales_invoice.flags.ignore_validate_update_after_submit = True
         sales_invoice.submit()
         
         response["message"] = "Invoice updated successfully"

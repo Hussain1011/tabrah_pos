@@ -57,6 +57,8 @@ def before_submit(doc, method):
 
                 # Check if any payment uses specific modes of payment
                 flag = 0
+                if not doc.payments:  
+                    frappe.throw("No Mode of Payment Selected")
                 for p in doc.payments:
                     if p.amount != 0:  # Only consider non-zero payments
                         mop = frappe.get_doc("Mode of Payment", p.mode_of_payment)
@@ -76,6 +78,18 @@ def before_submit(doc, method):
                     })
 
                 doc.calculate_taxes_and_totals()
+
+                if doc.paid_amount < doc.grand_total:
+                    frappe.throw("Paid Amount cannot be less than the Grand Total after tax recalculation.")
+
+                if doc.paid_amount == doc.grand_total:
+                    doc.change_amount = 0
+                    doc.base_change_amount = 0
+
+                if doc.paid_amount > doc.grand_total:
+                    doc.change_amount = doc.paid_amount - doc.grand_total
+                    doc.base_change_amount = doc.paid_amount - doc.grand_total
+
     add_loyalty_point(doc)
     create_sales_order(doc)
     update_coupon(doc, "used")

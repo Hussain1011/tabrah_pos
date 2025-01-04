@@ -129,19 +129,21 @@ async function getAllItems(items) {
 }
 
 // Method to open a new window and print the invoice
-export async function printInvoice(invoiceId, offline_paid_amount, offline_paid_change) {
+export async function printInvoice(invoiceId, offline_paid_amount, offline_paid_change,offlineData,fbr) {
   try {
     // Fetch the document and user data from IndexedDB
     console.log("invoiceId",invoiceId)
         console.log("offline_paid_amount",offline_paid_amount)
 
-    doc = await fetchInvoiceData(invoiceId[0]);    
+    // doc = await fetchInvoiceData(invoiceId[0]);    
     console.log("offline-print doc data.....",doc)
-    pos_profile = await fetchPosProfile(doc.invoice.pos_profile);
-    pos_setting = await fetchPosSetting();
-    pos_opening_shift = await fetchPosOpeningShift(doc.invoice.posa_pos_opening_shift);
-    usr = await fetchUserData(pos_opening_shift.user);
-    let itemNames = await getAllItems(doc.invoice.items);
+    console.log("offline-print fbr.....",fbr)
+
+    // pos_profile = await fetchPosProfile(doc.invoice.pos_profile);
+    // pos_setting = await fetchPosSetting();
+    // pos_opening_shift = await fetchPosOpeningShift(doc.invoice.posa_pos_opening_shift);
+    // usr = await fetchUserData(pos_opening_shift.user);
+    // let itemNames = await getAllItems(doc.invoice.items);
     let now = new Date();
 
 
@@ -263,14 +265,14 @@ export async function printInvoice(invoiceId, offline_paid_amount, offline_paid_
 
        <div style="line-height: 1.5; text-align: center;">
     <div style="text-align: center;">
-            <img src="/assets/tabrah_pos/js/posapp/components/pos/zara.svg" alt="Random Image"/>
+            <img src="https://cdn.shopify.com/s/files/1/0290/8123/9612/files/LOGO_packinng.jpg?height=628&pad_color=ffffff&v=1614755406&width=1200" alt="Random Image"/>
         <p style="margin: 0; font-size: 16px; font-weight: bold;">Layers Bakeshop</p>
         <div style="width: 28%; margin: 10px auto;">
         </div>
     </div>
     <div style="width: 55%; margin: 0 auto; text-align: left; line-height: 1.5;">
         <table style="width: 100%; font-size:12px; line-height: 0.7;">
-            ${doc.invoice.items.map((item, index) => `
+            ${offlineData.items.map((item, index) => `
                <tr>
                     <td colspan="2" style="width: 75%; font-weight: bold;">${item.item_name}</td>
                     <td style="width: 25%; text-align: right;"></td>
@@ -286,27 +288,30 @@ export async function printInvoice(invoiceId, offline_paid_amount, offline_paid_
         <div style="padding-left:10px; padding-right:10px" > 
         <div style="display: flex;flex-direction: row; justify-content: space-between;">
             <p>Subtotal</p>
-            <p>${doc.invoice.total.toFixed(2)} Rs</p>
+            <p>${offlineData.total.toFixed(2)} Rs</p>
         </div>  
         <div style="display: flex;flex-direction: row; justify-content: space-between;">
             <p>Sale Tax</p>
-            <p style="text-decoration: underline; text-decoration-style: dotted;">${doc.invoice.total_taxes_and_charges} Rs</p>
+            <p style="text-decoration: underline; text-decoration-style: dotted;">${offlineData.total_taxes_and_charges} Rs</p>
         </div>
         
-        <h3 style="text-align: right;" >Total &nbsp; &nbsp; &nbsp; &nbsp;  ${doc.invoice.grand_total} RS</h3>
+        <h3 style="text-align: right;" >Total &nbsp; &nbsp; &nbsp; &nbsp;  ${offlineData.grand_total} RS</h3>
   
             <!-- Dynamic Payment Modes -->
-                ${doc.invoice.payments.filter(payment => payment.amount > 0).map(payment => `
+                ${offlineData.payments.filter(payment => payment.amount > 0).map(payment => `
                     <div style="display: flex; flex-direction: row; justify-content: space-between;">
                         <p>${payment.mode_of_payment}</p>
-                        <p>${payment.amount.toFixed(2)} Rs</p>
+                        <p>${Number(payment.amount).toFixed(2)} Rs</p>
                     </div>
                 `).join("")} 
-        <h3 style="text-align: right;" >CHANGE &nbsp; &nbsp; &nbsp; &nbsp;  ${doc.invoice.amount_paid-doc.invoice.grand_total} RS</h3>
         </div>
         </div>
+        <p style="margin-top:30px;" >FBR id # ${fbr.fbrInvoiceId}</p>
+                <img id="qrCodeImg" src="${fbr.qrCode}" alt="FBR QR Code" style="height: 90px;"/>
+
+
         <p style="margin-top:30px;" >Thank you for your visit!
-        <br>Prepared by Hussain
+        <br>Prepared by Tabrah
         </p>
 
 </div>
@@ -317,13 +322,21 @@ export async function printInvoice(invoiceId, offline_paid_amount, offline_paid_
     `);
 
     // Close the document to trigger rendering in the new window
-    newWindow.document.close();
+    const qrCodeImg = newWindow.document.getElementById("qrCodeImg");
 
-    // Automatically open the print dialog
-    newWindow.focus(); // Ensure focus on the new window
-    newWindow.print();
-    
+    qrCodeImg.onload = () => {
+      newWindow.document.close();
+      newWindow.focus();
+      newWindow.print();
+    };
+
+    qrCodeImg.onerror = () => {
+      console.error("Error loading QR code image.");
+      newWindow.document.close();
+      newWindow.focus();
+      newWindow.print(); // Optionally print without the QR code
+    };
   } catch (error) {
-    console.error('Error printing invoice:', error);
+    console.error("Error printing invoice:", error);
   }
 }

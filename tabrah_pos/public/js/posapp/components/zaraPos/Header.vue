@@ -2,14 +2,7 @@
   <v-row class="pt-0 px-2">
     <v-col cols="12" md="8">
       <v-card elevation="1" class="border-16 title-card d-flex">
-        <img
-          src="/assets/tabrah_pos/js/posapp/components/pos/zara.svg"
-          alt=""
-          class="ml-5"
-          style="max-width: 235px"
-        />
-        <v-spacer></v-spacer>
-        <v-spacer></v-spacer>
+        
         <div class="search-div">
           <v-select
             v-model="selectedOrderType"
@@ -22,17 +15,34 @@
             :disabled="currentScreen !== 0"
           />
         </div>
+        <v-spacer></v-spacer>
+        <div class="search-div" style="margin-left: 1%;">
+          <v-select
+            variant="outlined"
+            label="Table"
+            append-inner-icon="mdi-magnify"
+            placeholder="Table No."
+            :items="tableOptions"
+            class="mt-1 mr-3"
+            density="compact"
+            item-title="table_name"
+            item-value="id"
+            style="height: 83px; border-radius: 6px;"
+            @click="onOpenSelect"
+          />
+        </div>
+        <v-spacer></v-spacer>
         <div class="search-div">
           <v-text-field
             variant="outlined"
             append-inner-icon="mdi-magnify"
             placeholder="Find Your Item"
-            class="mt-1 mr-4"
+            class="mt-1 mr-3"
             density="compact"
             style="height: 83px; border-radius: 6px"
             v-model="searchValue"
           />
-        </div>
+        </div>  
       </v-card>
     </v-col>
 
@@ -63,10 +73,20 @@ const selectedOrderType = ref("");
 const currentScreen = ref(null);
 
 const orderTypes = ref([]);
+const tableOptions = ref([]);
 
 const logOut = () => {
   eventBus.emit("logout-pos");
 };
+
+
+const onOpenSelect = () => {
+        fetchTableOptions();
+};
+
+onMounted(() => {
+        fetchTableOptions();
+      });
 
 const debounce = (func, delay) => {
   let timeout;
@@ -96,6 +116,7 @@ const changeOrderType = (newValue) => {
     eventBus.emit("required-order-id", false);
   }
 };
+
 // Fetch order types
 const fetchOrderTypes = async () => {
   try {
@@ -108,67 +129,28 @@ const fetchOrderTypes = async () => {
 
     // Assign response to order types
     orderTypes.value = response.message;
-    // selectedOrderType.value = response.message[0].name;
-    // eventBus.emit("selected_order_type", selectedOrderType.value);
-
-    // Emit the order type via event bus
-    //    eventBus.emit("send_order_type", selectedOrderType.value);
-
-    // Save the order types to IndexedDB
-    await indexedDBService.openDatabase();
-    await indexedDBService.saveOrderType(JSON.stringify(orderTypes.value));
-    // console.log("Order Type saved successfully!");
   } catch (error) {
     console.error("Error fetching order types:", error);
   }
 };
-// const offlineProfileData = () => {
-//   const profile = JSON.parse(
-//       localStorage.getItem("pos_profile")
-//     );
-//     pos_profile.value = profile;
-//     orderTypes.value = pos_profile.value.applicable_for_order_type;
-//     selectedOrderType.value =
-//       orderTypes.value.find((orderType) => orderType.default === 1)
-//         ?.order_type || orderTypes.value[0].order_type;
-//     let orderRequired =
-//       orderTypes.value.find(
-//         (orderType) => orderType.order_type == selectedOrderType.value
-//       ) || "";
-//     if (orderRequired.order_required) {
-//       eventBus.emit("required-order-id", true);
-//     } else {
-//       eventBus.emit("required-order-id", false);
-//     }
 
-// };
-const offlineProfileData = async () => {
+// Fetch order types
+const fetchTableOptions = async (profile) => {
   try {
-    // Wait for the IndexedDBService to open the database and get the pos_profile
-    const data = await indexedDBService.openDatabase()
-      .then(() => indexedDBService.getPosProfile());
+    const response = await frappe.call({
+      method: "tabrah_pos.tabrah_pos.api.posapp.get_Table_names",
+      args: {
+        pos_profile: 'Test',
+      },
+    });
 
-    console.log("offline pos profile from IndexedDB ..", data);
-
-    if (data && data.length > 0) {
-      pos_profile.value = data[0]; // Assuming pos_profile is in the first index
-      orderTypes.value = pos_profile.value.applicable_for_order_type;
-      selectedOrderType.value = orderTypes.value.find(
-        (orderType) => orderType.default === 1
-      )?.order_type || orderTypes.value[0].order_type;
-
-      let orderRequired = orderTypes.value.find(
-        (orderType) => orderType.order_type === selectedOrderType.value
-      ) || "";
-
-      // Emit event if the order is required
-      eventBus.emit("required-order-id", orderRequired.order_required);
-
-    } else {
-      console.error("No profile data found in IndexedDB.");
-    }
+    tableOptions.value = response.message.map((item) => ({
+      table_name: item.table_no,
+      id: item.name,
+    })); // Map response to expected structure
+    
   } catch (error) {
-    console.error("Error with IndexedDB operation getting profile:", error);
+    console.error("Error fetching order types:", error);
   }
 };
 
@@ -186,8 +168,11 @@ onMounted(() => {
     offlineProfileData();
   });
   eventBus.on("send_pos_profile", (profile) => {
+    console.log('profile')
+    console.log(profile)
     pos_profile.value = profile;
     orderTypes.value = pos_profile.value.applicable_for_order_type;
+    // tableOptions.value = ['01','02'];
     selectedOrderType.value =
       orderTypes.value.find((orderType) => orderType.default === 1)
         ?.order_type || orderTypes.value[0].order_type;

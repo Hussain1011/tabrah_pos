@@ -163,7 +163,7 @@
               <v-divider class="dotted-divider" :thickness="3"></v-divider>
             </v-col>
             <v-col cols="4" class="text-right py-0 payment-text-color">
-              Rs. 0.00
+              Rs.0.00
             </v-col>
           </v-row>
 
@@ -193,7 +193,7 @@
               </v-btn>
             </v-col>
           </v-row>
-          <!-- <v-row class="mt-3 px-6 pb-1">
+          <v-row class="mt-3 px-6 pb-1">
             <v-col cols="12">
               <v-btn
                 block
@@ -206,7 +206,7 @@
                 <p class="mt-2 payment-p">Hold</p>
               </v-btn>
             </v-col>
-          </v-row> -->
+          </v-row>
         </v-card>
       </v-col>
     </v-row>
@@ -269,6 +269,7 @@ export default {
     const screen = ref(0);
     const speedMbps = ref(null); // Measured internet speed in Mbps
     const getSpeedRes = ref(false);
+    const holdOrderId = ref(null);
 
     const totalQuantity = computed(() => {
       return items.value.reduce((acc, item) => acc + item.qty, 0);
@@ -363,15 +364,66 @@ export default {
       }
     };
 
+    // const holdOrder = () => {
+    //   // Start loading indicator
+    //   if (items.value.length > 0) {
+    //     loadingHold.value = true;
+
+    //     // Create a unique ID for the order
+    //     const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+    //     const nextOrderId = `Hold-Order-${heldOrders.length + 1}`;
+
+    //     // Add the current order with a holdOrderId
+    //     const currentOrder = {
+    //       id: nextOrderId,
+    //       items: items.value,
+    //       grand_total: grandTotal.value,
+    //       timestamp: new Date().toISOString(),
+    //     };
+    //     heldOrders.push(currentOrder);
+
+    //     localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
+
+    //     // Clear the current order for a new one
+    //     items.value = [];
+
+    //     // Stop loading indicator
+    //     loadingHold.value = false;
+    //     eventBus.emit("open-product-menu");
+    //     eventBus.emit("set-default-value");
+    //     console.log("Order held successfully:", currentOrder);
+    //   }
+    // };
     const holdOrder = () => {
-      // Start loading indicator
-      loadingHold.value = true;
+  if (items.value.length > 0) {
+    loadingHold.value = true; // Start loading indicator
 
-      // Create a unique ID for the order
-      const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+    // Retrieve held orders from localStorage
+    const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+
+    if (holdOrderId.value) {
+      // Update existing order if holdOrderId is present
+      const existingOrderIndex = heldOrders.findIndex(
+        (order) => order.id === holdOrderId.value
+      );
+
+      if (existingOrderIndex !== -1) {
+        // Update the existing order
+        heldOrders[existingOrderIndex] = {
+          ...heldOrders[existingOrderIndex],
+          items: items.value,
+          grand_total: grandTotal.value,
+          timestamp: new Date().toISOString(),
+        };
+        console.log(
+          `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
+        );
+      } else {
+        console.warn(`Order with ID ${holdOrderId.value} not found.`);
+      }
+    } else {
+      // Create a new order if no holdOrderId is present
       const nextOrderId = `Hold-Order-${heldOrders.length + 1}`;
-
-      // Add the current order with a holdOrderId
       const currentOrder = {
         id: nextOrderId,
         items: items.value,
@@ -379,17 +431,20 @@ export default {
         timestamp: new Date().toISOString(),
       };
       heldOrders.push(currentOrder);
-
-      localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
-
-      // Clear the current order for a new one
-      items.value = [];
-
-      // Stop loading indicator
-      loadingHold.value = false;
-
       console.log("Order held successfully:", currentOrder);
-    };
+    }
+
+    // Update localStorage with the modified held orders
+    localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
+
+    // Clear the current order for a new one
+    items.value = [];
+    loadingHold.value = false; // Stop loading indicator
+    eventBus.emit("open-product-menu");
+    eventBus.emit("set-default-value");
+  }
+};
+
 
     const goForPayment = async () => {
       // eventBus.emit("go-for-payment");
@@ -401,15 +456,28 @@ export default {
           // loadingBtn.value = true;
           const doc = get_invoice_doc();
           console.log("doc-payload-ready", doc);
+          invoice_doc.value = doc;
+          paymentProcess(invoice_doc.value);
 
-          if (doc.name) {
-            return update_invoice(doc);
-          } else {
-            return update_invoice(doc);
-          }
+          // if (doc.name) {
+          //   return update_invoice(doc);
+          // } else {
+          //   return update_invoice(doc);
+          // }
         }
       }
     };
+    const paymentProcess = (doc) => {
+      let grandTotalValue = grandTotal.value;
+      doc.total = grandTotalValue;
+      doc.net_total = netTotal.value.toFixed(2);
+      doc.grand_total = grandTotalValue;
+      doc.rounded_total = Math.ceil(grandTotalValue);
+      doc.total_taxes_and_charges = gstAmount.value.toFixed(2);
+      eventBus.emit("go-for-payment");
+      eventBus.emit("updated-invoice", invoice_doc.value);
+    };
+
     const processInvoiceFromOrder = async () => {
       // Fetch the invoice document
       const doc = await getInvoiceFromOrderDoc();
@@ -417,7 +485,7 @@ export default {
       // Set additional discount percentage
       // doc.additional_discount_percentage = Number(additionalDiscountPercentage.value);
 
-      // Update or create the invoice based on the presence of doc.name
+      // Update or create the invoice based on the presence of `doc.name`
       if (doc.name) {
         return await updateInvoiceFromOrder(doc);
       } else {
@@ -499,6 +567,9 @@ export default {
       // doc.order_summery_for_pos = orderItems.value;
       doc.cost_center = pos_profile.value.cost_center;
       doc.custom_invoice_status = "On Hold";
+      (doc.total_qty = totalQuantity.value),
+        (doc.holdOrderId = holdOrderId.value ? holdOrderId.value : "");
+
       // doc.cover = cover.value;
 
       return doc;
@@ -516,6 +587,7 @@ export default {
             mode_of_payment: payment.mode_of_payment,
             default: payment.default,
             account: "",
+            type: payment.mode_type,
           });
         });
 
@@ -588,6 +660,11 @@ export default {
         doc.grand_total = grandTotalValue;
         doc.rounded_total = Math.ceil(grandTotalValue);
         doc.total_taxes_and_charges = gstAmount.value.toFixed(2);
+        const randomReference = `${Date.now()}-${Math.floor(
+          Math.random() * 10000
+        )}`;
+        doc.pos_referrence = randomReference;
+
         console.log("offline-invoice...doc", doc);
         indexedDBService
           .openDatabase()
@@ -613,7 +690,6 @@ export default {
       }
     };
     const checkInternetSpeed = async (threshold = 2) => {
-      console.log("checking internet speed...", speedMbps.value);
       const imageAddr =
         "https://upload.wikimedia.org/wikipedia/commons/a/a6/Brandenburger_Tor_abends.jpg"; // Test image URL
       const downloadSize = 2707459; // File size in bytes
@@ -641,9 +717,9 @@ export default {
 
             speedMbps.value = calculatedSpeedMbps;
             getSpeedRes.value = false;
-            if (speedMbps.value > 1) {
-              eventBus.emit("sync-offline-invoice");
-            }
+            // if (speedMbps.value > 1) {
+            //   eventBus.emit("sync-offline-invoice");
+            // }
 
             // Update online status based on threshold
             // isInternet.value = parseFloat(calculatedSpeedMbps) >= threshold;
@@ -675,16 +751,28 @@ export default {
       invoiceItems.value = [];
 
       items.value.forEach((item, index) => {
+        let taxIncludeNetamount = 0;
+        const total = item.rate;
+        let taxrate = 1 + selectedPaymentMode.value?.tax_rate / 100 || 0;
+        taxIncludeNetamount = total / taxrate;
+
         const mainItemObject = {
           item_code: item.item_code,
           item_group: item.item_group,
           item_name: item.item_name,
           qty: item.qty,
           rate: item.rate,
+          amount: item.rate,
+          net_amount: taxIncludeNetamount,
         };
         invoiceItems.value.push(mainItemObject);
       });
-      // localStorage.setItem("order-items", JSON.stringify(invoiceItems.value));
+
+      localStorage.setItem("order-items", JSON.stringify(invoiceItems.value));
+      localStorage.setItem("net-total", JSON.stringify(netTotal.value));
+      localStorage.setItem("gst-amount", JSON.stringify(gstAmount.value));
+
+
       // checkInternetSpeed();
     };
 
@@ -717,10 +805,6 @@ export default {
             // If no default payment mode is found, set the first mode as default
             paymentModes.value[0].default = 1;
             paymentModes.value[0].selected = true;
-            console.log(
-              "No default payment mode found. Setting the first mode as default:",
-              paymentModes.value[0]
-            );
           }
           paymentModes.value.forEach((item) => {
             if (item.default) {
@@ -810,7 +894,6 @@ export default {
         offlineProfileData();
       }
       eventBus.on("app-internet-status", (newStatus) => {
-        console.log("IN order summary", newStatus);
         offlineMode.value = !newStatus;
         offlineProfileData();
       });
@@ -874,10 +957,6 @@ export default {
           // If no default payment mode is found, set the first mode as default
           paymentModes.value[0].default = 1;
           paymentModes.value[0].selected = true;
-          console.log(
-            "In order summary No default payment mode found. Setting the first mode as default:",
-            paymentModes.value[0]
-          );
         }
         paymentModes.value.forEach((item) => {
           if (item.default) {
@@ -898,6 +977,7 @@ export default {
         saleOrderDetail.value = "";
         items.value = [];
         invoiceItems.value = [];
+        holdOrderId.value = null;
       });
       eventBus.on("selected_order_type", (type) => {
         selectedOrderType.value = type;
@@ -906,8 +986,11 @@ export default {
         invoice_doc.value = {};
       });
       eventBus.on("load-hold-order", (order) => {
+        console.log("hold order", order);
         items.value = [];
+        holdOrderId.value = order.id;
         items.value = order.items;
+        makePayloadForInvoice();
       });
       eventBus.on("current-screen", (newVal) => {
         screen.value = newVal;
@@ -967,6 +1050,7 @@ export default {
       speedMbps,
       getSpeedRes,
       onEnterKey,
+      holdOrderId,
     };
   },
 };

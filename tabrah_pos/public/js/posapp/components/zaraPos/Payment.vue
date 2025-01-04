@@ -115,13 +115,13 @@
         </v-col>
 
         <!-- <v-col cols="12" md="4">
-          <v-text-field
-            class="b-radius-8"
-            variant="outlined"
-            label="Add Discount"
-            suffix="Rs."
-          />
-        </v-col> -->
+            <v-text-field
+              class="b-radius-8"
+              variant="outlined"
+              label="Add Discount"
+              suffix="Rs."
+            />
+          </v-col> -->
       </v-row>
 
       <!-- Paid Amount, To Be Paid, and Change Details -->
@@ -232,14 +232,14 @@
       <v-col cols="2"></v-col>
       <v-col cols="2">
         <!-- <v-btn
-          size="x-large"
-          variant="outlined"
-          color="#21A0A0"
-          class="text-capitalize ml-2"
-          style="background-color: #d3ecec; border-radius: 8px"
-        >
-          <v-icon left class="pr-2">mdi-pause-circle</v-icon> Hold Order
-        </v-btn> -->
+            size="x-large"
+            variant="outlined"
+            color="#21A0A0"
+            class="text-capitalize ml-2"
+            style="background-color: #d3ecec; border-radius: 8px"
+          >
+            <v-icon left class="pr-2">mdi-pause-circle</v-icon> Hold Order
+          </v-btn> -->
       </v-col>
       <v-col cols="2">
         <v-btn
@@ -249,7 +249,7 @@
           color="#21A0A0"
           style="background-color: #d3ecec; border-radius: 8px"
           :loading="btnLoading1"
-          @click="submit_invoice(undefined, false, true)"
+          @click="submitSaleInvoice(undefined, false, true)"
         >
           <v-icon left>mdi-printer</v-icon> Print Receipt
         </v-btn>
@@ -261,7 +261,7 @@
           color="#21A0A0"
           style="border-radius: 8px"
           class="white--text checkout-p"
-          @click="submit_invoice()"
+          @click="submitSaleInvoice()"
           :loading="btnLoading"
         >
           <p class="checkout-p mt-3">CHECKOUT</p>
@@ -375,11 +375,12 @@ const splitPayment = ref(false);
 const confirmSplit = ref(false);
 const offlineMode = ref(false);
 const punching = ref("completed");
+const fbrResponse = ref("");
 
 const requiredOrderId = ref(false);
 
 const setDefaultValue = () => {
-  amountTake.value = "";
+  amountTake.value = null;
   discount.value = "";
 
   invoice_doc.value = {};
@@ -406,6 +407,11 @@ const openSplitPaymentDialog = () => {
   if (paymentModes.value.length > 1) {
     showDialog.value = true;
     splitPayment.value = true;
+  } else {
+    eventBus.emit("show_mesage", {
+      text: `Split payment is not available as only one payment mode is configured.`,
+      color: "error",
+    });
   }
 };
 const cancelSplit = () => {
@@ -458,7 +464,7 @@ const closeDialog = () => {
 //   // Check if the amount is split across at least two payment modes
 //   if (validPaymentModes < 2) {
 //     eventBus.emit("show_mesage", {
-//       text: Amount must be split between at least two modes of payment.!,
+//       text: `Amount must be split between at least two modes of payment.!`,
 //       color: "error",
 //     });
 //     return;
@@ -474,7 +480,7 @@ const updateRemainingAmount = () => {
     return sum + amount;
   }, 0);
 
-  // Update remaining amount in invoice_doc
+  // Update remaining amount in `invoice_doc`
   invoice_doc.value.remaining_amount =
     invoice_doc.value.grand_total - totalPaid;
 };
@@ -544,7 +550,7 @@ const submitSplitPayment = () => {
 
   // if (totalPaidAmount > invoice_doc.value.grand_total) {
   //   eventBus.emit("show_mesage", {
-  //     text: The total amount paid exceeds the grand total!,
+  //     text: `The total amount paid exceeds the grand total!`,
   //     color: "error",
   //   });
   //   return;
@@ -752,92 +758,6 @@ const set_full_amount = (idx) => {
   }
 };
 
-// const set_full_amount = (idx) => {
-//   let getTax = pos_profile.value.payments.find(
-//     (item) => item.mode_of_payment == paymentType.value.mode_of_payment
-//   );
-
-//   invoice_doc.value.taxes_and_charges = getTax?.taxes_and_charges;
-//   taxRate.value = getTax?.tax_rate / 100 || 0;
-
-//   const subtotal = invoice_doc.value.net_total;
-//   const taxAndCharges = subtotal * taxRate.value;
-
-//   invoice_doc.value.total_taxes_and_charges = Number(taxAndCharges);
-//   invoice_doc.value.rounded_total = Math.ceil(
-//     Number(taxAndCharges) + Number(invoice_doc.value.net_total)
-//   );
-
-//   invoice_doc.value.grand_total =
-//     Number(taxAndCharges) + Number(invoice_doc.value.net_total);
-
-//   // Determine if there's any cash payment
-//   let cashPayment = paymentModes.value.find(
-//     (item) => item.mode_of_payment === 'Cash'
-//   );
-
-//   // If cash payment exists, subtract that from the grand total
-//   let remainingAmount = invoice_doc.value.grand_total;
-
-//   if (cashPayment) {
-//     cashPayment.amount=amountTake.value
-//     remainingAmount -= cashPayment.amount;
-//   }
-
-//   // If no amount has been paid in cash, allocate the full remaining amount to the selected payment mode
-//   if (!cashPayment) {
-//     let selectedPaymentMode = paymentModes.value.payments.find(
-//       (item) => item.mode_of_payment === paymentType.value.mode_of_payment
-//     );
-//     if (selectedPaymentMode) {
-//       selectedPaymentMode.amount = remainingAmount;
-//     }
-//   } else {
-//     // If cash payment exists, check if we need to allocate the remaining amount to other modes
-//     let otherPayments = pos_profile.value.payments.filter(
-//       (item) => item.mode_of_payment !== 'cash'
-//     );
-
-//     // Allocate the remaining amount to other payment modes
-//     otherPayments.forEach((payment) => {
-//       if (remainingAmount > 0) {
-//         let amountToPay = Math.min(remainingAmount, payment.amount);
-//         payment.amount = amountToPay;
-//         remainingAmount -= amountToPay;
-//       }
-//     });
-
-//     // If there's still a remaining amount, allocate it to the selected mode of payment
-//     if (remainingAmount > 0) {
-//       let selectedPaymentMode = pos_profile.value.payments.find(
-//         (item) => item.mode_of_payment === paymentType.value.mode_of_payment
-//       );
-//       if (selectedPaymentMode) {
-//         selectedPaymentMode.amount = remainingAmount;
-//       }
-//     }
-//   }
-
-//   // Update the invoice with the remaining amount after all payments
-//   invoice_doc.value.remaining_amount = remainingAmount;
-
-//   // If the amount taken exceeds the rounded total, calculate change
-//   if (amountTake.value > invoice_doc.value.rounded_total) {
-//     changeAmount.value = amountTake.value - invoice_doc.value.rounded_total;
-//   }
-
-//   // Discount logic if applicable
-//   let discountAmount = 0;
-//   if (
-//     discount.value &&
-//     discount.value <= pos_profile.value.posa_max_discount_allowed
-//   ) {
-//     discountAmount = (invoice_doc.value.grand_total * discount.value) / 100;
-//     invoice_doc.value.discount_amount = discountAmount;
-//     invoice_doc.value.grand_total =
-//       invoice_doc.value.grand_total - discountAmount;
-//   }
-// };
 const offlineProfileData = () => {
   indexedDBService
     .openDatabase()
@@ -866,28 +786,34 @@ const offlineProfileData = () => {
 };
 
 const cancelOrder = () => {
-  const doc = invoice_doc.value;
-  frappe.call({
-    method: "tabrah_pos.tabrah_pos.api.posapp.delete_invoice",
-    args: { invoice: doc.name },
-    async: true,
-    callback: (r) => {
-      if (r.message) {
-        eventBus.emit("open-product-menu");
-        eventBus.emit("set-default-value");
-        eventBus.emit("show_mesage", {
-          text: r.message,
-          color: "warning",
-        });
-      }
-    },
+  eventBus.emit("open-product-menu");
+  eventBus.emit("set-default-value");
+  eventBus.emit("show_mesage", {
+    text: "Order Cancel successfully",
+    color: "success",
   });
+  // const doc = invoice_doc.value;
+  // frappe.call({
+  //   method: "tabrah_pos.tabrah_pos.api.posapp.delete_invoice",
+  //   args: { invoice: doc.name },
+  //   async: true,
+  //   callback: (r) => {
+  //     if (r.message) {
+  //       eventBus.emit("open-product-menu");
+  //       eventBus.emit("set-default-value");
+  //       eventBus.emit("show_mesage", {
+  //         text: r.message,
+  //         color: "warning",
+  //       });
+  //     }
+  //   },
+  // });
 };
 const getFormattedPrintFormat = () => {
   const printFormat = pos_profile.value.print_format || "";
   return encodeURIComponent(printFormat.trim());
 };
-const load_print_page = () => {
+const load_print_page = (invoice) => {
   const print_format =
     pos_profile.value.print_format_for_online || pos_profile.value.print_format;
   const letter_head = pos_profile.value.letter_head || 0;
@@ -896,7 +822,7 @@ const load_print_page = () => {
   const url =
     frappe.urllib.get_base_url() +
     "/printview?doctype=Sales%20Invoice&name=" +
-    invoice_doc.value.name +
+    invoice +
     "&trigger_print=1" +
     "&format=" +
     formattedValue +
@@ -922,17 +848,15 @@ const load_print_page = () => {
   //   true
   // );
 };
-const submit_invoice = async (
+const submitSaleInvoice = async (
   event,
   payment_received = false,
   print = false
 ) => {
-  console.log("submit invoice...", invoice_doc.value.grand_total);
-  console.log("submit invoice...", invoice_doc.value.grand_total);
-
+  console.log("submit invoice...", invoice_doc.value);
   if (discount.value > pos_profile.value.posa_max_discount_allowed) {
     eventBus.emit("show_mesage", {
-      text:  `Only ${pos_profile.value.posa_max_discount_allowed}% discount allowed`,
+      text: `Only ${pos_profile.value.posa_max_discount_allowed}% discount allowed`,
       color: "error",
     });
     frappe.utils.play_sound("error");
@@ -966,275 +890,277 @@ const submit_invoice = async (
   // amountTake.value = totalAmount;
 
   if (totalAmount >= invoice_doc.value.grand_total) {
-    if (print) {
-      btnLoading1.value = true;
-    } else {
-      btnLoading.value = true;
-    }
+    if (!btnLoading.value && !btnLoading1.value) {
+      if (print) {
+        btnLoading1.value = true;
+      } else {
+        btnLoading.value = true;
+      }
 
-    // let totalPayedAmount = 0;
-    // invoice_doc.value.payments.forEach((payment) => {
-    //   payment.amount = flt(payment.amount);
-    //   totalPayedAmount += payment.amount;
-    // });
-    // invoice_doc.value.payments.forEach((payment) => {
-    //   if (payment.mode_of_payment == paymentType.value.mode_of_payment) {
-    //     payment.amount = amountTake.value;
-    //   } else {
-    //     payment.amount = 0;
-    //   }
-    // });
-    // invoice_doc.value.payments = paymentModes.value;
-    invoice_doc.value.payments = invoice_doc.value.payments.map((payment) => {
-      // Find the matching object in paymentModes
-      const matchedPayment = paymentModes.value.find(
-        (mode) => mode.mode_of_payment === payment.mode_of_payment
-      );
+      invoice_doc.value.payments = invoice_doc.value.payments.map((payment) => {
+        const matchedPayment = paymentModes.value.find(
+          (mode) => mode.mode_of_payment === payment.mode_of_payment
+        );
 
-      // Update the amount if a match is found
-      return {
-        ...payment,
-        amount: matchedPayment ? matchedPayment.amount : payment.amount, // Use the existing amount if no match
-      };
-    });
+        return {
+          ...payment,
+          amount: matchedPayment ? matchedPayment.amount : payment.amount, // Use the existing amount if no match
+        };
+      });
 
-    if (invoice_doc.value.is_return && totalPayedAmount == 0) {
-      invoice_doc.value.is_pos = 0;
-    }
+      if (invoice_doc.value.is_return && totalPayedAmount == 0) {
+        invoice_doc.value.is_pos = 0;
+      }
 
-    let data = {};
-    let totalChange = -changeAmount.value;
-    data.paid_change = changeAmount.value;
-    data.total_change = changeAmount.value;
-    data.credit_change = 0;
-    data.redeemed_customer_credit = 0;
-    data.customer_credit_dict = [];
-    data.is_cashback = true;
-    invoice_doc.value.custom_invoice_status = "In Queue";
-    if (
-      navigator.onLine &&
-      !offlineMode.value &&
-      punching.value == "completed"
-    ) {
-      try {
-        const response = await frappe.call({
-          method: "tabrah_pos.tabrah_pos.api.posapp.submit_invoice",
-          args: {
-            data: data,
-            invoice: invoice_doc.value,
-            taxvalue: pos_profile.value.posa_tax_inclusive
-              ? ""
-              : newTax.value.tax_and_charges,
-          },
-          async: true,
-        });
+      let data = {};
+      let totalChange = -changeAmount.value;
+      data.paid_change = changeAmount.value;
+      data.total_change = changeAmount.value;
+      data.credit_change = 0;
+      data.redeemed_customer_credit = 0;
+      data.customer_credit_dict = [];
+      data.is_cashback = true;
+      invoice_doc.value.custom_invoice_status = "In Queue";
+      if (
+        navigator.onLine &&
+        !offlineMode.value &&
+        punching.value == "completed"
+      ) {
+        try {
+          const response = await frappe.call({
+            method: "tabrah_pos.tabrah_pos.api.posapp.sales_invoice",
+            args: {
+              data: data,
+              invoice: invoice_doc.value,
+              taxvalue: pos_profile.value.posa_tax_inclusive
+                ? ""
+                : newTax.value.tax_and_charges,
+            },
+            async: true,
+          });
 
-        if (response.message) {
-          punching.value = "completed";
-          eventBus.emit("punching-status", punching.value);
-          console.log("submit-invoice fbr", response.message);
-          console.log("submit-invoice fbr payment", invoice_doc.value.payments);
+          if (response.message) {
+            invoice_doc.value.name = response.message.name;
+            if (invoice_doc.value.holdOrderId) {
+              const heldOrders =
+                JSON.parse(localStorage.getItem("heldOrders")) || [];
 
-          for (const payment of invoice_doc.value.payments) {
-            if (payment.amount > 0 && payment.type === "Bank" && !print) {
+              // Filter out the item with the matching holdOrderId
+              const updatedHeldOrders = heldOrders.filter(
+                (order) => order.id !== invoice_doc.value.holdOrderId
+              );
+              // Update local storage
+              localStorage.setItem(
+                "heldOrders",
+                JSON.stringify(updatedHeldOrders)
+              );
+            }
+            eventBus.emit("sync-offline-invoice");
+            punching.value = "completed";
+            eventBus.emit("punching-status", punching.value);
+            console.log("submit-invoice Successfully", response.message);
+            btnLoading1.value = false;
+            const hasBankPayment = invoice_doc.value.payments.some(
+              (payment) => payment.amount > 0 && payment.type === "Bank"
+            );
+            if (hasBankPayment && !print) {
               try {
                 const responseCode = await sync_fbr(
-                  invoice_doc.value.name,
-                  pos_profile.value.name
+                  invoice_doc.value,
+                  pos_profile.value,
+                  false
                 );
                 console.log("Response Code123:", responseCode);
               } catch (error) {
                 console.error("Error syncing FBR:", error);
               }
             }
-          }
 
-          if (print) {
-            try {
-              const responseCode = await sync_fbr(
-                invoice_doc.value.name,
-                pos_profile.value.name
-              );
-              console.log("fbr-response", responseCode);
-              if (responseCode) {
-                load_print_page();
-              } else {
+            if (print) {
+              try {
+                const responseCode = await sync_fbr(
+                  invoice_doc.value,
+                  pos_profile.value,
+                  false
+                );
+                console.log("fbr-response", responseCode);
+                if (responseCode) {
+                  load_print_page(response.message.name);
+                } else {
+                  console.error(
+                    "FBR synchronization failed. Print page will not be loaded."
+                  );
+                }
+              } catch (error) {
                 console.error(
-                  "FBR synchronization failed. Print page will not be loaded."
+                  "Error during FBR sync and print handling:",
+                  error
                 );
               }
-            } catch (error) {
-              console.error("Error during FBR sync and print handling:", error);
             }
-          }
 
+            eventBus.emit("show_mesage", {
+              text: `Invoice ${response.message.name} is Submitted`,
+              color: "success",
+            });
+            btnLoading.value = false;
+            btnLoading1.value = false;
+            amountTake.value = "";
+            frappe.utils.play_sound("submit");
+            setDefaultValue();
+            // localStorage.setItem("get-all-item-status", false);
+            eventBus.emit("open-product-menu");
+            eventBus.emit("set-default-value");
+            // eventBus.emit("set-default-data");
+            // eventBus.emit("update-selected-discount");
+            amountTake.value = "";
+          }
+        } catch (error) {
           eventBus.emit("show_mesage", {
-            text: `Invoice ${response.message.name} is Submitted`,
-            color: "success",
+            text: `An error occurred while submitting the invoice`,
+            color: "error",
           });
+          frappe.utils.play_sound("error");
           btnLoading.value = false;
           btnLoading1.value = false;
-          amountTake.value = "";
-          frappe.utils.play_sound("submit");
-          setDefaultValue();
-          // localStorage.setItem("get-all-item-status", false);
-          eventBus.emit("open-product-menu");
-          eventBus.emit("set-default-value");
-          // eventBus.emit("set-default-data");
-          // eventBus.emit("update-selected-discount");
-          amountTake.value = "";
         }
-      } catch (error) {
-        eventBus.emit("show_mesage", {
-          text: `An error occurred while submitting the invoice`,
-          color: "error",
-        });
-        frappe.utils.play_sound("error");
+      } else {
+        console.log("Submit invoive in offline mode");
         btnLoading.value = false;
         btnLoading1.value = false;
-      }
-    } else {
-      console.log("Submit invoive in offline mode");
-      btnLoading.value = false;
-      btnLoading1.value = false;
+        const randomReference = `${Date.now()}-${Math.floor(
+          Math.random() * 10000
+        )}`;
+        invoice_doc.value.pos_referrence = randomReference;
 
-      let invoice_log = invoice_doc.value;
+        let invoice_log = invoice_doc.value;
 
-      // Get the sales invoice data payload saved to use it offline.
-      indexedDBService
-        .openDatabase()
-        .then(() => {
-          return indexedDBService.getUpdateInvoice("Sales Invoice");
-        })
-        .then((data) => {
-          console.log("offline-print-data", data);
-          punching.value = "completed";
-          eventBus.emit("punching-status", punching.value);
-          // let temp = JSON.stringify(data);
-          // invoice_log = JSON.parse(temp);
-          // let updatePaymentAmount = invoice_log.payments.find(
-          //   (item) => item.mode_of_payment == paymentType.value.mode_of_payment
-          // );
-          // if (updatePaymentAmount) {
-          //   updatePaymentAmount.amount = amountTake.value;
-          // }
-          invoice_log.paid_change = changeAmount.value;
-          invoice_log.amount_paid = amountTake.value;
-          invoice_log.custom_invoice_status = "In Queue";
+        // Get the sales invoice data payload saved to use it offline.
+        indexedDBService
+          .openDatabase()
+          .then(() => {
+            return indexedDBService.getUpdateInvoice("Sales Invoice");
+          })
+          .then(async (data) => {
+            console.log("offline-print-data", data);
+            punching.value = "completed";
+            eventBus.emit("punching-status", punching.value);
+            invoice_log.paid_change = changeAmount.value;
+            invoice_log.amount_paid = amountTake.value;
+            invoice_log.custom_invoice_status = "In Queue";
 
-          let dataObj = {};
-          let payload = {};
+            let dataObj = {};
+            let payload = {};
 
-          dataObj["total_change"] = changeAmount.value;
-          dataObj["paid_change"] = changeAmount.value;
-          dataObj["credit_change"] = 0;
-          dataObj["redeemed_customer_credit"] = 0;
-          dataObj["customer_credit_dict"] = [];
-          dataObj["is_cashback"] = true;
+            dataObj["total_change"] = changeAmount.value;
+            dataObj["paid_change"] = changeAmount.value;
+            dataObj["credit_change"] = 0;
+            dataObj["redeemed_customer_credit"] = 0;
+            dataObj["customer_credit_dict"] = [];
+            dataObj["is_cashback"] = true;
 
-          payload["data"] = dataObj;
-          payload["invoice"] = invoice_log;
-          (payload["taxvalue"] = pos_profile.value.posa_tax_inclusive
-            ? ""
-            : newTax.value.tax_and_charges),
-            console.log("Offline-payload", payload);
-          indexedDBService
-            .openDatabase()
-            .then((db) => {
-              const plainObject = {};
-              for (const [key, value] of Object.entries(matchingPayment)) {
-                plainObject[key] = value;
-              }
-              // Save POS Profile and POS Opening Shift in IndexedDB
-              return Promise.all([
-                indexedDBService.saveSalesInvoice(
-                  JSON.stringify(payload),
-                  plainObject
-                ),
-              ]);
-            })
-            .then((recordId) => {
-              if (print) {
-                printInvoice(
-                  recordId,
-                  invoice_doc.value.grand_total,
-                  changeAmount.value
+            payload["data"] = dataObj;
+            // payload["invoice"] = invoice_log;
+            payload["taxvalue"] = pos_profile.value.posa_tax_inclusive
+              ? ""
+              : newTax.value.tax_and_charges;
+            const hasBankPayment = invoice_doc.value.payments.some(
+              (payment) => payment.amount > 0 && payment.type === "Bank"
+            );
+            if (hasBankPayment && !print) {
+              try {
+                const responseCode = await sync_fbr(
+                  invoice_doc.value,
+                  pos_profile.value,
+                  true
                 );
-                // this.offline_paid_amount_temp = 0;
-                // this.offline_paid_change_temp = 0;
+                fbrResponse.value = responseCode;
+
+                console.log("Response Code without print:", responseCode);
+              } catch (error) {
+                console.error("Error syncing FBR:", error);
               }
-              frappe.utils.play_sound("submit");
-              setDefaultValue();
-              eventBus.emit("open-product-menu");
-              eventBus.emit("set-default-value");
-              amountTake.value = "";
-              eventBus.emit("show_mesage", {
-                text: `Invoice is Submitted`,
-                color: "success",
+            }
+
+            if (print) {
+              try {
+                const responseCode = await sync_fbr(
+                  invoice_doc.value,
+                  pos_profile.value,
+                  true
+                );
+                // const obj = {
+                //   fbrInvoiceId: "123",
+                //   qrCode:
+                //     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQgAAAEIAQAAAACLjVdSAAAA2klEQVR4nO2VUQ7DMAhDff9LMy2YkEzrdoAHrRCF1x/LIYp/oSGGGGKIZ0IZq8je7jCJkkaLeb9xD2mEsqumVRydWNUQ7i7/PCtGIZwNqDtMwvv1eB52MoOokG+hu0kkPHLqOwhKKIutWK1cKJE9NRiq1cskMvkKSjuVmYjEFirkkTWjErZLpjj+pBIf5tnrhUm0dXb9uXFRxFKoGvKXAkyY89GSayqhliiP02EgJFGlLyH5Ly5RepVYORecuIZDxJatjQQlOp9KiUrcR8iqCUv8jCGGGGKI7/ECbxLxUgrJEnIAAAAASUVORK5CYII=",
+                // };
+                fbrResponse.value = responseCode;
+                console.log("fbr-response", responseCode);
+              } catch (error) {
+                console.error(
+                  "Error during FBR sync and print handling:",
+                  error
+                );
+              }
+            }
+            if (fbrResponse.value) {
+              invoice_doc.value.fbr_invoice_id = fbrResponse.value.fbrInvoiceId;
+              invoice_doc.value.qr_code = fbrResponse.value.qrCode;
+            }
+            payload["invoice"] = invoice_doc.value;
+
+            indexedDBService
+              .openDatabase()
+              .then((db) => {
+                return Promise.all([
+                  indexedDBService.saveSalesInvoice(JSON.stringify(payload)),
+                ]);
+              })
+              .then(async (recordId) => {
+                if (print) {
+                  printInvoice(
+                    recordId,
+                    invoice_doc.value.grand_total,
+                    changeAmount.value,
+                    invoice_doc.value,
+                    fbrResponse.value
+                  );
+                }
+                if (invoice_doc.value.holdOrderId) {
+                  const heldOrders =
+                    JSON.parse(localStorage.getItem("heldOrders")) || [];
+
+                  const updatedHeldOrders = heldOrders.filter(
+                    (order) => order.id !== invoice_doc.value.holdOrderId
+                  );
+                  localStorage.setItem(
+                    "heldOrders",
+                    JSON.stringify(updatedHeldOrders)
+                  );
+                }
+                frappe.utils.play_sound("submit");
+                setDefaultValue();
+                eventBus.emit("sync-offline-invoice");
+
+                eventBus.emit("open-product-menu");
+                eventBus.emit("set-default-value");
+                amountTake.value = "";
+                eventBus.emit("show_mesage", {
+                  text: `Invoice is Submitted`,
+                  color: "success",
+                });
+              })
+              .catch((error) => {
+                console.error("Error saving to IndexedDB:", error);
               });
-            })
-            .catch((error) => {
-              console.error("Error saving to IndexedDB:", error);
-            });
-
-          // try {
-          //   indexedDBService
-          //     .openDatabase()
-          //     .then((db) => {
-          //       // Save POS Profile and POS Opening Shift in IndexedDB
-          //       return Promise.all([
-          //         indexedDBService.saveSalesInvoice(
-          //           JSON.stringify(payload),
-          //           paymentType.value
-          //         ),
-          //       ]);
-          //     })
-          //     .then((recordId) => {
-          //       console.log("sale Invoice saved", recordId);
-          //     })
-          //     .catch((error) => {
-          //       console.error("Error saving to IndexedDB:", error);
-          //     });
-          // indexedDBService
-          //   .saveSalesInvoice(
-          //     JSON.stringify(payload),
-          //     paymentType.value
-          //   )
-          //   .then((recordId) => {
-          //     // This will log the saved record's ID after the promise is fulfilled
-          //     console.log("Offline Record ID:", recordId);
-          //     // if (print) {
-          //     //   printInvoice(
-          //     //     recordId,
-          //     //     this.offline_paid_amount_temp,
-          //     //     this.offline_paid_change_temp
-          //     //   );
-          //     //   this.offline_paid_amount_temp = 0;
-          //     //   this.offline_paid_change_temp = 0;
-          //     // }
-          //   })
-          //   .catch((error) => {
-          //     // Handle any errors that occur during the save
-          //     console.error("Error saving invoice:", error);
-          //   });
-          // } catch (error) {
-          //   console.error("Unexpected error:", error);
-          // }
-
-          // Save the invoice data directly
-          // return indexedDBService.saveSalesInvoice(JSON.stringify(payload));
-        });
-      // .then(() => {
-      //   console.log("Invoice saved successfully");
-
-      //   // this.offline_mode_of_payment = "";
-      //   // evntBus.$emit("new_invoice", "false");
-      //   // this.back_to_invoice();
-      // })
-      // .catch((error) => {
-      //   console.error("Error with IndexedDB operation:", error);
-      // });
+          });
+      }
     }
+    localStorage.setItem("order-items", JSON.stringify([]));
+    localStorage.setItem("current-screen", 0);
+
+    localStorage.setItem("net-total", JSON.stringify(0));
+    localStorage.setItem("gst-amount", JSON.stringify(0));
   } else {
     eventBus.emit("show_mesage", {
       text: `Paid amount must be greater than amount to be paid`,
@@ -1246,6 +1172,7 @@ const submit_invoice = async (
     return;
   }
 };
+
 watch(
   paymentModes,
   (newModes) => {
@@ -1287,8 +1214,31 @@ watch(
         paymentModes.value[0]
       );
     }
+    if (discount.value) {
+      const discountValue = Number(discount.value) || 0;
+      const maxAllowedDiscount =
+        Number(pos_profile.value.posa_max_discount_allowed) || 0;
+      const originalNetTotal =
+        Number(invoice_doc.value.original_net_total) || 0;
+      const originalGrandTotal =
+        Number(invoice_doc.value.original_grand_total) || 0;
+
+      if (discountValue <= maxAllowedDiscount) {
+        const discountAmount = (originalNetTotal * discountValue) / 100;
+        invoice_doc.value.discount_amount = discountAmount;
+
+        invoice_doc.value.net_total = originalNetTotal - discountAmount;
+
+        invoice_doc.value.grand_total = originalGrandTotal - discountAmount;
+        invoice_doc.value.grand_total = Math.ceil(
+          invoice_doc.value.grand_total
+        );
+
+        amountTake.value = invoice_doc.value.grand_total;
+      }
+    }
   },
-  { deep: true } // Ensures nested changes in objects are tracked
+  { deep: true }
 );
 watch(
   confirmSplit,
@@ -1356,19 +1306,19 @@ watch(
           amountTake.value = 0;
           changeAmount.value = 0;
         } else if (amountTake.value >= invoice_doc.value.grand_total) {
-          changeAmount.value = amountTake.value - invoice_doc.value.grand_total;
-          let updatePaymentAmount = invoice_doc.value.payments.find(
-            (item) => item.mode_of_payment == paymentType.value.mode_of_payment
-          );
-          updatePaymentAmount.amount = amountTake.value;
+          // changeAmount.value = amountTake.value - invoice_doc.value.grand_total;
+          // let updatePaymentAmount = invoice_doc.value.payments.find(
+          //   (item) => item.mode_of_payment == paymentType.value.mode_of_payment
+          // );
+          // updatePaymentAmount.amount = amountTake.value;
         } else {
           changeAmount.value = 0;
         }
-        // const activeMode = paymentModes.value.find((mode) => mode.selected);
-        // if (activeMode) {
-        //   // Update the active mode's amount
-        //   activeMode.amount = amountTake.value;
-        // }
+        const activeMode = paymentModes.value.find((mode) => mode.selected);
+        if (activeMode) {
+          // Update the active mode's amount
+          activeMode.amount = amountTake.value;
+        }
         // let totalAmount = 0;
         // paymentModes.value.forEach((payment) => {
         //   totalAmount += Number(payment.amount) || 0; // Convert to a number and handle non-numeric values
@@ -1434,6 +1384,7 @@ watch(discount, (newVal) => {
     invoice_doc.value.net_total = originalNetTotal;
     invoice_doc.value.grand_total = originalGrandTotal;
     invoice_doc.value.discount_amount = 0; // Reset the discount amount
+    // invoice_doc.value.grand_total=Math.round(invoice_doc.value.grand_total);
     amountTake.value = invoice_doc.value.grand_total;
     if (
       !paymentType.value.custom_expense_chrages &&
@@ -1451,7 +1402,7 @@ watch(discount, (newVal) => {
     return;
   }
 
-  // Ensure discount is a valid number and apply the discount
+  // Ensure `discount` is a valid number and apply the discount
   const discountValue = Number(newVal) || 0;
   const maxAllowedDiscount =
     Number(pos_profile.value.posa_max_discount_allowed) || 0;
@@ -1466,6 +1417,8 @@ watch(discount, (newVal) => {
 
     // Now subtract the same discount amount from grand total
     invoice_doc.value.grand_total = originalGrandTotal - discountAmount;
+    invoice_doc.value.grand_total = Math.ceil(invoice_doc.value.grand_total);
+
     amountTake.value = invoice_doc.value.grand_total;
     if (!paymentType.value.custom_expense_chrages) {
       // amountTake.value = amountTake.value + 1;
@@ -1477,9 +1430,17 @@ watch(discount, (newVal) => {
     //   invoice_doc.value.grand_total
     // );
   } else {
-    // console.warn(Discount exceeds the allowed limit of ${maxAllowedDiscount});
+    // console.warn(`Discount exceeds the allowed limit of ${maxAllowedDiscount}`);
   }
 });
+watch(
+  invoice_doc,
+  (newVal) => {
+    console.log("watcher for invoice_doc", newVal);
+    localStorage.setItem("invoice-data", JSON.stringify(newVal));
+  },
+  { deep: true }
+);
 
 onMounted(() => {
   eventBus.on("punching-status", (data) => {
@@ -1623,12 +1584,12 @@ onUnmounted(() => {
 }
 
 .scrollable-container-horizontal {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  /* scrollbar-width: none;
+    -ms-overflow-style: none; */
 }
 
 .scrollable-container-horizontal::-webkit-scrollbar {
-  display: none;
+  /* display: none; */
 }
 .payment-card {
   border-radius: 16px !important;
