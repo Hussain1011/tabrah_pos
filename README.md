@@ -1,6 +1,6 @@
-## Tabrah Pos
+## POS
 
-Tabrah Pos
+POS
 
 #### License
 
