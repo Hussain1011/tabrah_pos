@@ -20,7 +20,7 @@
         <span class="ml-2 primary--text"></span>
       </v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-btn color="#21A0A0" class="mr-3" style="background-color: rgb(211, 236, 236);"  @click="openCustomerScreen">
+      <!-- <v-btn color="#21A0A0" class="mr-3" style="background-color: rgb(211, 236, 236);"  @click="openCustomerScreen">
         Customer screen
       </v-btn>
       <v-switch
@@ -31,7 +31,7 @@
         class="switch-btn"
         color="#21A0A0"
         @click="isInternet=!isInternet"
-      ></v-switch>
+      ></v-switch> -->
       <v-btn style="cursor: unset" text color="#21A0A0">
         <span right>{{ pos_profile.name }}</span>
       </v-btn>
@@ -105,7 +105,7 @@
           <p style="color: white" class="ml-1 mb-0">Hold</p>
           <p style="color: white" class="pt-0">Orders</p>
         </v-list-item>
-        <v-list-item class="mt-4" @click="goToOrderHistory()">
+        <!-- <v-list-item class="mt-4" @click="goToOrderHistory()">
           <v-img
             class="img pl-1"
             src="/assets/tabrah_pos/js/posapp/components/pos/store.png"
@@ -115,9 +115,9 @@
           ></v-img>
           <p style="color: white" class="ml-1 mb-0">Sale</p>
           <p style="color: white" class="pt-0">Orders</p>
-        </v-list-item>
+        </v-list-item> -->
       </v-list>
-      <div style="padding-top: 300px">
+      <!-- <div style="padding-top: 300px">
         <v-tooltip bottom style="" theme="black">
           <template #activator="{ props }">
             <v-badge color="error" :content="unsyncInvoice" class="">
@@ -133,7 +133,7 @@
           </template>
           <span>Unsync Invoice: {{ unsyncInvoice }} </span>
         </v-tooltip>
-      </div>
+      </div> -->
     </v-navigation-drawer>
 
     <!-- <v-navigation-drawer

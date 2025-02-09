@@ -90,7 +90,7 @@ const pos_profile = ref("");
 const selectedCategory = ref("");
 const searchValue = ref("");
 const defaultImg = ref(
-  "https://cdn.shopify.com/s/files/1/0290/8123/9612/files/LOGO_packinng.jpg?height=628&pad_color=ffffff&v=1614755406&width=1200"
+  "/assets/tabrah_pos/js/posapp/components/pos/tabrah.png"
 );
 const orderType = ref("");
 
