@@ -70,6 +70,8 @@
                   >Date:{{ formatDeliveryDate(order.timestamp) }}</span
                 >
               </p>
+              <span v-if="order.table">Table:{{ order.table }}</span>
+
             </div>
             <div class="mt-3">
               <p>Order Detail:</p>

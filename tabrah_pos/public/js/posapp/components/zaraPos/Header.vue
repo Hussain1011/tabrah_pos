@@ -2,38 +2,26 @@
   <v-row class="pt-0 px-2">
     <v-col cols="12" md="8">
       <v-card elevation="1" class="border-16 title-card d-flex">
-        <img
-          src=""
-          alt=""
-          class="ml-5"
-          style="max-width: 235px"
-        />
+        <img src="/assets/tabrah_pos/js/posapp/components/pos/tabrah.png" alt="" class="ml-5"
+          style="max-width: 235px;height: 75px;" />
         <v-spacer></v-spacer>
         <v-spacer></v-spacer>
-        <div class="search-div">
-          <v-select
-            v-model="selectedOrderType"
-            :items="orderTypes"
-            label="Order Type"
-            class="order-type-select"
-            density="compact"
-            variant="outlined"
-            item-title="order_type"
-            :disabled="currentScreen !== 0"
-          />
+        <div class="">
+          <v-select v-model="selectedOrderType" :items="orderTypes" label="Order Type" class="order-type-select mr-3"
+            density="compact" variant="outlined" item-title="order_type" :disabled="currentScreen !== 0" />
+        </div>
+        <div class="">
+          <v-select v-model="orderBy" :items="employeesList" label="Order By" class="order-type-select mr-3"
+            density="compact" variant="outlined" item-title="employee_name" item-value="employee" />
+        </div>
+        <div class="">
+          <v-select v-model="selectedTable" :items="tableOptions" label="Select table" class="order-type-select mr-3"
+            density="compact" variant="outlined" item-title="table_no" item-value="table_no" />
         </div>
         <div class="search-div">
-          <v-text-field
-            variant="outlined"
-            append-inner-icon="mdi-magnify"
-            placeholder="Find Your Item"
-            class="mt-1 mr-4"
-            density="compact"
-            style="height: 83px; border-radius: 6px"
-            v-model="searchValue"
-            ref="searchField"
-            clearable
-          />
+          <v-text-field variant="outlined" append-inner-icon="mdi-magnify" placeholder="Find Your Item"
+            class="mt-1 mr-4" density="compact" style="height: 83px; border-radius: 6px" v-model="searchValue"
+            ref="searchField" clearable />
         </div>
       </v-card>
     </v-col>
@@ -66,7 +54,10 @@ const currentScreen = ref(null);
 const searchField = ref(null); // Ref to access the text field component
 
 const orderTypes = ref([]);
-
+const tableOptions = ref([]);
+const selectedTable = ref("");
+const employeesList = ref([]);
+const orderBy = ref("");
 const logOut = () => {
   eventBus.emit("logout-pos");
 };
@@ -100,31 +91,22 @@ const changeOrderType = (newValue) => {
   }
 };
 // Fetch order types
-const fetchOrderTypes = async () => {
+const fetchTableOptions = async () => {
   try {
     const response = await frappe.call({
-      method: "tabrah_pos.tabrah_pos.api.posapp.get_Order_type",
+      method: "tabrah_pos.tabrah_pos.api.posapp.get_Table_names",
       args: {
         pos_profile: pos_profile.value,
       },
     });
 
-    // Assign response to order types
-    orderTypes.value = response.message;
-    // selectedOrderType.value = response.message[0].name;
-    // eventBus.emit("selected_order_type", selectedOrderType.value);
+    tableOptions.value = response.message;
 
-    // Emit the order type via event bus
-    //    eventBus.emit("send_order_type", selectedOrderType.value);
-
-    // Save the order types to IndexedDB
-    await indexedDBService.openDatabase();
-    await indexedDBService.saveOrderType(JSON.stringify(orderTypes.value));
-    // console.log("Order Type saved successfully!");
   } catch (error) {
     console.error("Error fetching order types:", error);
   }
 };
+
 
 const offlineProfileData = async () => {
   try {
@@ -164,6 +146,9 @@ watch(selectedOrderType, (newValue) => {
   eventBus.emit("selected_order_type", newValue);
   changeOrderType(newValue);
 });
+watch(selectedTable, (newValue) => {
+  eventBus.emit("selected_table", newValue);
+});
 onMounted(() => {
   searchField.value.focus();
   if (!navigator.onLine) {
@@ -176,6 +161,8 @@ onMounted(() => {
   eventBus.on("send_pos_profile", (profile) => {
     pos_profile.value = profile;
     orderTypes.value = pos_profile.value.applicable_for_order_type;
+    employeesList.value = profile.employee_list
+    fetchTableOptions();
     selectedOrderType.value =
       orderTypes.value.find((orderType) => orderType.default === 1)
         ?.order_type || orderTypes.value[0].order_type;
@@ -196,6 +183,15 @@ onMounted(() => {
   eventBus.on("clear-search", () => {
     searchValue.value = "";
   });
+  eventBus.on("reserved-table", (table)=>{
+    const targetTable = tableOptions.value.find((t) => t.table_no === table.table_no);
+    if (targetTable) {
+      targetTable.status = "reserved";
+    }
+    tableOptions.value =tableOptions.value.filter((t) => t.status !=='reserved');
+    selectedTable.value = '' 
+  });
+
   eventBus.on("app-internet-status", (newStatus) => {
     offlineProfileData();
   });
@@ -218,11 +214,13 @@ onBeforeUnmount(() => {
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
   border-radius: 12px;
 }
+
 .search-div {
   height: 60px;
-  width: 100%;
-  max-width: 350px;
+  width: 50%;
+  max-width: 190px;
 }
+
 .v-text-field--outlined {
   border-radius: 16px !important;
 }
@@ -237,6 +235,7 @@ onBeforeUnmount(() => {
   margin-left: 14px;
   background: white;
 }
+
 .pos-close {
   border: 1px solid #f05d23;
   border-radius: 6px;
@@ -246,15 +245,16 @@ onBeforeUnmount(() => {
   margin-left: 14px;
   background: #fcdfd3;
 }
+
 .pos-p {
   font-size: 16px;
   font-weight: 600;
 }
+
 .order-type-select {
   padding-top: 3px;
-  height: 95px;
-  width: 290px;
-  margin-left: 44px;
+  height: 86px;
+  width: 150px;
 }
 </style>
 <style>
@@ -262,10 +262,12 @@ onBeforeUnmount(() => {
   padding-top: 7px !important;
   border-radius: 12px !important;
 }
+
 .v-select__selection {
   position: relative;
   top: 8px;
 }
+
 .v-field__clearable {
   margin-bottom: 8px !important;
 }

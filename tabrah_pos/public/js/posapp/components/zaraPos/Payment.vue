@@ -44,18 +44,7 @@
             :max="pos_profile.posa_max_discount_allowed" @update="validateDiscount"
             :disabled="!pos_profile.posa_max_discount_allowed" />
         </v-col>
-        <v-col cols="12" md="2">
-          <v-select v-model="orderBy" :items="employeesList" label="Order By" class="b-radius-8 orderBy"
-            density="compact" variant="outlined" item-title="employee_name" item-value="employee" />
-        </v-col>
-        <!-- <v-col cols="12" md="2" v-show="requiredOrderId">
-          <v-text-field
-            class="b-radius-8"
-            variant="outlined"
-            label="Order id"
-            v-model="orderId"
-          />
-        </v-col> -->
+        
         <v-col cols="12" md="3">
           <v-btn class="mr-2 b-radius-8" :color="splitPayment ? '#F05D23' : '#21A0A0'" size="large" variant="outlined"
             :style="{
@@ -69,6 +58,15 @@
             style="background-color: #d3ecec" @click="cancelSplit()">
             <v-icon left class="pr-2">mdi-close</v-icon>
           </v-btn>
+        </v-col>
+        <v-col cols="12" md="2">
+            <v-checkbox
+            v-model="complementaryItem"
+            color="red"
+            label="Complementary Item"
+            value="red"
+            hide-details
+          ></v-checkbox>
         </v-col>
 
         <!-- <v-col cols="12" md="4">
@@ -288,6 +286,7 @@ const offlineMode = ref(false);
 const punching = ref("completed");
 const employeesList = ref([]);
 const orderBy = ref("");
+const complementaryItem = ref(false);
 
 
 

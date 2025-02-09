@@ -494,6 +494,7 @@ const submitLoading = ref(false);
 const search = ref("");
 const returnDoc = ref("");
 const returnType = ref("");
+const selectedTable = ref("");
 const advanceAmount = ref(0)
 
 
@@ -851,9 +852,11 @@ const holdOrder = () => {
         id: nextOrderId,
         items: items.value,
         grand_total: grandTotal.value,
+        table: selectedTable.value,
         timestamp: new Date().toISOString(),
       };
       heldOrders.push(currentOrder);
+      eventBus.emit("reserved-table", selectedTable.value);
       console.log("Order held successfully:", currentOrder);
     }
 
@@ -1459,6 +1462,10 @@ onMounted(() => {
   eventBus.on("enter-key-called", () => {
     onEnterKey();
   });
+  eventBus.on("selected_table", (table)=>{
+    selectedTable.value = table;
+  });
+
 });
 onUnmounted(() => {
   eventBus.off("app-internet-status");
