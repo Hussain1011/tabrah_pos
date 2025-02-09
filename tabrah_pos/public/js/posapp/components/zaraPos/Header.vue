@@ -188,7 +188,8 @@ onMounted(() => {
     if (targetTable) {
       targetTable.status = "reserved";
     }
-    tableOptions.value =tableOptions.value.filter((t) => t.status !=='reserved'); 
+    tableOptions.value =tableOptions.value.filter((t) => t.status !=='reserved');
+    selectedTable.value = '' 
   });
 
   eventBus.on("app-internet-status", (newStatus) => {

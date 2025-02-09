@@ -11757,6 +11757,7 @@ Expected function or array of functions, received type ${typeof value}.`
             targetTable.status = "reserved";
           }
           tableOptions.value = tableOptions.value.filter((t) => t.status !== "reserved");
+          selectedTable.value = "";
         });
         bus_default.on("app-internet-status", (newStatus) => {
           offlineProfileData();
@@ -47792,4 +47793,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.ZJJAIVVZ.js.map
+//# sourceMappingURL=pos.bundle.IHXHOS2C.js.map
