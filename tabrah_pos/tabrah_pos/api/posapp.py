@@ -204,6 +204,9 @@ def get_items(
         condition = "WHERE disabled = 0 AND is_sales_item = 1 AND is_fixed_asset = 0"
         condition += get_item_group_condition(pos_profile.get("name"))
 
+        if posa_show_template_items:
+            condition += " AND (has_variants = 0 OR variant_of IS NULL)"
+
         if use_limit_search:
             search_limit = pos_profile.get("posa_search_limit") or 500
             if search_value:
@@ -225,9 +228,6 @@ def get_items(
                 )
             limit = " LIMIT {search_limit}".format(search_limit=search_limit)
 
-        if posa_show_template_items:
-            condition += " AND has_variants = 0"
-
         if item_group:
             condition += " AND item_group = '{item_group}'".format(item_group=item_group)
         result = []
@@ -240,12 +240,6 @@ def get_items(
                     AND child.order_type = '{order_type}'
                 )
             """.format(order_type=order_type)
-
-        # Add conditions based on posa_show_template_items and posa_hide_variants_items
-        if posa_show_template_items and posa_hide_variants_items:
-            condition += " AND variant_of IS NULL"  # Only show template items
-        elif not posa_show_template_items and not posa_hide_variants_items:
-            condition += " AND variant_of IS NOT NULL"  # Only show variant items
 
         items_data = frappe.db.sql(
             """
