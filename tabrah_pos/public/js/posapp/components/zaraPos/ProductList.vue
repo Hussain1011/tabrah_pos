@@ -315,9 +315,8 @@ const getItemBundle = async (product) => {
 
     if (response.message) {
       console.log("bundle Api response....", response.message);
-      // eventBus.emit("add-to-cart", variantPayload.value);
-      // variantsDialog.value = false;
-
+      eventBus.emit("add-to-cart", response.message);
+      variantsDialog.value = false;
     }
 
   } catch (error) {

@@ -12010,6 +12010,8 @@ Expected function or array of functions, received type ${typeof value}.`
           });
           if (response.message) {
             console.log("bundle Api response....", response.message);
+            bus_default.emit("add-to-cart", response.message);
+            variantsDialog.value = false;
           }
         } catch (error) {
           console.error("Error fetching order types:", error);
@@ -48041,4 +48043,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.X3SOXTRO.js.map
+//# sourceMappingURL=pos.bundle.7OMN3BLU.js.map
