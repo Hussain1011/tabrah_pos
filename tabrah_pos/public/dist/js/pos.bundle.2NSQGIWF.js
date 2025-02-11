@@ -12002,16 +12002,22 @@ Expected function or array of functions, received type ${typeof value}.`
           const obj = {
             items: bundleArray.value
           };
+          let bundle = [];
+          bundle.push(obj);
+          const obj1 = {
+            items: bundle
+          };
           const response = await frappe.call({
             method: "tabrah_pos.tabrah_pos.api.posapp.create_bundle_from_item",
             args: {
-              json_data: obj
+              json_data: obj1
             }
           });
           if (response.message) {
             console.log("bundle Api response....", response.message);
-            bus_default.emit("add-to-cart", response.message);
+            bus_default.emit("add-to-cart", response.message[0]);
             variantsDialog.value = false;
+            calledBundleApi.value = false;
           }
         } catch (error) {
           console.error("Error fetching order types:", error);
@@ -48043,4 +48049,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.VB72AILB.js.map
+//# sourceMappingURL=pos.bundle.2NSQGIWF.js.map

@@ -306,17 +306,24 @@ const getItemBundle = async (product) => {
     const obj = {
       items: bundleArray.value,
     };
+    let bundle=[]
+    bundle.push(obj)
+    const obj1 = {
+      items: bundle,
+    };
+
     const response = await frappe.call({
       method: "tabrah_pos.tabrah_pos.api.posapp.create_bundle_from_item",
       args: {
-        json_data: obj,
+        json_data: obj1,
       },
     });
 
     if (response.message) {
       console.log("bundle Api response....", response.message);
-      eventBus.emit("add-to-cart", response.message);
+      eventBus.emit("add-to-cart", response.message[0]);
       variantsDialog.value = false;
+      calledBundleApi.value = false
     }
 
   } catch (error) {
