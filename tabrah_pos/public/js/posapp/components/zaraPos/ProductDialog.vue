@@ -20,17 +20,17 @@
               </div>
               <div class="item-price" v-if="selectedProduct.custom_discounted_rate > 0"
                 style=" text-decoration: line-through!important;color: grey;font-size: 0.9em;margin-right: 5px;">
-                Rs.{{
+                QAR.{{
                   selectedProduct.rate ? formatNumber(selectedProduct.rate) : ""
                 }}
               </div>
               <div class="item-price" v-else>
-                Rs.{{
+                QAR.{{
                   selectedProduct.rate ? formatNumber(selectedProduct.rate) : ""
                 }}
               </div>
               <div class="item-price" v-show="selectedProduct.custom_discounted_rate > 0">
-                Rs.{{
+                QAR.{{
                   selectedProduct.rate ? formatNumber(selectedProduct.custom_discounted_rate) : ""
                 }}
               </div>

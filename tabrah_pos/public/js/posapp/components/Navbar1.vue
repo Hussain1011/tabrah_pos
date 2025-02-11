@@ -4,21 +4,20 @@
   <div>
     <v-app-bar app color="white" height="55" class="elevation-0">
       <!-- <v-app-bar-nav-icon @click="drawer = !drawer" /> -->
-      <v-img
-        src=""
-        alt="POS"
-        max-width="32"
-        class="mx-3"
-        @click="go_desk"
-      ></v-img>
-      <v-toolbar-title
+      <p style="margin-left: 24px;
+    margin-top: 11px;
+    font-size: 18px;
+    font-weight: 600;
+    text-transform: uppercase;color: #21A0A0;" @click="go_desk">Neighborhood</p>
+
+      <!-- <v-toolbar-title
         style="cursor: pointer"
         class="text-uppercase primary--text ml-1"
         @click="go_desk"
       >
         <span class="font-weight-light primary--text"></span>
         <span class="ml-2 primary--text"></span>
-      </v-toolbar-title>
+      </v-toolbar-title> -->
       <v-spacer></v-spacer>
       <!-- <v-btn color="#21A0A0" class="mr-3" style="background-color: rgb(211, 236, 236);"  @click="openCustomerScreen">
         Customer screen
@@ -60,11 +59,7 @@
     </v-app-bar>
 
     <!-- Navigation Drawer -->
-    <v-navigation-drawer
-      style="background-color: #0d1821; width: 65px"
-      permanent
-      rail
-    >
+    <v-navigation-drawer style="background-color: #0d1821; width: 65px" permanent rail>
       <v-list-item>
         <!-- <v-img
           src="/assets/tabrah_pos/js/posapp/components/"
@@ -77,31 +72,16 @@
 
       <v-divider></v-divider>
 
-      <v-list
-        density="compact"
-        nav
-        class="px-0 curser-pointer"
-        style="padding-top: 124px"
-      >
+      <v-list density="compact" nav class="px-0 curser-pointer" style="padding-top: 124px">
         <v-list-item @click="goToDashboard()">
-          <v-img
-            class="img pl-1"
-            src="/assets/tabrah_pos/js/posapp/components/pos/dashboard.png"
-            alt=""
-            cover
-            style="width: 38px; height: 40px"
-          ></v-img>
+          <v-img class="img pl-1" src="/assets/tabrah_pos/js/posapp/components/pos/dashboard.png" alt="" cover
+            style="width: 38px; height: 40px"></v-img>
           <p style="color: white" class="mb-0 pl-1">Dash</p>
           <p style="color: white" class="pt-0">board</p>
         </v-list-item>
         <v-list-item class="mt-4" @click="goToHoldOrder()">
-          <v-img
-            class="img pl-1"
-            src="/assets/tabrah_pos/js/posapp/components/pos/receipt.png"
-            alt=""
-            cover
-            style="width: 38px; height: 40px"
-          ></v-img>
+          <v-img class="img pl-1" src="/assets/tabrah_pos/js/posapp/components/pos/receipt.png" alt="" cover
+            style="width: 38px; height: 40px"></v-img>
           <p style="color: white" class="ml-1 mb-0">Hold</p>
           <p style="color: white" class="pt-0">Orders</p>
         </v-list-item>
@@ -192,16 +172,8 @@
     </v-navigation-drawer> -->
 
     <div>
-      <v-snackbar
-        v-model="snack"
-        top
-        right
-        :elevation="0"
-        :timeout="5000"
-        :color="snackColor"
-        class="snack custom-snackbar"
-        :class="'snack-type-' + type"
-      >
+      <v-snackbar v-model="snack" top right :elevation="0" :timeout="5000" :color="snackColor"
+        class="snack custom-snackbar" :class="'snack-type-' + type">
         <div class="notification-content">
           <div class="notification-icon" :class="type">
             <v-icon v-if="type === 'success'">mdi-check-bold</v-icon>
@@ -209,10 +181,7 @@
             <i class="fa fa-info-circle" v-if="type === 'info'"></i>
           </div>
 
-          <div
-            class="notification-message"
-            style="font-size: 16px; font-weight: 500"
-          >
+          <div class="notification-message" style="font-size: 16px; font-weight: 500">
             {{ snackText }}
           </div>
         </div>
@@ -372,8 +341,7 @@ export default {
             }
 
             console.log(
-              `Internet speed: ${calculatedSpeedMbps} Mbps. ${
-                isInternet.value ? "Online" : "Offline"
+              `Internet speed: ${calculatedSpeedMbps} Mbps. ${isInternet.value ? "Online" : "Offline"
               }`
             );
             resolve({
@@ -495,7 +463,8 @@ export default {
   position: fixed !important;
   top: 40px !important;
   right: 20px;
-  z-index: 9999; /* Ensures it appears on top of other content */
+  z-index: 9999;
+  /* Ensures it appears on top of other content */
   margin: 0;
 }
 </style>
@@ -503,6 +472,7 @@ export default {
 .v-switch .v-label {
   margin-top: 8px;
 }
+
 .notification-content {
   display: flex;
   justify-content: flex-start;
@@ -512,12 +482,15 @@ export default {
 .notification-content .notification-icon.success {
   background-color: #3fbf62;
 }
+
 .notification-content .notification-icon.error {
   background-color: #ec4f2b;
 }
+
 .notification-content .notification-icon.info {
   background-color: #016de6;
 }
+
 .notification-content .notification-icon.warning {
   background-color: #ee9401;
 }
@@ -526,27 +499,33 @@ export default {
   background-color: #eaf7ee !important;
   border: 1px solid #a4ddb4 !important;
 }
+
 .v-snack.snack-type-error .v-snack__wrapper {
   background-color: #fcece9 !important;
   border: 1px solid #f4c5bb !important;
 }
+
 .v-snack.snack-type-info .v-snack__wrapper {
   background-color: #e4effa !important;
   border: 1px solid #abcdf1 !important;
 }
+
 .v-snack.snack-type-warning .v-snack__wrapper {
   background-color: #fef7e9 !important;
   border: 1px solid #fde0af !important;
 }
+
 .notification-content .notification-message {
   color: white !important;
 }
+
 .notification-content .notification-icon i {
   width: 27px;
   display: flex;
   justify-content: center;
   align-items: center;
 }
+
 .notification-content .notification-icon {
   font-size: 25px !important;
   padding: 5px;
@@ -562,10 +541,12 @@ export default {
 .v-snack__content {
   padding: 5px 7px !important;
 }
+
 .v-snackbar--variant-elevated {
   position: fixed !important;
   top: 40px !important;
 }
+
 .curser-pointer {
   cursor: pointer;
 }

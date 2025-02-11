@@ -39,7 +39,7 @@
         </v-col>
 
         <v-col cols="4" class="text-right teal--text text--accent-4 pb-0">
-          <strong>Rs.{{ formatNumber(item.rate * item.qty) }}</strong>
+          <strong>QAR.{{ formatNumber(item.rate * item.qty) }}</strong>
         </v-col>
 
         <v-col cols="1" class="text-right pb-0" v-show="screen == 0">
@@ -107,7 +107,7 @@
               <v-divider class="mt-3 dotted-divider" :thickness="3"></v-divider>
             </v-col>
             <v-col cols="4" class="text-right pb-0 payment-text-color">
-              Rs. {{ formatNumber(netTotal) }}
+              QAR. {{ formatNumber(netTotal) }}
             </v-col>
           </v-row>
 
@@ -117,7 +117,7 @@
               <v-divider class="dotted-divider" :thickness="3"></v-divider>
             </v-col>
             <v-col cols="4" class="text-right py-0 payment-text-color">
-              Rs. {{ formatNumber(gstAmount) }}
+              QAR. {{ formatNumber(gstAmount) }}
             </v-col>
           </v-row>
           <v-row justify="space-between" class="px-6 py-0" v-if="returnType">
@@ -126,7 +126,7 @@
               <v-divider class="dotted-divider" :thickness="3"></v-divider>
             </v-col>
             <v-col cols="4" class="text-right py-0 payment-text-color">
-              Rs. {{ advanceAmount }}
+              QAR. {{ advanceAmount }}
             </v-col>
           </v-row>
           <v-row justify="space-between" class="px-6 py-0" v-else>
@@ -135,7 +135,7 @@
               <v-divider class="dotted-divider" :thickness="3"></v-divider>
             </v-col>
             <v-col cols="4" class="text-right py-0 payment-text-color">
-              Rs.0.00
+              QAR.0.00
             </v-col>
           </v-row>
 
@@ -146,7 +146,7 @@
               <p class="font-20">Grand Total:</p>
             </v-col>
             <v-col cols="6" class="text-right total-amount">
-              <p class="total-p">Rs. {{ formatNumber(grandTotal) }}</p>
+              <p class="total-p">QAR. {{ formatNumber(grandTotal) }}</p>
             </v-col>
           </v-row>
 
@@ -260,7 +260,7 @@
 
                       </div>
                       <p class="mt-1 px-2" style="font-size: 18px;font-weight: 700; color: #666666;">
-                        Rs. {{ formatNumber(grandTotal) }}
+                        QAR. {{ formatNumber(grandTotal) }}
                       </p>
                     </div>
 
@@ -312,7 +312,7 @@
                     </v-col>
 
                     <v-col cols="4" class="text-right teal--text text--accent-4 pb-0">
-                      <strong>Rs.{{ item.rate * item.qty }}</strong>
+                      <strong>QAR.{{ item.rate * item.qty }}</strong>
                     </v-col>
                     <v-col cols="1" class="text-right pb-0" v-show="returnDoc.items.length > 1">
                       <!-- Delete icon -->
@@ -496,6 +496,8 @@ const returnDoc = ref("");
 const returnType = ref("");
 const selectedTable = ref("");
 const advanceAmount = ref(0)
+const orderBy = ref("");
+
 
 
 
@@ -853,6 +855,7 @@ const holdOrder = () => {
         items: items.value,
         grand_total: grandTotal.value,
         table: selectedTable.value,
+        orderBy: orderBy.value,
         timestamp: new Date().toISOString(),
       };
       heldOrders.push(currentOrder);
@@ -1465,6 +1468,10 @@ onMounted(() => {
   eventBus.on("selected_table", (table)=>{
     selectedTable.value = table;
   });
+  eventBus.on("order-taker", (data)=>{
+    orderBy.value = data;
+  });
+
 
 });
 onUnmounted(() => {

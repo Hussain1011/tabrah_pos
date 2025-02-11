@@ -149,6 +149,9 @@ watch(selectedOrderType, (newValue) => {
 watch(selectedTable, (newValue) => {
   eventBus.emit("selected_table", newValue);
 });
+watch(orderBy, (newValue) => {
+  eventBus.emit("order-taker", newValue);
+});
 onMounted(() => {
   searchField.value.focus();
   if (!navigator.onLine) {
@@ -184,7 +187,8 @@ onMounted(() => {
     searchValue.value = "";
   });
   eventBus.on("reserved-table", (table)=>{
-    const targetTable = tableOptions.value.find((t) => t.table_no === table.table_no);
+    const targetTable = tableOptions.value.find((t) => t.table_no == table);
+    console.log("targetTable", targetTable);
     if (targetTable) {
       targetTable.status = "reserved";
     }
