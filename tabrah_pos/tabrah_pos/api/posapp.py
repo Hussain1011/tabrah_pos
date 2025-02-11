@@ -1656,7 +1656,7 @@ def create_bundle_from_item(json_data):
 
                 # Add the newly created bundle to created_bundles
                 total_rate = sum(item_data["rate"] for item_data in items_list)
-                created_bundles.append({"item_code": new_bundle.name, "qty": items_list[0]["qty"], "rate": total_rate})
+                created_bundles.append({"item_code": new_bundle.name,"item_name": service_item_doc.item_name, "qty": items_list[0]["qty"], "rate": total_rate})
         
         # Return the flat list of created bundles
         return created_bundles
