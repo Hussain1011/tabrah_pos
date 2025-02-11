@@ -5,15 +5,8 @@
         <h3>Hold Orders</h3>
       </v-col>
       <v-col cols="9" class="d-flex justify-end pr-11">
-        <v-btn
-          variant="outlined"
-          size="large"
-          class="text-capitalize mr-2"
-          color="#21A0A0"
-          style="border-radius: 8px"
-          @click="addItem()"
-          width="300px"
-        >
+        <v-btn variant="outlined" size="large" class="text-capitalize mr-2" color="#21A0A0" style="border-radius: 8px"
+          @click="addItem()" width="300px">
           <v-icon class="mr-2">mdi-plus</v-icon>
           <p class="mt-2 category-p">Add Item</p>
         </v-btn>
@@ -32,45 +25,30 @@
     </v-row>
 
     <v-row class="px-4">
-      <v-col
-        v-for="order in orders"
-        :key="order.id"
-        cols="12"
-        sm="6"
-        md="4"
-        lg="4"
-        class="px-8"
-      >
-        <v-card
-          class="order-card d-flex flex-column"
-          elevation="0"
-          outlined
-          @click="showOrderDetail(order)"
-          :class="{ 'selected-card': selectedOrder == order }"
-          style="
+      <v-col v-for="order in orders" :key="order.id" cols="12" sm="6" md="4" lg="4" class="px-8">
+        <v-card class="order-card d-flex flex-column" elevation="0" outlined @click="showOrderDetail(order)"
+          :class="{ 'selected-card': selectedOrder == order }" style="
             min-height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-          "
-        >
+          ">
           <v-card-text class="pb-0">
             <div class="dis-grid">
               <div class="d-flex justify-space-between">
                 <!-- <div class="panda-go-div">Pando Go</div> -->
                 <div class="panda-go-div">{{ order.id }}</div>
-                <v-icon @click.stop="deleteItem(order.id)" color="red"
-                  >mdi-delete</v-icon
-                >
+                <v-icon @click.stop="deleteItem(order.id)" color="red">mdi-delete</v-icon>
 
                 <!-- <span class="ml-2 mt-1">{{ order.name }}</span> -->
               </div>
               <p class="mt-2">
-                <span class="text-grey"
-                  >Date:{{ formatDeliveryDate(order.timestamp) }}</span
-                >
+                <span class="text-grey">Date:{{ formatDeliveryDate(order.timestamp) }}</span>
               </p>
               <span v-if="order.table">Table:{{ order.table }}</span>
+
+              <span v-if="order.orderBy">Order Taker:{{ order.orderBy }}</span>
+
 
             </div>
             <div class="mt-3">
@@ -84,9 +62,7 @@
                       .slice(0, 6)
                       .map((item) => item.item_name)
                       .join(", ")
-                  }}<span v-if="order.items.length > 6"
-                    >, +{{ order.items.length - 6 }} more</span
-                  >
+                  }}<span v-if="order.items.length > 6">, +{{ order.items.length - 6 }} more</span>
                 </p>
               </div>
             </div>
@@ -234,7 +210,8 @@ onMounted(() => {
 }
 
 .order-card:hover {
-  transform: translateY(-5px); /* Move card slightly up on hover */
+  transform: translateY(-5px);
+  /* Move card slightly up on hover */
 }
 
 .order-header {
@@ -243,6 +220,7 @@ onMounted(() => {
   font-weight: bold;
   color: #ff4500;
 }
+
 .grand-p {
   color: #ff4500;
 }
@@ -251,16 +229,20 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
 }
+
 .dis-grid {
   display: grid;
 }
+
 .selected-card {
   background: #fcdfd3 !important;
 }
+
 .dotted-divider {
   border-style: dotted !important;
   border-color: #ff4500 !important;
 }
+
 .panda-go-div {
   border: 1px solid #ff6dbd;
   padding: 1px 7px 0px;
@@ -268,6 +250,7 @@ onMounted(() => {
   color: #ff6dbd !important;
   background: #fceaed;
 }
+
 .text-grey {
   color: #b3b3b3;
 }

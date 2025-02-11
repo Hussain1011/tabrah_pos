@@ -35,7 +35,7 @@
       <!-- Payment Details Input Fields -->
       <v-row class="mt-2 pb-0">
         <v-col cols="12" md="3">
-          <v-text-field class="b-radius-8" variant="outlined" label="Paid Amount" suffix="Rs." v-model="amountTake"
+          <v-text-field class="b-radius-8" variant="outlined" label="Paid Amount" suffix="QAR." v-model="amountTake"
             :disabled="paymentType.mode_type !== 'Cash' || splitPayment" />
         </v-col>
         <v-col cols="12" md="3">
@@ -74,7 +74,7 @@
               class="b-radius-8"
               variant="outlined"
               label="Add Discount"
-              suffix="Rs."
+              suffix="QAR."
             />
           </v-col> -->
       </v-row>
@@ -85,7 +85,7 @@
           <div class="amount-div paid-div">
             <p class="py-0 amount-title mb-2">Paid Amount</p>
             <p class="amount-pay">
-              Rs. {{ formatNumber(totalPaidAmount) || 0.0 }}
+              QAR. {{ formatNumber(totalPaidAmount) || 0.0 }}
             </p>
           </div>
         </v-col>
@@ -93,7 +93,7 @@
           <div class="amount-div to-paid-div">
             <p class="py-0 amount-title mb-2">To Be Paid</p>
             <p class="amount-pay">
-              Rs. {{ formatNumber(invoice_doc.grand_total) }}
+              QAR. {{ formatNumber(invoice_doc.grand_total) }}
             </p>
           </div>
         </v-col>
@@ -101,20 +101,20 @@
           <div class="amount-div to-paid-div">
             <p class="py-0 amount-title mb-2">Remaining paid amount</p>
             <p class="amount-pay">
-              Rs. {{ formatNumber(invoice_doc.remaining_amount) || 0 }}
+              QAR. {{ formatNumber(invoice_doc.remaining_amount) || 0 }}
             </p>
           </div>
         </v-col>
         <v-col cols="2" class="pt-0">
           <div class="amount-div change-div">
             <p class="py-0 amount-title mb-2">Change</p>
-            <p class="amount-pay">Rs. -{{ formatNumber(changeAmount) }}</p>
+            <p class="amount-pay">QAR. -{{ formatNumber(changeAmount) }}</p>
           </div>
         </v-col>
         <v-col cols="3" class="pt-0" v-if="invoice_doc.exchangeItem">
           <div class="amount-div change-div">
             <p class="py-0 amount-title mb-2">Advance Amount</p>
-            <p class="amount-pay">Rs. {{ formatNumber(invoice_doc.advanceAmount) }}</p>
+            <p class="amount-pay">QAR. {{ formatNumber(invoice_doc.advanceAmount) }}</p>
           </div>
         </v-col>
       </v-row>
@@ -124,7 +124,7 @@
         <v-col cols="2">
           <div class="amount-title">Total Amount</div>
           <div class="grey--text amount-pay pt-2">
-            Rs. {{ invoice_doc.total ? formatNumber(invoice_doc.total) : 0 }}
+            QAR. {{ invoice_doc.total ? formatNumber(invoice_doc.total) : 0 }}
           </div>
           <v-divider :thickness="2" class="border-opacity-75" style="background-color: #21a0a0"></v-divider>
         </v-col>
@@ -133,7 +133,7 @@
             Tax (GST {{ paymentType.tax_rate }}%)
           </div>
           <div class="black--text amount-pay-one pt-2">
-            Rs.
+            QAR.
             {{
               invoice_doc.total_taxes_and_charges
                 ? formatNumber(invoice_doc.total_taxes_and_charges)
@@ -145,21 +145,21 @@
         <v-col cols="2">
           <div class="grey--text amount-title">Net Total</div>
           <div class="grey--text amount-pay pt-2">
-            Rs. {{ formatNumber(invoice_doc.net_total) }}
+            QAR. {{ formatNumber(invoice_doc.net_total) }}
           </div>
           <v-divider :thickness="2" class="border-opacity-75" style="background-color: #21a0a0"></v-divider>
         </v-col>
         <v-col cols="2">
           <div class="grey--text amount-title">Discount</div>
           <div class="grey--text amount-pay pt-2">
-            Rs.{{ formatNumber(invoice_doc.discount_amount) }}
+            QAR.{{ formatNumber(invoice_doc.discount_amount) }}
           </div>
           <v-divider :thickness="2" class="border-opacity-75" style="background-color: #21a0a0"></v-divider>
         </v-col>
         <v-col cols="2">
           <div class="grey--text amount-title">Gross Total</div>
           <div class="black--text amount-pay-one pt-2">
-            Rs. {{ formatNumber(invoice_doc.grand_total) }}
+            QAR. {{ formatNumber(invoice_doc.grand_total) }}
           </div>
           <v-divider :thickness="2" class="border-opacity-75" style="background-color: #f05d23"></v-divider>
         </v-col>
@@ -1011,30 +1011,7 @@ const submitSaleInvoice = async (
     return;
   }
 
-  if (requiredOrderId.value) {
-    if (!orderId.value) {
-      eventBus.emit("show_mesage", {
-        text: `Order Id is required!`,
-        color: "error",
-      });
-      frappe.utils.play_sound("error");
-      btnLoading.value = false;
-      btnLoading1.value = false;
-      return;
-    }
-    invoice_doc.value.custom_foodpanda_order_id = orderId.value;
-  }
-  if (!orderBy.value) {
-    eventBus.emit("show_mesage", {
-      text: `Order By is required!`,
-      color: "error",
-    });
-    frappe.utils.play_sound("error");
-    btnLoading.value = false;
-    btnLoading1.value = false;
-    return;
-  }
-  invoice_doc.value.order_by = orderBy.value
+  
 
   let matchingPayment = pos_profile.value.payments.find(
     (item) => item.mode_of_payment === paymentType.value.mode_of_payment
@@ -1078,6 +1055,7 @@ const submitSaleInvoice = async (
       data.customer_credit_dict = [];
       data.is_cashback = true;
       invoice_doc.value.custom_invoice_status = "In Queue";
+      invoice_doc.value.custom_is_complementary=complementaryItem.value
       if (
         navigator.onLine &&
         !offlineMode.value &&
