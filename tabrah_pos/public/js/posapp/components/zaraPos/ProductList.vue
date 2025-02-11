@@ -271,7 +271,17 @@ const nextStep = (index) => {
 
 const closeDialog = () => {
   variantsDialog.value = false;
+  defaultValue()
 };
+const defaultValue = () => {
+  calledBundleApi.value = false
+  bundleArray.value = []
+  variantPayload.value = ''
+  currentStep.value = 1
+  variantMatch.value = ''
+  payload_string.value = ''
+  variantRadio.value = []
+}
 const prevStep = () => {
   if (currentStep.value > 1) currentStep.value--;
 };
@@ -323,8 +333,7 @@ const getItemBundle = async (product) => {
       console.log("bundle Api response....", response.message);
       eventBus.emit("add-to-cart", response.message[0]);
       variantsDialog.value = false;
-      calledBundleApi.value = false
-    }
+      defaultValue()    }
 
   } catch (error) {
     console.error("Error fetching order types:", error);
