@@ -12005,7 +12005,7 @@ Expected function or array of functions, received type ${typeof value}.`
           const response = await frappe.call({
             method: "tabrah_pos.tabrah_pos.api.posapp.create_bundle_from_item",
             args: {
-              json_data: bundleArray.value
+              json_data: obj
             }
           });
           if (response.message) {
@@ -48043,4 +48043,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.7OMN3BLU.js.map
+//# sourceMappingURL=pos.bundle.VB72AILB.js.map

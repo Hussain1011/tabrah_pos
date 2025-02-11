@@ -309,7 +309,7 @@ const getItemBundle = async (product) => {
     const response = await frappe.call({
       method: "tabrah_pos.tabrah_pos.api.posapp.create_bundle_from_item",
       args: {
-        json_data: bundleArray.value,
+        json_data: obj,
       },
     });
 
