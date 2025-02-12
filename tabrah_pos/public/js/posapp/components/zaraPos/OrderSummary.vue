@@ -440,7 +440,7 @@ const paymentModes = ref([
   //   selected:false
   // },
 ]);
-const selectedCustomer = ref('walk-In');
+const selectedCustomer = ref('');
 const customers = ref([
   // Example customer list
   // { text: "John Doe", value: 1 },
@@ -1415,6 +1415,7 @@ onMounted(() => {
 
   eventBus.on("send_pos_profile", (profile) => {
     pos_profile.value = profile;
+    selectedCustomer.value = profile.customer;
     paymentModes.value = profile.payments;
     getCustomerNames(profile);
     const hasDefaultPayment = paymentModes.value.some(

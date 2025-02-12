@@ -11969,6 +11969,16 @@ Expected function or array of functions, received type ${typeof value}.`
       };
       const closeDialog = () => {
         variantsDialog.value = false;
+        defaultValue;
+      };
+      const defaultValue = () => {
+        calledBundleApi.value = false;
+        bundleArray.value = [];
+        variantPayload.value = "";
+        currentStep.value = 1;
+        variantMatch.value = "";
+        payload_string.value = "";
+        variantRadio.value = [];
       };
       const prevStep = () => {
         if (currentStep.value > 1)
@@ -12525,7 +12535,7 @@ Expected function or array of functions, received type ${typeof value}.`
         return checkConnectionInterval;
       }, set checkConnectionInterval(v) {
         checkConnectionInterval = v;
-      }, requestComplete, itemloading, getAllItems, offlineMode, unsyncInvoice, variantsDialog, parentItem, panel, addOnPanel, variantRadio, selectedValues, selectedVariants, payload_string, variantMatch, currentStep, variantPayload, calledBundleApi, bundleArray, nextStep, closeDialog, prevStep, submitSelection, getItemBundle, onOptionSelect, addVariantItem, products, filteredProducts, formatNumber, handleOffline: handleOffline2, handleOnline: handleOnline2, syncSalesInvoicesFromIndexedDB, fetchUnsyncedSalesInvoiceRecords: fetchUnsyncedSalesInvoiceRecords2, syncSalesInvoiceRecord, updateInvoice, getInvoiceLog, markRecordAsSynced, openDialog, get_variants, changeCategory, scanItem, get_items, loadAllItems, offlineProfileData, checkInternetConnection, ref, onMounted, onUnmounted, computed: computed2, watch: watch2, get eventBus() {
+      }, requestComplete, itemloading, getAllItems, offlineMode, unsyncInvoice, variantsDialog, parentItem, panel, addOnPanel, variantRadio, selectedValues, selectedVariants, payload_string, variantMatch, currentStep, variantPayload, calledBundleApi, bundleArray, nextStep, closeDialog, defaultValue, prevStep, submitSelection, getItemBundle, onOptionSelect, addVariantItem, products, filteredProducts, formatNumber, handleOffline: handleOffline2, handleOnline: handleOnline2, syncSalesInvoicesFromIndexedDB, fetchUnsyncedSalesInvoiceRecords: fetchUnsyncedSalesInvoiceRecords2, syncSalesInvoiceRecord, updateInvoice, getInvoiceLog, markRecordAsSynced, openDialog, get_variants, changeCategory, scanItem, get_items, loadAllItems, offlineProfileData, checkInternetConnection, ref, onMounted, onUnmounted, computed: computed2, watch: watch2, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
@@ -48049,4 +48059,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.2NSQGIWF.js.map
+//# sourceMappingURL=pos.bundle.KPUK5KPA.js.map
