@@ -11648,6 +11648,7 @@ Expected function or array of functions, received type ${typeof value}.`
       const selectedOrderType = ref("");
       const currentScreen = ref(null);
       const searchField = ref(null);
+      const searchItem = ref("");
       const orderTypes = ref([]);
       const tableOptions = ref([]);
       const selectedTable = ref("");
@@ -11694,6 +11695,9 @@ Expected function or array of functions, received type ${typeof value}.`
           console.error("Error fetching order types:", error);
         }
       };
+      const emitSearchItemEvent = debounce2((value) => {
+        bus_default.emit("search-item-by-code", value);
+      }, 500);
       const offlineProfileData = async () => {
         var _a2;
         try {
@@ -11717,6 +11721,9 @@ Expected function or array of functions, received type ${typeof value}.`
       watch2(searchValue, (newValue) => {
         emitSearchEvent(newValue);
       });
+      watch2(searchItem, (newValue) => {
+        emitSearchItemEvent(newValue);
+      });
       watch2(selectedOrderType, (newValue) => {
         bus_default.emit("selected_order_type", newValue);
         changeOrderType(newValue);
@@ -11728,7 +11735,6 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.emit("order-taker", newValue);
       });
       onMounted(() => {
-        searchField.value.focus();
         if (!navigator.onLine) {
           offlineProfileData();
         }
@@ -11772,7 +11778,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.off("current-screen");
         bus_default.off("app-internet-status");
       });
-      const __returned__ = { searchValue, pos_profile: pos_profile2, selectedOrderType, currentScreen, searchField, orderTypes, tableOptions, selectedTable, employeesList, orderBy, logOut, debounce: debounce2, emitSearchEvent, go_desk, changeOrderType, fetchTableOptions, offlineProfileData, get eventBus() {
+      const __returned__ = { searchValue, pos_profile: pos_profile2, selectedOrderType, currentScreen, searchField, searchItem, orderTypes, tableOptions, selectedTable, employeesList, orderBy, logOut, debounce: debounce2, emitSearchEvent, go_desk, changeOrderType, fetchTableOptions, emitSearchItemEvent, offlineProfileData, get eventBus() {
         return bus_default;
       }, ref, onMounted, watch: watch2, onBeforeUnmount, get indexedDBService() {
         return indexedDB_default;
@@ -11865,13 +11871,12 @@ Expected function or array of functions, received type ${typeof value}.`
                   createVNode(_component_v_text_field, {
                     variant: "outlined",
                     "append-inner-icon": "mdi-magnify",
-                    placeholder: "Find Your Item",
+                    placeholder: "Find your item",
                     class: "mt-1 mr-4",
                     density: "compact",
                     style: { "height": "83px", "border-radius": "6px" },
-                    modelValue: $setup.searchValue,
-                    "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.searchValue = $event),
-                    ref: "searchField",
+                    modelValue: $setup.searchItem,
+                    "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.searchItem = $event),
                     clearable: ""
                   }, null, 8, ["modelValue"])
                 ])
@@ -11937,6 +11942,7 @@ Expected function or array of functions, received type ${typeof value}.`
         "/assets/tabrah_pos/js/posapp/components/pos/tabrah.png"
       );
       const orderType = ref("");
+      const searchItemCode = ref("");
       const isOnline = ref(navigator.onLine);
       let intervalId = ref(null);
       let checkConnectionInterval = null;
@@ -11969,7 +11975,7 @@ Expected function or array of functions, received type ${typeof value}.`
       };
       const closeDialog = () => {
         variantsDialog.value = false;
-        defaultValue;
+        defaultValue();
       };
       const defaultValue = () => {
         calledBundleApi.value = false;
@@ -11991,7 +11997,9 @@ Expected function or array of functions, received type ${typeof value}.`
           variantsDialog.value = false;
         } else {
           variantsDialog.value = false;
-          bundleArray.value.push(variantPayload.value);
+          if (variantPayload.value) {
+            bundleArray.value.push(variantPayload.value);
+          }
           variantRadio.value.forEach((item) => {
             if (item.doctype == "Item Add Ons Child") {
               const obj = {
@@ -12027,7 +12035,7 @@ Expected function or array of functions, received type ${typeof value}.`
             console.log("bundle Api response....", response.message);
             bus_default.emit("add-to-cart", response.message[0]);
             variantsDialog.value = false;
-            calledBundleApi.value = false;
+            defaultValue();
           }
         } catch (error) {
           console.error("Error fetching order types:", error);
@@ -12061,12 +12069,13 @@ Expected function or array of functions, received type ${typeof value}.`
       };
       const products = ref([]);
       const filteredProducts = computed2(() => {
-        if (!searchValue.value) {
+        if (!searchItemCode.value) {
           return products.value;
         }
-        return products.value.filter(
-          (product) => product.item_code.toLowerCase().includes(searchValue.value.toLowerCase())
-        );
+        const searchQuery = searchItemCode.value.toLowerCase();
+        return products.value.filter((product) => {
+          return product.item_code.toLowerCase().includes(searchQuery) || product.item_name.toLowerCase().includes(searchQuery);
+        });
       });
       const formatNumber = (num) => {
         return new Intl.NumberFormat("en-US", {
@@ -12277,17 +12286,10 @@ Expected function or array of functions, received type ${typeof value}.`
       const openDialog = (product, flag = false) => {
         console.log("Product clicked:", product);
         product.qty = 1;
-        if (product.has_variants) {
-          get_variants(product);
-        } else {
-          const obj = {
-            product,
-            flag
-          };
-          bus_default.emit("open-product-dialog", obj);
-        }
+        product.loading = true;
+        get_variants(product, flag);
       };
-      const get_variants = async (product) => {
+      const get_variants = async (product, flag) => {
         try {
           const response = await frappe.call({
             method: "tabrah_pos.tabrah_pos.api.posapp.get_variants_addons",
@@ -12316,7 +12318,16 @@ Expected function or array of functions, received type ${typeof value}.`
             parentItem.value.attributes = [...response.message[0].Attributes[0], ...response.message[0].add_ons];
             parentItem.value.variants = response.message[0].variants;
             console.log("parentItem", parentItem.value);
-            variantsDialog.value = true;
+            if (parentItem.value.attributes.length > 0) {
+              variantsDialog.value = true;
+            } else {
+              const obj = {
+                product,
+                flag
+              };
+              bus_default.emit("open-product-dialog", obj);
+            }
+            product.loading = false;
           }
         } catch (error) {
           console.error("Error fetching order types:", error);
@@ -12476,7 +12487,9 @@ Expected function or array of functions, received type ${typeof value}.`
         });
         bus_default.on("search-item", (value) => {
           searchValue.value = value;
-          scanItem();
+        });
+        bus_default.on("search-item-by-code", (value) => {
+          searchItemCode.value = value;
         });
         bus_default.on("send_order_type", (data) => {
           orderType.value = data;
@@ -12527,7 +12540,7 @@ Expected function or array of functions, received type ${typeof value}.`
         window.removeEventListener("offline", handleOffline2);
         window.removeEventListener("online", handleOnline2);
       });
-      const __returned__ = { categories, pos_profile: pos_profile2, selectedCategory, searchValue, defaultImg, orderType, isOnline, pollingInterval, get intervalId() {
+      const __returned__ = { categories, pos_profile: pos_profile2, selectedCategory, searchValue, defaultImg, orderType, searchItemCode, isOnline, pollingInterval, get intervalId() {
         return intervalId;
       }, set intervalId(v) {
         intervalId = v;
@@ -12551,27 +12564,28 @@ Expected function or array of functions, received type ${typeof value}.`
   var _hoisted_22 = { class: "black--text mt-2 category-p" };
   var _hoisted_32 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ createBaseVNode("p", { class: "pt-6 pl-5 title-h" }, "Products", -1));
   var _hoisted_42 = ["src"];
-  var _hoisted_52 = { style: { "display": "flex", "justify-content": "space-between" } };
-  var _hoisted_62 = { style: { "width": "140px" } };
-  var _hoisted_72 = { class: "stock-div" };
-  var _hoisted_82 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ createBaseVNode("img", {
+  var _hoisted_52 = { class: "stock-loading" };
+  var _hoisted_62 = { style: { "display": "flex", "justify-content": "space-between" } };
+  var _hoisted_72 = { style: { "width": "140px" } };
+  var _hoisted_82 = { class: "stock-div" };
+  var _hoisted_92 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ createBaseVNode("img", {
     src: "/assets/tabrah_pos/js/posapp/components/pos/noData.png",
     alt: "",
     class: "ml-5"
   }, null, -1));
-  var _hoisted_92 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ createBaseVNode("p", { class: "title-p" }, "Select Your Business Meal Item", -1));
-  var _hoisted_102 = { class: "d-flex justify-center parent-p" };
-  var _hoisted_11 = { class: "d-flex flex-wrap justify-center gap-2 mt-10" };
-  var _hoisted_122 = { class: "d-flex justify-space-between mt-14" };
+  var _hoisted_102 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ createBaseVNode("p", { class: "title-p" }, "Select Your Business Meal Item", -1));
+  var _hoisted_11 = { class: "d-flex justify-center parent-p" };
+  var _hoisted_122 = { class: "d-flex flex-wrap justify-center gap-2 mt-10" };
+  var _hoisted_13 = { class: "d-flex justify-space-between mt-14" };
   function render3(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_v_btn = resolveComponent("v-btn");
     const _component_v_col = resolveComponent("v-col");
     const _component_v_row = resolveComponent("v-row");
+    const _component_v_progress_circular = resolveComponent("v-progress-circular");
     const _component_v_card_title = resolveComponent("v-card-title");
     const _component_v_tooltip = resolveComponent("v-tooltip");
     const _component_v_card_subtitle = resolveComponent("v-card-subtitle");
     const _component_v_card = resolveComponent("v-card");
-    const _component_v_progress_circular = resolveComponent("v-progress-circular");
     const _component_v_icon = resolveComponent("v-icon");
     const _component_v_stepper_item = resolveComponent("v-stepper-item");
     const _component_v_stepper_header = resolveComponent("v-stepper-header");
@@ -12665,12 +12679,25 @@ Expected function or array of functions, received type ${typeof value}.`
                       onClick: ($event) => $setup.openDialog(product)
                     }, {
                       default: withCtx(() => [
-                        createBaseVNode("img", {
+                        withDirectives(createBaseVNode("img", {
                           src: product.image ? product.image : $setup.defaultImg,
                           class: "white--text align-end item-img"
-                        }, null, 8, _hoisted_42),
-                        createBaseVNode("div", _hoisted_52, [
-                          createBaseVNode("div", _hoisted_62, [
+                        }, null, 8, _hoisted_42), [
+                          [vShow, !product.loading]
+                        ]),
+                        withDirectives(createBaseVNode("p", _hoisted_52, [
+                          createVNode(_component_v_progress_circular, {
+                            indeterminate: "",
+                            size: "50",
+                            color: "#21A0A0",
+                            class: "mt-1",
+                            style: { "width": "220px", "height": "120px" }
+                          })
+                        ], 512), [
+                          [vShow, product.loading]
+                        ]),
+                        createBaseVNode("div", _hoisted_62, [
+                          createBaseVNode("div", _hoisted_72, [
                             createVNode(_component_v_card_title, { class: "item-name py-0 mt-3" }, {
                               default: withCtx(() => [
                                 createTextVNode(toDisplayString(product.item_name), 1)
@@ -12714,7 +12741,7 @@ Expected function or array of functions, received type ${typeof value}.`
                             ])
                           ]),
                           createBaseVNode("div", null, [
-                            createBaseVNode("div", _hoisted_72, [
+                            createBaseVNode("div", _hoisted_82, [
                               createBaseVNode("p", {
                                 class: normalizeClass(["stock-count", { "negative-stock": product.actual_qty < 0 }])
                               }, toDisplayString(product.actual_qty), 3)
@@ -12740,7 +12767,7 @@ Expected function or array of functions, received type ${typeof value}.`
                 style: { "display": "flex", "justify-content": "center" }
               }, {
                 default: withCtx(() => [
-                  _hoisted_82
+                  _hoisted_92
                 ]),
                 _: 1
               })
@@ -12800,11 +12827,11 @@ Expected function or array of functions, received type ${typeof value}.`
               }),
               createVNode(_component_v_card_title, { class: "text-h5 d-flex justify-center pt-7 px-10 pb-0" }, {
                 default: withCtx(() => [
-                  _hoisted_92
+                  _hoisted_102
                 ]),
                 _: 1
               }),
-              createBaseVNode("p", _hoisted_102, toDisplayString($setup.parentItem.item_name), 1),
+              createBaseVNode("p", _hoisted_11, toDisplayString($setup.parentItem.item_name), 1),
               $setup.parentItem.attributes ? (openBlock(), createBlock(_component_v_card_text, {
                 key: 0,
                 class: "pt-4 add-on-div"
@@ -12837,7 +12864,7 @@ Expected function or array of functions, received type ${typeof value}.`
                             }, {
                               default: withCtx(() => [
                                 createCommentVNode(' <p v-if="item.required && !variantRadio[i]" class="required-p mt-1">Required</p> '),
-                                createBaseVNode("div", _hoisted_11, [
+                                createBaseVNode("div", _hoisted_122, [
                                   (openBlock(true), createElementBlock(Fragment, null, renderList(item.values, (option, index) => {
                                     return openBlock(), createBlock(_component_v_btn, {
                                       key: index,
@@ -12853,7 +12880,7 @@ Expected function or array of functions, received type ${typeof value}.`
                                     }, 1032, ["color", "onClick"]);
                                   }), 128))
                                 ]),
-                                createBaseVNode("div", _hoisted_122, [
+                                createBaseVNode("div", _hoisted_13, [
                                   i > 0 ? (openBlock(), createBlock(_component_v_btn, {
                                     key: 0,
                                     color: "secondary",
@@ -12908,6 +12935,120 @@ Expected function or array of functions, received type ${typeof value}.`
   ProductList_default.__scopeId = "data-v-034ec62e";
   var ProductList_default2 = ProductList_default;
 
+  // ../tabrah_pos/tabrah_pos/public/js/posapp/preinvoice.js
+  async function printPreInvoice(offlineData) {
+    try {
+      let now = new Date();
+      const items = (offlineData == null ? void 0 : offlineData.items) || [];
+      const itemRows = items.map((item) => {
+        const { item_name, qty, rate, discount = 0, amount } = item;
+        return `
+            <tr>
+                <td>${item_name || "N/A"}</td>
+                <td class="text-center">${qty || 0}</td>
+                <td class="text-center">${rate || 0}</td>
+                <td class="text-center">${discount || 0}</td>
+                <td class="text-center">${qty * rate || 0}</td>
+            </tr>
+          `;
+      }).join("");
+      const newWindow = window.open("", "_blank");
+      newWindow.document.write(`
+  <html>
+  <head>
+      <title>Pre-Invoice</title>
+      <style>
+          .print-format table, .print-format tr, .print-format td, .print-format div, .print-format p {
+              line-height: 100%;
+              vertical-align: middle;
+          }
+          @media screen {
+              .print-format {
+                  width: 4in;
+                  padding: 0.25in;
+                  min-height: 8in;
+              }
+          }
+          .print-format td, .print-format th {
+              padding: 5px !important;
+          }
+          table {
+              width: 100%;
+              border-collapse: collapse;
+          }
+          th, td {
+              border: 2px solid black;
+              padding: 5px;
+              text-align: left;
+          }
+          .text-center {
+              text-align: center;
+          }
+          .text-right {
+              text-align: right;
+          }
+      </style>
+  </head>
+  <body>
+        <div style="display: flex; justify-content: center;">
+  </div>
+  
+  <div style="text-align: center; font-weight: bold;">Neighborhood Cafe</div>
+  <div style="text-align: center;">
+        <br>
+      Mov#: 055664455 
+  </div>
+  
+      <table>
+                <thead>
+                    <tr style="background-color: #e0e0e0;">
+                        <th>Item</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-center">Rate</th>
+                        <th class="text-center">Disc</th>
+                        <th class="text-center">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemRows}
+                    <tr>
+                        <td colspan="4"><b>Bill Excluding GST (Rs.)</b></td>
+                        <td class="text-right">${offlineData.total.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4"><b>SALES TAX @ 16%</b></td>
+                        <td class="text-right">${offlineData.gstAmountCash.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4"><b>Total Bill Including 16% GST Rs.</b></td>
+                        <td class="text-right">${offlineData.grand_total.toFixed(2)}</td>
+                    </tr>
+                </tbody>
+            </table>
+      </table>
+  
+      <p class="text-center" style="margin-top: 0px;"><b>Thank you for Choosing Us!</b></p>
+      <hr>
+      <p class="text-center" style="margin-top: -10px;">Prepared by Neighborhood Cafe</p>
+  </body>
+  </html>
+  
+      `);
+      newWindow.document.close();
+      newWindow.onafterprint = () => {
+        newWindow.close();
+      };
+      newWindow.print();
+      newWindow.addEventListener("focus", () => {
+        setTimeout(() => {
+          newWindow.close();
+        }, 500);
+      });
+    } catch (error) {
+      console.error("Error printing invoice:", error);
+    }
+  }
+
   // sfc-script:/home/daniyal/frappe_benches/version15/frappe-bench/apps/tabrah_pos/tabrah_pos/public/js/posapp/components/zaraPos/OrderSummary.vue?type=script
   var OrderSummary_default = {
     __name: "OrderSummary",
@@ -12915,7 +13056,7 @@ Expected function or array of functions, received type ${typeof value}.`
       __expose();
       const items = ref([]);
       const paymentModes = ref([]);
-      const selectedCustomer = ref("walk-In");
+      const selectedCustomer = ref("");
       const customers = ref([]);
       const showDialog = ref(false);
       const isFormValid = ref(false);
@@ -12962,6 +13103,10 @@ Expected function or array of functions, received type ${typeof value}.`
       const selectedTable = ref("");
       const advanceAmount = ref(0);
       const orderBy = ref("");
+      const allowedDelete = ref(true);
+      const pindialog = ref(false);
+      const otp = ref("");
+      const pinloading = ref(false);
       const selected = ref([]);
       const headers = [
         { title: "Customer", value: "customer" },
@@ -13023,6 +13168,19 @@ Expected function or array of functions, received type ${typeof value}.`
       };
       const addNewCustomer = () => {
         showDialog.value = true;
+      };
+      const checkAuthAccess = () => {
+        const isMatch = pos_profile2.value.employee_list.some((emp) => emp.pin_for_pos === parseInt(otp.value));
+        if (isMatch) {
+          allowedDelete.value = true;
+          pindialog.value = false;
+        } else {
+          bus_default.emit("show_mesage", {
+            text: "Invalid Pin. Please try again!",
+            color: "error"
+          });
+        }
+        pinloading.value = false;
       };
       const submitCustomerDialog = async () => {
         try {
@@ -13103,6 +13261,18 @@ Expected function or array of functions, received type ${typeof value}.`
             flag
           };
           bus_default.emit("open-product-dialog", obj);
+        }
+      };
+      const createPreInvoice = async () => {
+        if (items.value.length > 0) {
+          const doc3 = await get_invoice_doc();
+          doc3.grand_total = grandTotal.value;
+          doc3.gstAmountCash = gstAmount.value;
+          console.log("pre-invoice", doc3);
+          printPreInvoice(
+            doc3
+          );
+          holdOrder();
         }
       };
       const goForReturnProceed = () => {
@@ -13521,8 +13691,17 @@ Expected function or array of functions, received type ${typeof value}.`
         localStorage.setItem("gst-amount", JSON.stringify(gstAmount.value));
       };
       const deleteItem = (index) => {
-        items.value.splice(index, 1);
-        makePayloadForInvoice();
+        if (allowedDelete.value || !holdOrderId.value) {
+          items.value.splice(index, 1);
+          console.log("holdOrderId.value", holdOrderId.value);
+          if (holdOrderId.value) {
+            bus_default.emit("update-hold-order", holdOrderId.value);
+            holdOrderId.value = "";
+          }
+          makePayloadForInvoice();
+        } else {
+          pindialog.value = true;
+        }
       };
       const toggleDelete = (index) => {
         items.value[index].showDelete = !items.value[index].showDelete;
@@ -13625,6 +13804,7 @@ Expected function or array of functions, received type ${typeof value}.`
         });
         bus_default.on("send_pos_profile", (profile) => {
           pos_profile2.value = profile;
+          selectedCustomer.value = profile.customer;
           paymentModes.value = profile.payments;
           getCustomerNames(profile);
           const hasDefaultPayment = paymentModes.value.some(
@@ -13654,6 +13834,7 @@ Expected function or array of functions, received type ${typeof value}.`
           items.value = [];
           invoiceItems.value = [];
           holdOrderId.value = null;
+          allowedDelete.value = true;
         });
         bus_default.on("selected_order_type", (type) => {
           selectedOrderType.value = type;
@@ -13665,6 +13846,8 @@ Expected function or array of functions, received type ${typeof value}.`
           console.log("hold order", order);
           items.value = [];
           holdOrderId.value = order.id;
+          bus_default.emit("open-product-menu");
+          allowedDelete.value = false;
           items.value = order.items;
           makePayloadForInvoice();
         });
@@ -13695,10 +13878,12 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.off("current-screen");
         bus_default.off("enter-key-called");
       });
-      const __returned__ = { items, paymentModes, selectedCustomer, customers, showDialog, isFormValid, customerLoading, formData, rules, pos_profile: pos_profile2, pos_opening_shift, invoice_doc, invoiceItems, selectedPaymentMode, loadingBtn, saleOrder, loadingHold, saleOrderDetail, selectedOrderType, offlineMode, punching, screen, speedMbps, getSpeedRes, holdOrderId, dialog, exchangeItem, submitLoading, search, returnDoc, returnType, selectedTable, advanceAmount, orderBy, selected, headers, returnItems, returnDialog, returnitems, totalQuantity, totalItems, netTotal, gstAmount, grandTotal, formatNumber, addNewCustomer, submitCustomerDialog, closeCustomerDialog, getCustomerNames, changePaymentMode, openDialog, goForReturnProceed, openReturnDialog, closeReturnDialog, searchReturnInvoice, loadReturn, submitReturn, load_print_page, getFormattedPrintFormat, holdOrder, goForPayment, paymentProcess, processInvoiceFromOrder, getInvoiceFromOrderDoc, updateInvoiceFromOrder, get_invoice_doc, get_payments, getCurrentDate, onEnterKey, update_invoice, checkInternetSpeed, makePayloadForInvoice, deleteItem, toggleDelete, offlineProfileData, createSaleOrder, ref, onMounted, computed: computed2, watch: watch2, onUnmounted, onBeforeUnmount, get eventBus() {
+      const __returned__ = { items, paymentModes, selectedCustomer, customers, showDialog, isFormValid, customerLoading, formData, rules, pos_profile: pos_profile2, pos_opening_shift, invoice_doc, invoiceItems, selectedPaymentMode, loadingBtn, saleOrder, loadingHold, saleOrderDetail, selectedOrderType, offlineMode, punching, screen, speedMbps, getSpeedRes, holdOrderId, dialog, exchangeItem, submitLoading, search, returnDoc, returnType, selectedTable, advanceAmount, orderBy, allowedDelete, pindialog, otp, pinloading, selected, headers, returnItems, returnDialog, returnitems, totalQuantity, totalItems, netTotal, gstAmount, grandTotal, formatNumber, addNewCustomer, checkAuthAccess, submitCustomerDialog, closeCustomerDialog, getCustomerNames, changePaymentMode, openDialog, createPreInvoice, goForReturnProceed, openReturnDialog, closeReturnDialog, searchReturnInvoice, loadReturn, submitReturn, load_print_page, getFormattedPrintFormat, holdOrder, goForPayment, paymentProcess, processInvoiceFromOrder, getInvoiceFromOrderDoc, updateInvoiceFromOrder, get_invoice_doc, get_payments, getCurrentDate, onEnterKey, update_invoice, checkInternetSpeed, makePayloadForInvoice, deleteItem, toggleDelete, offlineProfileData, createSaleOrder, ref, onMounted, computed: computed2, watch: watch2, onUnmounted, onBeforeUnmount, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
+      }, get printPreInvoice() {
+        return printPreInvoice;
       } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
@@ -13707,7 +13892,7 @@ Expected function or array of functions, received type ${typeof value}.`
 
   // sfc-template:/home/daniyal/frappe_benches/version15/frappe-bench/apps/tabrah_pos/tabrah_pos/public/js/posapp/components/zaraPos/OrderSummary.vue?type=template
   var _withScopeId3 = (n) => (pushScopeId("data-v-9421c1d1"), n = n(), popScopeId(), n);
-  var _hoisted_13 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("strong", null, "ITEM", -1));
+  var _hoisted_14 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("strong", null, "ITEM", -1));
   var _hoisted_23 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("strong", null, "QTY.", -1));
   var _hoisted_33 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("strong", null, "PRICE ", -1));
   var _hoisted_43 = { class: "text-caption grey--text" };
@@ -13717,10 +13902,10 @@ Expected function or array of functions, received type ${typeof value}.`
   var _hoisted_83 = { class: "total-p" };
   var _hoisted_93 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("p", { class: "mt-2 payment-p" }, "PAYMENT", -1));
   var _hoisted_103 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("p", { class: "mt-2 payment-p" }, "Hold", -1));
-  var _hoisted_112 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("p", { class: "mt-2 payment-p" }, "Return", -1));
+  var _hoisted_112 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("p", { class: "mt-2 print-p" }, "Pre Invoice", -1));
   var _hoisted_123 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("span", { class: "text-h6" }, "Select Return Invoice", -1));
   var _hoisted_132 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("p", { class: "mt-2" }, "Search", -1));
-  var _hoisted_14 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("img", {
+  var _hoisted_142 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("img", {
     src: "/assets/tabrah_pos/js/posapp/components/pos/returnType.png",
     alt: "",
     class: ""
@@ -13794,6 +13979,8 @@ Expected function or array of functions, received type ${typeof value}.`
     class: "ml-2"
   }, "Add Customer", -1));
   var _hoisted_41 = { style: { "background": "#F05D23", "height": "21px", "border-radius": "15px", "position": "relative", "left": "139px" } };
+  var _hoisted_422 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("span", { class: "text-h6" }, "Enter OTP", -1));
+  var _hoisted_432 = { class: "text-center" };
   function render4(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_v_col = resolveComponent("v-col");
     const _component_v_row = resolveComponent("v-row");
@@ -13813,6 +14000,7 @@ Expected function or array of functions, received type ${typeof value}.`
     const _component_v_chip = resolveComponent("v-chip");
     const _component_v_card_text = resolveComponent("v-card-text");
     const _component_v_form = resolveComponent("v-form");
+    const _component_v_otp_input = resolveComponent("v-otp-input");
     return openBlock(), createBlock(_component_v_card, {
       elevation: "1",
       class: "border-16 summary-main-card"
@@ -13829,7 +14017,7 @@ Expected function or array of functions, received type ${typeof value}.`
               default: withCtx(() => [
                 createVNode(_component_v_col, { cols: "5" }, {
                   default: withCtx(() => [
-                    _hoisted_13
+                    _hoisted_14
                   ]),
                   _: 1
                 }),
@@ -14269,7 +14457,7 @@ Expected function or array of functions, received type ${typeof value}.`
                               class: "white--text font-weight-bold payment-button",
                               height: "48",
                               color: "#F05D23",
-                              onClick: _cache[3] || (_cache[3] = ($event) => $setup.openReturnDialog()),
+                              onClick: _cache[3] || (_cache[3] = ($event) => $setup.createPreInvoice()),
                               disabled: $setup.screen != 0
                             }, {
                               default: withCtx(() => [
@@ -14279,7 +14467,8 @@ Expected function or array of functions, received type ${typeof value}.`
                             }, 8, ["disabled"])
                           ]),
                           _: 1
-                        })
+                        }),
+                        createCommentVNode(' <v-col cols="6">\n              <v-btn block class="white--text font-weight-bold payment-button" height="48" color="#F05D23"\n                @click="openReturnDialog()" :disabled="screen != 0">\n                <p class="mt-2 payment-p">Return</p>\n              </v-btn>\n            </v-col> ')
                       ]),
                       _: 1
                     })
@@ -14414,7 +14603,7 @@ Expected function or array of functions, received type ${typeof value}.`
                           style: { "padding-left": "260px" }
                         }, {
                           default: withCtx(() => [
-                            _hoisted_14,
+                            _hoisted_142,
                             _hoisted_15
                           ]),
                           _: 1
@@ -14755,6 +14944,66 @@ Expected function or array of functions, received type ${typeof value}.`
                     }, 8, ["modelValue"]),
                     createCommentVNode(" Note Section "),
                     createCommentVNode(' <div class="mt-4 text-center">\n            <span class="caption">\n              NOTE: Looking for an existing customer?\n              <a href="#" class="text-decoration-underline">Re-Call Customer</a>\n            </span>\n          </div> ')
+                  ]),
+                  _: 1
+                })
+              ]),
+              _: 1
+            })
+          ]),
+          _: 1
+        }, 8, ["modelValue"]),
+        createVNode(_component_v_dialog, {
+          modelValue: $setup.pindialog,
+          "onUpdate:modelValue": _cache[24] || (_cache[24] = ($event) => $setup.pindialog = $event),
+          "max-width": "400",
+          persistent: ""
+        }, {
+          default: withCtx(() => [
+            createVNode(_component_v_card, null, {
+              default: withCtx(() => [
+                createVNode(_component_v_card_title, { class: "d-flex justify-space-between align-center" }, {
+                  default: withCtx(() => [
+                    _hoisted_422,
+                    createVNode(_component_v_icon, {
+                      onClick: _cache[21] || (_cache[21] = ($event) => $setup.pindialog = false),
+                      class: "cursor-pointer"
+                    }, {
+                      default: withCtx(() => [
+                        createTextVNode("mdi-close")
+                      ]),
+                      _: 1
+                    })
+                  ]),
+                  _: 1
+                }),
+                createTextVNode(),
+                createVNode(_component_v_card_text, null, {
+                  default: withCtx(() => [
+                    createBaseVNode("div", _hoisted_432, [
+                      createVNode(_component_v_otp_input, {
+                        modelValue: $setup.otp,
+                        "onUpdate:modelValue": _cache[22] || (_cache[22] = ($event) => $setup.otp = $event),
+                        type: "password",
+                        loading: $setup.pinloading,
+                        length: "5"
+                      }, null, 8, ["modelValue", "loading"])
+                    ])
+                  ]),
+                  _: 1
+                }),
+                createVNode(_component_v_card_actions, { class: "justify-end" }, {
+                  default: withCtx(() => [
+                    createVNode(_component_v_btn, {
+                      text: "Cancel",
+                      onClick: _cache[23] || (_cache[23] = ($event) => $setup.pindialog = false)
+                    }),
+                    createVNode(_component_v_btn, {
+                      disabled: $setup.otp.length < 5 || $setup.pinloading,
+                      color: "primary",
+                      text: "Submit",
+                      onClick: $setup.checkAuthAccess
+                    }, null, 8, ["disabled"])
                   ]),
                   _: 1
                 })
@@ -16239,7 +16488,7 @@ Expected function or array of functions, received type ${typeof value}.`
   var _hoisted_113 = { class: "amount-pay" };
   var _hoisted_124 = { class: "amount-div change-div" };
   var _hoisted_133 = /* @__PURE__ */ _withScopeId4(() => /* @__PURE__ */ createBaseVNode("p", { class: "py-0 amount-title mb-2" }, "Change", -1));
-  var _hoisted_142 = { class: "amount-pay" };
+  var _hoisted_143 = { class: "amount-pay" };
   var _hoisted_152 = { class: "amount-div change-div" };
   var _hoisted_162 = /* @__PURE__ */ _withScopeId4(() => /* @__PURE__ */ createBaseVNode("p", { class: "py-0 amount-title mb-2" }, "Advance Amount", -1));
   var _hoisted_172 = { class: "amount-pay" };
@@ -16549,7 +16798,7 @@ Expected function or array of functions, received type ${typeof value}.`
                 default: withCtx(() => [
                   createBaseVNode("div", _hoisted_124, [
                     _hoisted_133,
-                    createBaseVNode("p", _hoisted_142, "QAR. -" + toDisplayString($setup.formatNumber($setup.changeAmount)), 1)
+                    createBaseVNode("p", _hoisted_143, "QAR. -" + toDisplayString($setup.formatNumber($setup.changeAmount)), 1)
                   ])
                 ]),
                 _: 1
@@ -16917,7 +17166,7 @@ Expected function or array of functions, received type ${typeof value}.`
   var _hoisted_114 = { class: "ml-2 text-grey" };
   var _hoisted_125 = { key: 0 };
   var _hoisted_134 = { class: "order-detail" };
-  var _hoisted_143 = /* @__PURE__ */ _withScopeId5(() => /* @__PURE__ */ createBaseVNode("strong", null, "Grand Total", -1));
+  var _hoisted_144 = /* @__PURE__ */ _withScopeId5(() => /* @__PURE__ */ createBaseVNode("strong", null, "Grand Total", -1));
   var _hoisted_153 = { class: "grand-p" };
   function render6(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_v_col = resolveComponent("v-col");
@@ -16998,7 +17247,7 @@ Expected function or array of functions, received type ${typeof value}.`
                             thickness: 3
                           }),
                           createBaseVNode("div", _hoisted_134, [
-                            _hoisted_143,
+                            _hoisted_144,
                             createBaseVNode("p", _hoisted_153, "Rs. " + toDisplayString(order.grand_total), 1)
                           ]),
                           createCommentVNode(' <div class="order-detail mt-3">\n              <strong>By</strong>\n              <p>{{ order.name }}</p>\n            </div>\n            <div class="order-detail mt-3 pb-3">\n              <strong>At</strong>\n              <p>{{ order.location }}</p>\n            </div> ')
@@ -17102,6 +17351,10 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.on("go-to-hold-order", (data) => {
           orders.value = data.reverse();
         });
+        bus_default.on("update-hold-order", (id) => {
+          console.log("id", id);
+          deleteItem(id);
+        });
       });
       const __returned__ = { orders, pos_profile: pos_profile2, selectedOrder, showOrderDetail, formatDeliveryDate, get_draft_orders, getHoldOrders, deleteItem, addItem, ref, onMounted, get eventBus() {
         return bus_default;
@@ -17129,7 +17382,7 @@ Expected function or array of functions, received type ${typeof value}.`
     style: { "height": "80px" }
   };
   var _hoisted_135 = { class: "ml-2 text-grey" };
-  var _hoisted_144 = { key: 0 };
+  var _hoisted_145 = { key: 0 };
   var _hoisted_154 = { class: "order-detail" };
   var _hoisted_163 = /* @__PURE__ */ _withScopeId6(() => /* @__PURE__ */ createBaseVNode("strong", null, "Grand Total", -1));
   var _hoisted_173 = { class: "grand-p" };
@@ -17244,7 +17497,7 @@ Expected function or array of functions, received type ${typeof value}.`
                               createBaseVNode("p", _hoisted_135, [
                                 createCommentVNode(' Display items with "+x more" if more than 6 items '),
                                 createTextVNode(" " + toDisplayString(order.items.slice(0, 6).map((item) => item.item_name).join(", ")), 1),
-                                order.items.length > 6 ? (openBlock(), createElementBlock("span", _hoisted_144, ", +" + toDisplayString(order.items.length - 6) + " more", 1)) : createCommentVNode("v-if", true)
+                                order.items.length > 6 ? (openBlock(), createElementBlock("span", _hoisted_145, ", +" + toDisplayString(order.items.length - 6) + " more", 1)) : createCommentVNode("v-if", true)
                               ])
                             ])
                           ]),
@@ -17384,7 +17637,7 @@ Expected function or array of functions, received type ${typeof value}.`
   var _hoisted_118 = { key: 0 };
   var _hoisted_127 = { class: "order-detail" };
   var _hoisted_136 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ createBaseVNode("strong", null, "Grand Total", -1));
-  var _hoisted_145 = { class: "grand-p" };
+  var _hoisted_146 = { class: "grand-p" };
   var _hoisted_155 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ createBaseVNode("img", {
     src: "/assets/tabrah_pos/js/posapp/components/pos/returnType.png",
     alt: "",
@@ -17572,7 +17825,7 @@ Expected function or array of functions, received type ${typeof value}.`
                           }),
                           createBaseVNode("div", _hoisted_127, [
                             _hoisted_136,
-                            createBaseVNode("p", _hoisted_145, "Rs. " + toDisplayString(order.grand_total), 1)
+                            createBaseVNode("p", _hoisted_146, "Rs. " + toDisplayString(order.grand_total), 1)
                           ]),
                           createCommentVNode(' <div class="order-detail mt-3">\n                    <strong>By</strong>\n                    <p>{{ order.name }}</p>\n                  </div>\n                  <div class="order-detail mt-3 pb-3">\n                    <strong>At</strong>\n                    <p>{{ order.location }}</p>\n                  </div> ')
                         ]),
@@ -17977,7 +18230,7 @@ Expected function or array of functions, received type ${typeof value}.`
   var _hoisted_137 = /* @__PURE__ */ _withScopeId8(() => /* @__PURE__ */ createBaseVNode("div", { class: "d-flex justify-between" }, [
     /* @__PURE__ */ createCommentVNode(' <div class="black--text item-title">Died Cambric Trouser</div>\n              <div>2.50 m</div> ')
   ], -1));
-  var _hoisted_146 = { class: "text-quantity black--text" };
+  var _hoisted_147 = { class: "text-quantity black--text" };
   var _hoisted_156 = /* @__PURE__ */ _withScopeId8(() => /* @__PURE__ */ createBaseVNode("div", {
     class: "font-weight-bold",
     style: { "margin-top": "49px !important" }
@@ -18105,7 +18358,7 @@ Expected function or array of functions, received type ${typeof value}.`
                               class: "text-center"
                             }, {
                               default: withCtx(() => [
-                                createBaseVNode("div", _hoisted_146, toDisplayString($setup.quantity), 1),
+                                createBaseVNode("div", _hoisted_147, toDisplayString($setup.quantity), 1),
                                 createVNode(_component_v_divider, {
                                   class: "mx-7 border-opacity-75",
                                   thickness: 2,
@@ -47658,7 +47911,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
     style: { "width": "100%", "height": "1px", "background": "#21a0a0" },
     class: "mt-3"
   }, null, -1));
-  var _hoisted_147 = /* @__PURE__ */ _withScopeId12(() => /* @__PURE__ */ createBaseVNode("h5", { class: "title py-2" }, "Tax (GST)", -1));
+  var _hoisted_148 = /* @__PURE__ */ _withScopeId12(() => /* @__PURE__ */ createBaseVNode("h5", { class: "title py-2" }, "Tax (GST)", -1));
   var _hoisted_157 = {
     class: "amount py-2",
     style: { "color": "#000" }
@@ -47833,7 +48086,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
                             }, {
                               default: withCtx(() => [
                                 createBaseVNode("div", null, [
-                                  _hoisted_147,
+                                  _hoisted_148,
                                   createBaseVNode("h6", _hoisted_157, " Rs. " + toDisplayString(parseFloat($setup.gstAmount).toFixed(2)), 1),
                                   _hoisted_166
                                 ])
@@ -48059,4 +48312,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.KPUK5KPA.js.map
+//# sourceMappingURL=pos.bundle.PR3E6AMH.js.map

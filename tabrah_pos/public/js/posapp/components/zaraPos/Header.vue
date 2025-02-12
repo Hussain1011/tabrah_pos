@@ -18,10 +18,17 @@
           <v-select v-model="selectedTable" :items="tableOptions" label="Select table" class="order-type-select mr-3"
             density="compact" variant="outlined" item-title="table_no" item-value="table_no" />
         </div>
-        <div class="search-div">
-          <v-text-field variant="outlined" append-inner-icon="mdi-magnify" placeholder="Find Your Item"
-            class="mt-1 mr-4" density="compact" style="height: 83px; border-radius: 6px" v-model="searchValue"
-            ref="searchField" clearable />
+        <div class="search-div ">
+          <v-text-field
+            variant="outlined"
+            append-inner-icon="mdi-magnify"
+            placeholder="Find your item"
+            class="mt-1 mr-4"
+            density="compact"
+            style="height: 83px; border-radius: 6px"
+            v-model="searchItem"
+            clearable
+          />
         </div>
       </v-card>
     </v-col>
@@ -52,6 +59,7 @@ const pos_profile = ref("");
 const selectedOrderType = ref("");
 const currentScreen = ref(null);
 const searchField = ref(null); // Ref to access the text field component
+const searchItem = ref("");
 
 const orderTypes = ref([]);
 const tableOptions = ref([]);
@@ -106,7 +114,9 @@ const fetchTableOptions = async () => {
     console.error("Error fetching order types:", error);
   }
 };
-
+const emitSearchItemEvent = debounce((value) => {
+  eventBus.emit("search-item-by-code", value); 
+}, 500); 
 
 const offlineProfileData = async () => {
   try {
@@ -142,6 +152,9 @@ const offlineProfileData = async () => {
 watch(searchValue, (newValue) => {
   emitSearchEvent(newValue); // Trigger debounce when searchValue changes
 });
+watch(searchItem, (newValue) => {
+  emitSearchItemEvent(newValue); // Trigger debounce when searchValue changes
+});
 watch(selectedOrderType, (newValue) => {
   eventBus.emit("selected_order_type", newValue);
   changeOrderType(newValue);
@@ -153,7 +166,6 @@ watch(orderBy, (newValue) => {
   eventBus.emit("order-taker", newValue);
 });
 onMounted(() => {
-  searchField.value.focus();
   if (!navigator.onLine) {
     offlineProfileData();
   }

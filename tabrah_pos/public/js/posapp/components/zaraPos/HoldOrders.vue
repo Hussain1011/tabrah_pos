@@ -192,6 +192,12 @@ onMounted(() => {
 
     orders.value = data.reverse();
   });
+  eventBus.on("update-hold-order",(id)=>{
+    console.log("id",id)
+    deleteItem(id)
+  })
+
+
 });
 </script>
 
