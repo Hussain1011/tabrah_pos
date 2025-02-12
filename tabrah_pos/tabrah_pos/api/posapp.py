@@ -758,6 +758,20 @@ def get_Table_names(pos_profile):
         return __get_Table_names(pos_profile)
     else:
         return _get_Table_names(pos_profile)
+    
+@frappe.whitelist()
+def update_table_status(table_name, status):
+    if not table_name or not status:
+        frappe.throw(_("Table name and status are required"))
+
+    table = frappe.get_doc("Table Management", table_name)
+    table.status = status
+    table.save(ignore_permissions=True)
+    
+    frappe.db.commit()
+    
+    return {"message": f"Table {table_name} status updated to {status}"}
+
 @frappe.whitelist()
 def get_all_Table_names(pos_profile):
     _pos_profile = json.loads(pos_profile)
