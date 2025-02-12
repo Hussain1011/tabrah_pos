@@ -13174,6 +13174,7 @@ Expected function or array of functions, received type ${typeof value}.`
         if (isMatch) {
           allowedDelete.value = true;
           pindialog.value = false;
+          otp.value = "";
         } else {
           bus_default.emit("show_mesage", {
             text: "Invalid Pin. Please try again!",
@@ -13979,7 +13980,7 @@ Expected function or array of functions, received type ${typeof value}.`
     class: "ml-2"
   }, "Add Customer", -1));
   var _hoisted_41 = { style: { "background": "#F05D23", "height": "21px", "border-radius": "15px", "position": "relative", "left": "139px" } };
-  var _hoisted_422 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("span", { class: "text-h6" }, "Enter OTP", -1));
+  var _hoisted_422 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("span", { class: "text-h6" }, "Enter Pin", -1));
   var _hoisted_432 = { class: "text-center" };
   function render4(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_v_col = resolveComponent("v-col");
@@ -17468,15 +17469,7 @@ Expected function or array of functions, received type ${typeof value}.`
                             createBaseVNode("div", _hoisted_46, [
                               createCommentVNode(' <div class="panda-go-div">Pando Go</div> '),
                               createBaseVNode("div", _hoisted_56, toDisplayString(order.id), 1),
-                              createVNode(_component_v_icon, {
-                                onClick: withModifiers(($event) => $setup.deleteItem(order.id), ["stop"]),
-                                color: "red"
-                              }, {
-                                default: withCtx(() => [
-                                  createTextVNode("mdi-delete")
-                                ]),
-                                _: 2
-                              }, 1032, ["onClick"]),
+                              createCommentVNode(' <v-icon @click.stop="deleteItem(order.id)" color="red">mdi-delete</v-icon> '),
                               createCommentVNode(' <span class="ml-2 mt-1">{{ order.name }}</span> ')
                             ]),
                             createBaseVNode("p", _hoisted_66, [
@@ -48312,4 +48305,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.PR3E6AMH.js.map
+//# sourceMappingURL=pos.bundle.O6TS6F3G.js.map

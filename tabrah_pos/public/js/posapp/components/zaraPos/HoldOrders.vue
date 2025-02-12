@@ -38,7 +38,7 @@
               <div class="d-flex justify-space-between">
                 <!-- <div class="panda-go-div">Pando Go</div> -->
                 <div class="panda-go-div">{{ order.id }}</div>
-                <v-icon @click.stop="deleteItem(order.id)" color="red">mdi-delete</v-icon>
+                <!-- <v-icon @click.stop="deleteItem(order.id)" color="red">mdi-delete</v-icon> -->
 
                 <!-- <span class="ml-2 mt-1">{{ order.name }}</span> -->
               </div>

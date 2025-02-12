@@ -408,7 +408,7 @@
     <v-dialog v-model="pindialog" max-width="400" persistent>
       <v-card>
         <v-card-title class="d-flex justify-space-between align-center">
-          <span class="text-h6">Enter OTP</span>
+          <span class="text-h6">Enter Pin</span>
           <v-icon @click="pindialog = false" class="cursor-pointer">mdi-close</v-icon>
         </v-card-title> <v-card-text>
           <div class="text-center">
@@ -643,6 +643,7 @@ const checkAuthAccess = () => {
   if (isMatch) {
     allowedDelete.value = true;
     pindialog.value = false;
+    otp.value=''
   }
   else {
     eventBus.emit("show_mesage", {
