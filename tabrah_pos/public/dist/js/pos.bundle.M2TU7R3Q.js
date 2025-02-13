@@ -11690,7 +11690,7 @@ Expected function or array of functions, received type ${typeof value}.`
               pos_profile: pos_profile2.value
             }
           });
-          tableOptions.value = response.message;
+          tableOptions.value = response.message.filter((t) => t.status !== "Reserved");
         } catch (error) {
           console.error("Error fetching order types:", error);
         }
@@ -11761,12 +11761,7 @@ Expected function or array of functions, received type ${typeof value}.`
           searchValue.value = "";
         });
         bus_default.on("reserved-table", (table) => {
-          const targetTable = tableOptions.value.find((t) => t.table_no == table);
-          console.log("targetTable", targetTable);
-          if (targetTable) {
-            targetTable.status = "reserved";
-          }
-          tableOptions.value = tableOptions.value.filter((t) => t.status !== "reserved");
+          fetchTableOptions();
           selectedTable.value = "";
         });
         bus_default.on("app-internet-status", (newStatus) => {
@@ -13399,6 +13394,8 @@ Expected function or array of functions, received type ${typeof value}.`
               console.warn(`Order with ID ${holdOrderId.value} not found.`);
             }
           } else {
+            const employee = pos_profile2.value.employee_list.find((emp) => emp.employee === orderBy.value);
+            console.log("orderby....", employee);
             const nextOrderId = `Hold-Order-${heldOrders.length + 1}`;
             const currentOrder = {
               id: nextOrderId,
@@ -13406,11 +13403,12 @@ Expected function or array of functions, received type ${typeof value}.`
               grand_total: grandTotal.value,
               table: selectedTable.value,
               orderBy: orderBy.value,
+              orderByName: employee.employee_name,
               timestamp: new Date().toISOString()
             };
             heldOrders.push(currentOrder);
-            bus_default.emit("reserved-table", selectedTable.value);
             console.log("Order held successfully:", currentOrder);
+            updateTableStatus(selectedTable.value, "Reserved");
           }
           localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
           items.value = [];
@@ -13418,6 +13416,23 @@ Expected function or array of functions, received type ${typeof value}.`
           bus_default.emit("open-product-menu");
           bus_default.emit("set-default-value");
         }
+      };
+      const updateTableStatus = async (table, status) => {
+        try {
+          const response = await frappe.call({
+            method: "tabrah_pos.tabrah_pos.api.posapp.update_table_status",
+            args: {
+              table_name: table,
+              status
+            }
+          });
+          if (response && response.message) {
+            bus_default.emit("reserved-table", selectedTable.value);
+          }
+        } catch (error) {
+          console.error("Error updating invoice from order:", error);
+        }
+        return invoice_doc.value;
       };
       const goForPayment = async () => {
         if (items.value.length > 0) {
@@ -13532,7 +13547,7 @@ Expected function or array of functions, received type ${typeof value}.`
         doc3.posa_delivery_charges = "";
         doc3.posa_delivery_charges_rate = 0;
         doc3.posting_date = getCurrentDate();
-        doc3.table_no = "";
+        doc3.table_no = selectedTable.value || "";
         doc3.resturent_type = selectedOrderType.value;
         doc3.cost_center = pos_profile2.value.cost_center;
         doc3.custom_invoice_status = "On Hold";
@@ -13793,6 +13808,9 @@ Expected function or array of functions, received type ${typeof value}.`
           }
           makePayloadForInvoice();
         });
+        bus_default.on("update-table-status", (table) => {
+          updateTableStatus(table, "Available");
+        });
         bus_default.on("show-sale-order", (order) => {
           order.items.forEach((item) => {
             item.netTotal = item.rate * item.qty;
@@ -13879,7 +13897,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.off("current-screen");
         bus_default.off("enter-key-called");
       });
-      const __returned__ = { items, paymentModes, selectedCustomer, customers, showDialog, isFormValid, customerLoading, formData, rules, pos_profile: pos_profile2, pos_opening_shift, invoice_doc, invoiceItems, selectedPaymentMode, loadingBtn, saleOrder, loadingHold, saleOrderDetail, selectedOrderType, offlineMode, punching, screen, speedMbps, getSpeedRes, holdOrderId, dialog, exchangeItem, submitLoading, search, returnDoc, returnType, selectedTable, advanceAmount, orderBy, allowedDelete, pindialog, otp, pinloading, selected, headers, returnItems, returnDialog, returnitems, totalQuantity, totalItems, netTotal, gstAmount, grandTotal, formatNumber, addNewCustomer, checkAuthAccess, submitCustomerDialog, closeCustomerDialog, getCustomerNames, changePaymentMode, openDialog, createPreInvoice, goForReturnProceed, openReturnDialog, closeReturnDialog, searchReturnInvoice, loadReturn, submitReturn, load_print_page, getFormattedPrintFormat, holdOrder, goForPayment, paymentProcess, processInvoiceFromOrder, getInvoiceFromOrderDoc, updateInvoiceFromOrder, get_invoice_doc, get_payments, getCurrentDate, onEnterKey, update_invoice, checkInternetSpeed, makePayloadForInvoice, deleteItem, toggleDelete, offlineProfileData, createSaleOrder, ref, onMounted, computed: computed2, watch: watch2, onUnmounted, onBeforeUnmount, get eventBus() {
+      const __returned__ = { items, paymentModes, selectedCustomer, customers, showDialog, isFormValid, customerLoading, formData, rules, pos_profile: pos_profile2, pos_opening_shift, invoice_doc, invoiceItems, selectedPaymentMode, loadingBtn, saleOrder, loadingHold, saleOrderDetail, selectedOrderType, offlineMode, punching, screen, speedMbps, getSpeedRes, holdOrderId, dialog, exchangeItem, submitLoading, search, returnDoc, returnType, selectedTable, advanceAmount, orderBy, allowedDelete, pindialog, otp, pinloading, selected, headers, returnItems, returnDialog, returnitems, totalQuantity, totalItems, netTotal, gstAmount, grandTotal, formatNumber, addNewCustomer, checkAuthAccess, submitCustomerDialog, closeCustomerDialog, getCustomerNames, changePaymentMode, openDialog, createPreInvoice, goForReturnProceed, openReturnDialog, closeReturnDialog, searchReturnInvoice, loadReturn, submitReturn, load_print_page, getFormattedPrintFormat, holdOrder, updateTableStatus, goForPayment, paymentProcess, processInvoiceFromOrder, getInvoiceFromOrderDoc, updateInvoiceFromOrder, get_invoice_doc, get_payments, getCurrentDate, onEnterKey, update_invoice, checkInternetSpeed, makePayloadForInvoice, deleteItem, toggleDelete, offlineProfileData, createSaleOrder, ref, onMounted, computed: computed2, watch: watch2, onUnmounted, onBeforeUnmount, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
@@ -16004,6 +16022,7 @@ Expected function or array of functions, received type ${typeof value}.`
                       JSON.stringify(updatedHeldOrders)
                     );
                   }
+                  bus_default.emit("update-table-status", invoice_doc.value.table_no);
                   bus_default.emit("sync-offline-invoice");
                   punching.value = "completed";
                   bus_default.emit("punching-status", punching.value);
@@ -17476,7 +17495,7 @@ Expected function or array of functions, received type ${typeof value}.`
                               createBaseVNode("span", _hoisted_76, "Date:" + toDisplayString($setup.formatDeliveryDate(order.timestamp)), 1)
                             ]),
                             order.table ? (openBlock(), createElementBlock("span", _hoisted_86, "Table:" + toDisplayString(order.table), 1)) : createCommentVNode("v-if", true),
-                            order.orderBy ? (openBlock(), createElementBlock("span", _hoisted_96, "Order Taker:" + toDisplayString(order.orderBy), 1)) : createCommentVNode("v-if", true)
+                            order.orderBy ? (openBlock(), createElementBlock("span", _hoisted_96, "Order Taker:" + toDisplayString(order.orderByName), 1)) : createCommentVNode("v-if", true)
                           ]),
                           createBaseVNode("div", _hoisted_106, [
                             _hoisted_116,
@@ -48305,4 +48324,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.O6TS6F3G.js.map
+//# sourceMappingURL=pos.bundle.M2TU7R3Q.js.map

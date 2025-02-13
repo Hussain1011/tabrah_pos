@@ -47,7 +47,7 @@
               </p>
               <span v-if="order.table">Table:{{ order.table }}</span>
 
-              <span v-if="order.orderBy">Order Taker:{{ order.orderBy }}</span>
+              <span v-if="order.orderBy">Order Taker:{{ order.orderByName }}</span>
 
 
             </div>

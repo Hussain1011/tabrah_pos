@@ -643,7 +643,7 @@ const checkAuthAccess = () => {
   if (isMatch) {
     allowedDelete.value = true;
     pindialog.value = false;
-    otp.value=''
+    otp.value = ''
   }
   else {
     eventBus.emit("show_mesage", {
@@ -743,20 +743,20 @@ const openDialog = (product, flag) => {
   }
 };
 const createPreInvoice = async () => {
-      if (items.value.length > 0) {
-        const doc = await get_invoice_doc();
-        doc.grand_total = grandTotal.value
-        doc.gstAmountCash = gstAmount.value
-        // doc.gstAmountCard = gstAmountCard.value
-        // doc.grand_total_card = grandTotalCard.value
-        console.log("pre-invoice", doc);
-        printPreInvoice(
-          doc,
-        );
-        holdOrder()
+  if (items.value.length > 0) {
+    const doc = await get_invoice_doc();
+    doc.grand_total = grandTotal.value
+    doc.gstAmountCash = gstAmount.value
+    // doc.gstAmountCard = gstAmountCard.value
+    // doc.grand_total_card = grandTotalCard.value
+    console.log("pre-invoice", doc);
+    printPreInvoice(
+      doc,
+    );
+    holdOrder()
 
-      }
-    };
+  }
+};
 const goForReturnProceed = () => {
   if (returnType.value) {
     if (returnType.value == "return") {
@@ -910,7 +910,9 @@ const holdOrder = () => {
         console.warn(`Order with ID ${holdOrderId.value} not found.`);
       }
     } else {
-      // Create a new order if no holdOrderId is present
+      // Create a new order if no holdOrderId    is present
+      const employee = pos_profile.value.employee_list.find(emp => emp.employee === orderBy.value);
+      console.log("orderby....", employee)
       const nextOrderId = `Hold-Order-${heldOrders.length + 1}`;
       const currentOrder = {
         id: nextOrderId,
@@ -918,11 +920,13 @@ const holdOrder = () => {
         grand_total: grandTotal.value,
         table: selectedTable.value,
         orderBy: orderBy.value,
+        orderByName: employee.employee_name,
+
         timestamp: new Date().toISOString(),
       };
       heldOrders.push(currentOrder);
-      eventBus.emit("reserved-table", selectedTable.value);
       console.log("Order held successfully:", currentOrder);
+      updateTableStatus(selectedTable.value, "Reserved");
     }
 
     // Update localStorage with the modified held orders
@@ -934,6 +938,27 @@ const holdOrder = () => {
     eventBus.emit("open-product-menu");
     eventBus.emit("set-default-value");
   }
+};
+
+const updateTableStatus = async (table, status) => {
+  try {
+    const response = await frappe.call({
+      method:
+        "tabrah_pos.tabrah_pos.api.posapp.update_table_status",
+      args: {
+        table_name: table,
+        status: status
+      },
+    });
+
+    if (response && response.message) {
+      eventBus.emit("reserved-table", selectedTable.value);
+    }
+  } catch (error) {
+    console.error("Error updating invoice from order:", error);
+  }
+
+  return invoice_doc.value;
 };
 
 
@@ -1071,7 +1096,7 @@ const get_invoice_doc = () => {
   doc.posa_delivery_charges = "";
   doc.posa_delivery_charges_rate = 0;
   doc.posting_date = getCurrentDate();
-  doc.table_no = "";
+  doc.table_no = selectedTable.value || "";
   doc.resturent_type = selectedOrderType.value;
   // doc.order_summery_for_pos = orderItems.value;
   doc.cost_center = pos_profile.value.cost_center;
@@ -1308,7 +1333,7 @@ const deleteItem = (index) => {
     console.log("holdOrderId.value", holdOrderId.value)
     if (holdOrderId.value) {
       eventBus.emit("update-hold-order", holdOrderId.value)
-      holdOrderId.value=''
+      holdOrderId.value = ''
     }
     makePayloadForInvoice();
 
@@ -1475,6 +1500,10 @@ onMounted(() => {
 
     makePayloadForInvoice();
   });
+  eventBus.on("update-table-status", (table) => {
+    updateTableStatus(table, "Available")
+  });
+
 
   eventBus.on("show-sale-order", (order) => {
     order.items.forEach((item) => {

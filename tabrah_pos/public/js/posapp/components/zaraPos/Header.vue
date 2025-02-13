@@ -19,16 +19,9 @@
             density="compact" variant="outlined" item-title="table_no" item-value="table_no" />
         </div>
         <div class="search-div ">
-          <v-text-field
-            variant="outlined"
-            append-inner-icon="mdi-magnify"
-            placeholder="Find your item"
-            class="mt-1 mr-4"
-            density="compact"
-            style="height: 83px; border-radius: 6px"
-            v-model="searchItem"
-            clearable
-          />
+          <v-text-field variant="outlined" append-inner-icon="mdi-magnify" placeholder="Find your item"
+            class="mt-1 mr-4" density="compact" style="height: 83px; border-radius: 6px" v-model="searchItem"
+            clearable />
         </div>
       </v-card>
     </v-col>
@@ -108,15 +101,17 @@ const fetchTableOptions = async () => {
       },
     });
 
-    tableOptions.value = response.message;
+    // tableOptions.value = response.message;
+    tableOptions.value = response.message.filter((t) => t.status !== 'Reserved');
+
 
   } catch (error) {
     console.error("Error fetching order types:", error);
   }
 };
 const emitSearchItemEvent = debounce((value) => {
-  eventBus.emit("search-item-by-code", value); 
-}, 500); 
+  eventBus.emit("search-item-by-code", value);
+}, 500);
 
 const offlineProfileData = async () => {
   try {
@@ -198,14 +193,15 @@ onMounted(() => {
   eventBus.on("clear-search", () => {
     searchValue.value = "";
   });
-  eventBus.on("reserved-table", (table)=>{
-    const targetTable = tableOptions.value.find((t) => t.table_no == table);
-    console.log("targetTable", targetTable);
-    if (targetTable) {
-      targetTable.status = "reserved";
-    }
-    tableOptions.value =tableOptions.value.filter((t) => t.status !=='reserved');
-    selectedTable.value = '' 
+  eventBus.on("reserved-table", (table) => {
+    // const targetTable = tableOptions.value.find((t) => t.table_no == table);
+    // console.log("targetTable", targetTable);
+    // if (targetTable) {
+    //   targetTable.status = "reserved";
+    // }
+    // tableOptions.value =tableOptions.value.filter((t) => t.status !=='reserved');
+    fetchTableOptions()
+    selectedTable.value = ''
   });
 
   eventBus.on("app-internet-status", (newStatus) => {
