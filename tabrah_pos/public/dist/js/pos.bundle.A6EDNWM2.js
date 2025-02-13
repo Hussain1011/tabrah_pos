@@ -12935,100 +12935,74 @@ Expected function or array of functions, received type ${typeof value}.`
     try {
       let now = new Date();
       const items = (offlineData == null ? void 0 : offlineData.items) || [];
+      const tableNo = (offlineData == null ? void 0 : offlineData.table_no) || "N/A";
+      const date2 = (offlineData == null ? void 0 : offlineData.date) || now.toISOString().split("T")[0];
+      const time = (offlineData == null ? void 0 : offlineData.time) || now.toLocaleTimeString("en-US", { hour12: true });
       const itemRows = items.map((item) => {
-        const { item_name, qty, rate, discount = 0, amount } = item;
+        const { item_name, qty, rate, discount = 0 } = item;
         return `
-            <tr>
-                <td>${item_name || "N/A"}</td>
-                <td class="text-center">${qty || 0}</td>
-                <td class="text-center">${rate || 0}</td>
-                <td class="text-center">${discount || 0}</td>
-                <td class="text-center">${qty * rate || 0}</td>
-            </tr>
-          `;
+                    <tr style="border-bottom: 2px solid black;">
+                        <td>${item_name || "N/A"}</td>
+                        <td class="text-center">${qty || 0}</td>
+                    </tr>
+                `;
       }).join("");
       const newWindow = window.open("", "_blank");
       newWindow.document.write(`
   <html>
   <head>
-      <title>Pre-Invoice</title>
-      <style>
-          .print-format table, .print-format tr, .print-format td, .print-format div, .print-format p {
-              line-height: 100%;
-              vertical-align: middle;
-          }
-          @media screen {
-              .print-format {
-                  width: 4in;
-                  padding: 0.25in;
-                  min-height: 8in;
-              }
-          }
-          .print-format td, .print-format th {
-              padding: 5px !important;
-          }
-          table {
-              width: 100%;
-              border-collapse: collapse;
-          }
-          th, td {
-              border: 2px solid black;
-              padding: 5px;
-              text-align: left;
-          }
-          .text-center {
-              text-align: center;
-          }
-          .text-right {
-              text-align: right;
-          }
-      </style>
-  </head>
-  <body>
-        <div style="display: flex; justify-content: center;">
-  </div>
-  
-  <div style="text-align: center; font-weight: bold;">Neighborhood Cafe</div>
-  <div style="text-align: center;">
-        <br>
-      Mov#: 055664455 
-  </div>
-  
-      <table>
-                <thead>
-                    <tr style="background-color: #e0e0e0;">
-                        <th>Item</th>
-                        <th class="text-center">Qty</th>
-                        <th class="text-center">Rate</th>
-                        <th class="text-center">Disc</th>
-                        <th class="text-center">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${itemRows}
-                    <tr>
-                        <td colspan="4"><b>Bill Excluding GST (Rs.)</b></td>
-                        <td class="text-right">${offlineData.total.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="4"><b>SALES TAX @ 16%</b></td>
-                        <td class="text-right">${offlineData.gstAmountCash.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="4"><b>Total Bill Including 16% GST Rs.</b></td>
-                        <td class="text-right">${offlineData.grand_total.toFixed(2)}</td>
-                    </tr>
-                </tbody>
-            </table>
-      </table>
-  
-      <p class="text-center" style="margin-top: 0px;"><b>Thank you for Choosing Us!</b></p>
-      <hr>
-      <p class="text-center" style="margin-top: -10px;">Prepared by Neighborhood Cafe</p>
-  </body>
+    <style>
+        .print-format table, .print-format tr, 
+        .print-format td, .print-format div, .print-format p {
+            line-height: 150%;
+            vertical-align: middle;
+            margin: 2px 0;
+        }
+        
+        @media screen {
+            .print-format {
+                width: 3.6in;
+                padding: 0.25in;
+            }
+        }
+    </style>
+</head>
+ <body>
+    <div class="print-format">
+        <div style="margin-bottom: 5px;">
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
+            <p class="text-center" style="margin-bottom: 2px;">Server: N/A</p>
+            <p class="text-center" style="margin-bottom: 2px;">No of Pax: N/A</p>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
+            <p class="text-center" style="margin-bottom: 2px;">Order No: 12345</p>
+            <p style="margin-bottom: 0;">Date: ${date2}</p>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
+            <p style="margin-bottom: 0;">Table: ${tableNo}</p>
+            <p style="margin-bottom: 0;">Time: ${time}</p>
+        </div>
+        <p class="text-center" style="margin-bottom: 0.25rem; border-bottom: 2px solid black; font-size:15px;"><b>Dine In</b></p>
+        <div style="display:flex;justify-content:space-between; border-bottom: 2px solid black; font-size:15px;">
+            <p style="margin-bottom: 0;"><b>New Order</b></p>
+            <p style="margin-bottom: 0;"><b>Modified</b></p>
+        </div>
+        <table style="margin-top: 1px;" class="innertext">
+            <thead>
+                <tr style="border-bottom: 2px solid black;">
+                    <th style="width: 70%;"><b>ITEM</b></th>
+                    <th style="width: 30%;" class="text-center"><b>Qty</b></th>
+                </tr>
+            </thead>
+            <tbody>
+                ${itemRows}
+            </tbody>
+        </table>
+    </div>
+</body>
   </html>
-  
-      `);
+        `);
       newWindow.document.close();
       newWindow.onafterprint = () => {
         newWindow.close();
@@ -13264,6 +13238,9 @@ Expected function or array of functions, received type ${typeof value}.`
           const doc3 = await get_invoice_doc();
           doc3.grand_total = grandTotal.value;
           doc3.gstAmountCash = gstAmount.value;
+          const now = new Date();
+          doc3.date = now.toISOString().split("T")[0];
+          doc3.time = now.toLocaleTimeString("en-US", { hour12: false });
           console.log("pre-invoice", doc3);
           printPreInvoice(
             doc3
@@ -13394,7 +13371,7 @@ Expected function or array of functions, received type ${typeof value}.`
               console.warn(`Order with ID ${holdOrderId.value} not found.`);
             }
           } else {
-            const employee = pos_profile2.value.employee_list.find((emp) => emp.employee === orderBy.value);
+            const employee = pos_profile2.value.employee_list.find((emp) => emp.employee === orderBy.value) || "";
             console.log("orderby....", employee);
             const nextOrderId = `Hold-Order-${heldOrders.length + 1}`;
             const currentOrder = {
@@ -13418,21 +13395,22 @@ Expected function or array of functions, received type ${typeof value}.`
         }
       };
       const updateTableStatus = async (table, status) => {
-        try {
-          const response = await frappe.call({
-            method: "tabrah_pos.tabrah_pos.api.posapp.update_table_status",
-            args: {
-              table_name: table,
-              status
+        if (table) {
+          try {
+            const response = await frappe.call({
+              method: "tabrah_pos.tabrah_pos.api.posapp.update_table_status",
+              args: {
+                table_name: table,
+                status
+              }
+            });
+            if (response && response.message) {
+              bus_default.emit("reserved-table", selectedTable.value);
             }
-          });
-          if (response && response.message) {
-            bus_default.emit("reserved-table", selectedTable.value);
+          } catch (error) {
+            console.error("Error updating invoice from order:", error);
           }
-        } catch (error) {
-          console.error("Error updating invoice from order:", error);
         }
-        return invoice_doc.value;
       };
       const goForPayment = async () => {
         if (items.value.length > 0) {
@@ -13921,7 +13899,7 @@ Expected function or array of functions, received type ${typeof value}.`
   var _hoisted_83 = { class: "total-p" };
   var _hoisted_93 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("p", { class: "mt-2 payment-p" }, "PAYMENT", -1));
   var _hoisted_103 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("p", { class: "mt-2 payment-p" }, "Hold", -1));
-  var _hoisted_112 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("p", { class: "mt-2 print-p" }, "Pre Invoice", -1));
+  var _hoisted_112 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("p", { class: "mt-2 print-p" }, "KOT Print", -1));
   var _hoisted_123 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("span", { class: "text-h6" }, "Select Return Invoice", -1));
   var _hoisted_132 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("p", { class: "mt-2" }, "Search", -1));
   var _hoisted_142 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ createBaseVNode("img", {
@@ -48324,4 +48302,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.M2TU7R3Q.js.map
+//# sourceMappingURL=pos.bundle.A6EDNWM2.js.map

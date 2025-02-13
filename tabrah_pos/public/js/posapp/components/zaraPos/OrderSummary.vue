@@ -169,7 +169,7 @@
             <v-col cols="6">
               <v-btn block class="white--text font-weight-bold payment-button" height="48" color="#F05D23"
                 @click="createPreInvoice()" :disabled="screen != 0">
-                <p class="mt-2 print-p">Pre Invoice</p>
+                <p class="mt-2 print-p">KOT Print</p>
               </v-btn>
             </v-col>
             <!-- <v-col cols="6">
@@ -747,8 +747,15 @@ const createPreInvoice = async () => {
     const doc = await get_invoice_doc();
     doc.grand_total = grandTotal.value
     doc.gstAmountCash = gstAmount.value
-    // doc.gstAmountCard = gstAmountCard.value
-    // doc.grand_total_card = grandTotalCard.value
+    const now = new Date();
+    
+    // Format date as YYYY-MM-DD
+    doc.date = now.toISOString().split('T')[0];
+
+    // Format time as HH:MM:SS
+    doc.time = now.toLocaleTimeString('en-US', { hour12: false });
+  
+ 
     console.log("pre-invoice", doc);
     printPreInvoice(
       doc,
@@ -911,7 +918,7 @@ const holdOrder = () => {
       }
     } else {
       // Create a new order if no holdOrderId    is present
-      const employee = pos_profile.value.employee_list.find(emp => emp.employee === orderBy.value);
+      const employee = pos_profile.value.employee_list.find(emp => emp.employee === orderBy.value) || '';
       console.log("orderby....", employee)
       const nextOrderId = `Hold-Order-${heldOrders.length + 1}`;
       const currentOrder = {
@@ -941,6 +948,7 @@ const holdOrder = () => {
 };
 
 const updateTableStatus = async (table, status) => {
+  if(table){
   try {
     const response = await frappe.call({
       method:
@@ -957,8 +965,8 @@ const updateTableStatus = async (table, status) => {
   } catch (error) {
     console.error("Error updating invoice from order:", error);
   }
+}
 
-  return invoice_doc.value;
 };
 
 
