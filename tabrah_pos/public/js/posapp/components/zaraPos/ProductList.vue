@@ -36,7 +36,12 @@
         <v-col v-for="product in filteredProducts" :key="product.item_code" cols="12" sm="6" md="4" lg="3" xl="3"
           class="mb-4 pt-0">
           <v-card class="hover-card" elevation="0" @click="openDialog(product)">
-            <img :src="product.image ? product.image : defaultImg" class="white--text align-end item-img" />
+            <img :src="product.image ? product.image : defaultImg" class="white--text align-end item-img"
+              v-show="!product.loading" />
+            <p class="stock-loading" v-show="product.loading">
+              <v-progress-circular indeterminate size="50" color="#21A0A0" class="mt-1" style=" width: 220px;
+  height: 120px;"></v-progress-circular>
+            </p>
 
             <div style="display: flex; justify-content: space-between">
               <div style="width: 140px">
@@ -56,7 +61,9 @@
 
               </div>
               <div>
+
                 <div class="stock-div">
+
                   <p class="stock-count" :class="{ 'negative-stock': product.actual_qty < 0 }">
                     {{ product.actual_qty }}
                   </p>
@@ -219,6 +226,8 @@ const defaultImg = ref(
   "/assets/tabrah_pos/js/posapp/components/pos/tabrah.png"
 );
 const orderType = ref("");
+const searchItemCode = ref("");
+
 
 const isOnline = ref(navigator.onLine);
 const pollingInterval = 4000; // Set the desired interval (e.g., 5000 ms for 5 seconds)
@@ -293,7 +302,9 @@ const submitSelection = () => {
   }
   else {
     variantsDialog.value = false;
-    bundleArray.value.push(variantPayload.value);
+    if(variantPayload.value){
+      bundleArray.value.push(variantPayload.value);
+    }
     variantRadio.value.forEach((item) => {
       if (item.doctype == 'Item Add Ons Child') {
         const obj = {
@@ -316,7 +327,7 @@ const getItemBundle = async (product) => {
     const obj = {
       items: bundleArray.value,
     };
-    let bundle=[]
+    let bundle = []
     bundle.push(obj)
     const obj1 = {
       items: bundle,
@@ -333,7 +344,8 @@ const getItemBundle = async (product) => {
       console.log("bundle Api response....", response.message);
       eventBus.emit("add-to-cart", response.message[0]);
       variantsDialog.value = false;
-      defaultValue()    }
+      defaultValue()
+    }
 
   } catch (error) {
     console.error("Error fetching order types:", error);
@@ -406,14 +418,23 @@ const products = ref([
 
 const filteredProducts = computed(() => {
   // If the search value is empty, return all products
-  if (!searchValue.value) {
+  if (!searchItemCode.value) {
     return products.value;
   }
-  // Otherwise, filter products that match the search value (case insensitive)
-  return products.value.filter((product) =>
-    product.item_code.toLowerCase().includes(searchValue.value.toLowerCase())
-  );
+
+  // Convert search input to lowercase for case-insensitive search
+  const searchQuery = searchItemCode.value.toLowerCase();
+
+  // Filter products that match `item_code` OR `item_name`
+  return products.value.filter((product) => {
+    return (
+      product.item_code.toLowerCase().includes(searchQuery) ||
+      product.item_name.toLowerCase().includes(searchQuery)
+    );
+  });
 });
+
+
 const formatNumber = (num) => {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -769,18 +790,21 @@ async function markRecordAsSynced(db, record) {
 const openDialog = (product, flag = false) => {
   console.log("Product clicked:", product);
   product.qty = 1;
-  if (product.has_variants) {
-    get_variants(product)
-  }
-  else {
-    const obj = {
-      product,
-      flag,
-    };
-    eventBus.emit("open-product-dialog", obj);
-  }
+  product.loading = true
+  get_variants(product, flag)
+
+  // if (product.has_variants) {
+  //   get_variants(product,flag)
+  // }
+  // else {
+  //   const obj = {
+  //     product,
+  //     flag,
+  //   };
+  //   eventBus.emit("open-product-dialog", obj);
+  // }
 };
-const get_variants = async (product) => {
+const get_variants = async (product, flag) => {
   try {
     const response = await frappe.call({
       method: "tabrah_pos.tabrah_pos.api.posapp.get_variants_addons",
@@ -811,7 +835,18 @@ const get_variants = async (product) => {
       parentItem.value.attributes = [...response.message[0].Attributes[0], ...response.message[0].add_ons]
       parentItem.value.variants = response.message[0].variants
       console.log("parentItem", parentItem.value)
-      variantsDialog.value = true
+      if (parentItem.value.attributes.length > 0) {
+        variantsDialog.value = true
+
+      }
+      else {
+        const obj = {
+          product,
+          flag,
+        };
+        eventBus.emit("open-product-dialog", obj);
+      }
+      product.loading = false
       // parentItem.value.attributes.forEach((item) => {
       //   item.required = true;
       //   item.valueSelect = false;
@@ -1064,7 +1099,11 @@ onMounted(() => {
   eventBus.on("search-item", (value) => {
     // console.log("receive-search", value);
     searchValue.value = value;
-    scanItem();
+    // scanItem();
+  });
+  eventBus.on("search-item-by-code", (value) => {
+    // console.log("receive-search", value);
+    searchItemCode.value = value;
   });
   eventBus.on("send_order_type", (data) => {
     orderType.value = data;

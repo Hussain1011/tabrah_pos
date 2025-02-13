@@ -1090,6 +1090,7 @@ const submitSaleInvoice = async (
                 JSON.stringify(updatedHeldOrders)
               );
             }
+            eventBus.emit("update-table-status",invoice_doc.value.table_no);
             eventBus.emit("sync-offline-invoice");
             punching.value = "completed";
             eventBus.emit("punching-status", punching.value);

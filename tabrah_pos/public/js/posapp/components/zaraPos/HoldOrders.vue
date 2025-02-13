@@ -38,7 +38,7 @@
               <div class="d-flex justify-space-between">
                 <!-- <div class="panda-go-div">Pando Go</div> -->
                 <div class="panda-go-div">{{ order.id }}</div>
-                <v-icon @click.stop="deleteItem(order.id)" color="red">mdi-delete</v-icon>
+                <!-- <v-icon @click.stop="deleteItem(order.id)" color="red">mdi-delete</v-icon> -->
 
                 <!-- <span class="ml-2 mt-1">{{ order.name }}</span> -->
               </div>
@@ -47,7 +47,7 @@
               </p>
               <span v-if="order.table">Table:{{ order.table }}</span>
 
-              <span v-if="order.orderBy">Order Taker:{{ order.orderBy }}</span>
+              <span v-if="order.orderBy">Order Taker:{{ order.orderByName }}</span>
 
 
             </div>
@@ -192,6 +192,12 @@ onMounted(() => {
 
     orders.value = data.reverse();
   });
+  eventBus.on("update-hold-order",(id)=>{
+    console.log("id",id)
+    deleteItem(id)
+  })
+
+
 });
 </script>
 

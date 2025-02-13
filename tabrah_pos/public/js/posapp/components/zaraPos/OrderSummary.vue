@@ -168,10 +168,16 @@
             </v-col>
             <v-col cols="6">
               <v-btn block class="white--text font-weight-bold payment-button" height="48" color="#F05D23"
+                @click="createPreInvoice()" :disabled="screen != 0">
+                <p class="mt-2 print-p">Pre Invoice</p>
+              </v-btn>
+            </v-col>
+            <!-- <v-col cols="6">
+              <v-btn block class="white--text font-weight-bold payment-button" height="48" color="#F05D23"
                 @click="openReturnDialog()" :disabled="screen != 0">
                 <p class="mt-2 payment-p">Return</p>
               </v-btn>
-            </v-col>
+            </v-col> -->
           </v-row>
         </v-card>
       </v-col>
@@ -399,6 +405,24 @@
         </v-card-text>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="pindialog" max-width="400" persistent>
+      <v-card>
+        <v-card-title class="d-flex justify-space-between align-center">
+          <span class="text-h6">Enter Pin</span>
+          <v-icon @click="pindialog = false" class="cursor-pointer">mdi-close</v-icon>
+        </v-card-title> <v-card-text>
+          <div class="text-center">
+            <v-otp-input v-model="otp" type="password" :loading="pinloading" length="5"></v-otp-input>
+          </div>
+        </v-card-text>
+
+        <v-card-actions class="justify-end">
+          <v-btn text="Cancel" @click="pindialog = false"></v-btn>
+          <v-btn :disabled="otp.length < 5 || pinloading" color="primary" text="Submit"
+            @click="checkAuthAccess"></v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
 
@@ -413,6 +437,8 @@ import {
 } from "vue";
 import eventBus from "../../bus.js";
 import indexedDBService from "../../indexedDB";
+import { printPreInvoice } from "../../preinvoice";
+
 const items = ref([
   // {
   //   name: "Gul Bahaar",
@@ -497,7 +523,10 @@ const returnType = ref("");
 const selectedTable = ref("");
 const advanceAmount = ref(0)
 const orderBy = ref("");
-
+const allowedDelete = ref(true);
+const pindialog = ref(false);
+const otp = ref("");
+const pinloading = ref(false);
 
 
 
@@ -609,6 +638,23 @@ const formatNumber = (num) => {
 const addNewCustomer = () => {
   showDialog.value = true;
 }
+const checkAuthAccess = () => {
+  const isMatch = pos_profile.value.employee_list.some((emp) => emp.pin_for_pos === parseInt(otp.value));
+  if (isMatch) {
+    allowedDelete.value = true;
+    pindialog.value = false;
+    otp.value = ''
+  }
+  else {
+    eventBus.emit("show_mesage", {
+      text: "Invalid Pin. Please try again!",
+      color: "error",
+    });
+  }
+
+  pinloading.value = false;
+
+};
 
 const submitCustomerDialog = async () => {
   try {
@@ -694,6 +740,21 @@ const openDialog = (product, flag) => {
       flag,
     };
     eventBus.emit("open-product-dialog", obj);
+  }
+};
+const createPreInvoice = async () => {
+  if (items.value.length > 0) {
+    const doc = await get_invoice_doc();
+    doc.grand_total = grandTotal.value
+    doc.gstAmountCash = gstAmount.value
+    // doc.gstAmountCard = gstAmountCard.value
+    // doc.grand_total_card = grandTotalCard.value
+    console.log("pre-invoice", doc);
+    printPreInvoice(
+      doc,
+    );
+    holdOrder()
+
   }
 };
 const goForReturnProceed = () => {
@@ -821,6 +882,7 @@ const getFormattedPrintFormat = () => {
   return encodeURIComponent(printFormat.trim());
 };
 const holdOrder = () => {
+
   if (items.value.length > 0) {
     loadingHold.value = true; // Start loading indicator
 
@@ -848,7 +910,9 @@ const holdOrder = () => {
         console.warn(`Order with ID ${holdOrderId.value} not found.`);
       }
     } else {
-      // Create a new order if no holdOrderId is present
+      // Create a new order if no holdOrderId    is present
+      const employee = pos_profile.value.employee_list.find(emp => emp.employee === orderBy.value);
+      console.log("orderby....", employee)
       const nextOrderId = `Hold-Order-${heldOrders.length + 1}`;
       const currentOrder = {
         id: nextOrderId,
@@ -856,11 +920,13 @@ const holdOrder = () => {
         grand_total: grandTotal.value,
         table: selectedTable.value,
         orderBy: orderBy.value,
+        orderByName: employee.employee_name,
+
         timestamp: new Date().toISOString(),
       };
       heldOrders.push(currentOrder);
-      eventBus.emit("reserved-table", selectedTable.value);
       console.log("Order held successfully:", currentOrder);
+      updateTableStatus(selectedTable.value, "Reserved");
     }
 
     // Update localStorage with the modified held orders
@@ -872,6 +938,27 @@ const holdOrder = () => {
     eventBus.emit("open-product-menu");
     eventBus.emit("set-default-value");
   }
+};
+
+const updateTableStatus = async (table, status) => {
+  try {
+    const response = await frappe.call({
+      method:
+        "tabrah_pos.tabrah_pos.api.posapp.update_table_status",
+      args: {
+        table_name: table,
+        status: status
+      },
+    });
+
+    if (response && response.message) {
+      eventBus.emit("reserved-table", selectedTable.value);
+    }
+  } catch (error) {
+    console.error("Error updating invoice from order:", error);
+  }
+
+  return invoice_doc.value;
 };
 
 
@@ -1009,7 +1096,7 @@ const get_invoice_doc = () => {
   doc.posa_delivery_charges = "";
   doc.posa_delivery_charges_rate = 0;
   doc.posting_date = getCurrentDate();
-  doc.table_no = "";
+  doc.table_no = selectedTable.value || "";
   doc.resturent_type = selectedOrderType.value;
   // doc.order_summery_for_pos = orderItems.value;
   doc.cost_center = pos_profile.value.cost_center;
@@ -1241,8 +1328,20 @@ const makePayloadForInvoice = () => {
 };
 
 const deleteItem = (index) => {
-  items.value.splice(index, 1);
-  makePayloadForInvoice();
+  if (allowedDelete.value || !holdOrderId.value) {
+    items.value.splice(index, 1);
+    console.log("holdOrderId.value", holdOrderId.value)
+    if (holdOrderId.value) {
+      eventBus.emit("update-hold-order", holdOrderId.value)
+      holdOrderId.value = ''
+    }
+    makePayloadForInvoice();
+
+  }
+  else {
+    pindialog.value = true
+  }
+
 };
 const toggleDelete = (index) => {
   // Toggle the visibility of the delete button for the clicked item
@@ -1401,6 +1500,10 @@ onMounted(() => {
 
     makePayloadForInvoice();
   });
+  eventBus.on("update-table-status", (table) => {
+    updateTableStatus(table, "Available")
+  });
+
 
   eventBus.on("show-sale-order", (order) => {
     order.items.forEach((item) => {
@@ -1446,6 +1549,7 @@ onMounted(() => {
     items.value = [];
     invoiceItems.value = [];
     holdOrderId.value = null;
+    allowedDelete.value = true
   });
   eventBus.on("selected_order_type", (type) => {
     selectedOrderType.value = type;
@@ -1457,6 +1561,8 @@ onMounted(() => {
     console.log("hold order", order);
     items.value = [];
     holdOrderId.value = order.id;
+    eventBus.emit("open-product-menu");
+    allowedDelete.value = false
     items.value = order.items;
     makePayloadForInvoice();
   });
@@ -1466,10 +1572,10 @@ onMounted(() => {
   eventBus.on("enter-key-called", () => {
     onEnterKey();
   });
-  eventBus.on("selected_table", (table)=>{
+  eventBus.on("selected_table", (table) => {
     selectedTable.value = table;
   });
-  eventBus.on("order-taker", (data)=>{
+  eventBus.on("order-taker", (data) => {
     orderBy.value = data;
   });
 
