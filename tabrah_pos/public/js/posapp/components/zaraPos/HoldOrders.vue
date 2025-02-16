@@ -70,7 +70,7 @@
 
             <div class="order-detail">
               <strong>Grand Total</strong>
-              <p class="grand-p">Rs. {{ order.grand_total }}</p>
+              <p class="grand-p">QAR. {{ order.grand_total }}</p>
             </div>
 
             <!-- <div class="order-detail mt-3">

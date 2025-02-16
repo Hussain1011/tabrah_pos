@@ -32,7 +32,7 @@
                   <!-- Difference -->
                   <template v-slot:item.difference="{ item }">
                     <!-- {{ currencySymbol(pos_profile.currency) }} -->
-                    Rs.
+                    QAR.
                     {{
                       parseFloat(
                         item.expected_amount - item.closing_amount
@@ -43,13 +43,13 @@
                   <!-- Opening Amount -->
                   <template v-slot:item.opening_amount="{ item }">
                     <!-- {{ currencySymbol(pos_profile.currency) }} -->
-                    Rs.{{ parseFloat(item.opening_amount).toFixed(2) }}
+                    QAR.{{ parseFloat(item.opening_amount).toFixed(2) }}
                   </template>
 
                   <!-- Expected Amount -->
                   <template v-slot:item.expected_amount="{ item }">
                     <!-- {{ currencySymbol(pos_profile.currency) }} -->
-                    Rs.{{ parseFloat(item.expected_amount).toFixed(2) }}
+                    QAR.{{ parseFloat(item.expected_amount).toFixed(2) }}
                   </template>
                   <template v-slot:item.difference_detail="{ item }">
                     <v-text-field

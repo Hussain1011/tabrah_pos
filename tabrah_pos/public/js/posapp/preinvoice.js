@@ -1,131 +1,100 @@
-
-
-// Method to open a new window and print the invoice
 export async function printPreInvoice(offlineData) {
     try {
-   
-      let now = new Date();
-      const items = offlineData?.items || [];
-  
+        let now = new Date();
+        const items = offlineData?.items || [];
+        const tableNo = offlineData?.table_no || "N/A";
+        const date = offlineData?.date || now.toISOString().split('T')[0]; // Fallback to current date
+        const time = offlineData?.time || now.toLocaleTimeString('en-US', { hour12: true }); // Fallback to current time
+
         // Dynamically generate table rows for the items
         const itemRows = items
-        .map(item => {
-          const { item_name, qty, rate, discount = 0, amount } = item;
-          return `
-            <tr>
-                <td>${item_name || "N/A"}</td>
-                <td class="text-center">${qty || 0}</td>
-                <td class="text-center">${rate || 0}</td>
-                <td class="text-center">${discount || 0}</td>
-                <td class="text-center">${qty*rate || 0}</td>
-            </tr>
-          `;
-        })
-        .join("");
-  
-  
-      // Create a new window
-      const newWindow = window.open("", "_blank");
-      
-  
-      // Set the HTML content of the new window
-      newWindow.document.write(`
+            .map(item => {
+                const { item_name, qty, rate, discount = 0 } = item;
+                return `
+                    <tr style="border-bottom: 2px solid black;">
+                        <td>${item_name || "N/A"}</td>
+                        <td class="text-center">${qty || 0}</td>
+                    </tr>
+                `;
+            })
+            .join("");
+
+        // Create a new window
+        const newWindow = window.open("", "_blank");
+
+        // Set the HTML content of the new window
+        newWindow.document.write(`
   <html>
   <head>
-      <title>Pre-Invoice</title>
-      <style>
-          .print-format table, .print-format tr, .print-format td, .print-format div, .print-format p {
-              line-height: 100%;
-              vertical-align: middle;
-          }
-          @media screen {
-              .print-format {
-                  width: 4in;
-                  padding: 0.25in;
-                  min-height: 8in;
-              }
-          }
-          .print-format td, .print-format th {
-              padding: 5px !important;
-          }
-          table {
-              width: 100%;
-              border-collapse: collapse;
-          }
-          th, td {
-              border: 2px solid black;
-              padding: 5px;
-              text-align: left;
-          }
-          .text-center {
-              text-align: center;
-          }
-          .text-right {
-              text-align: right;
-          }
-      </style>
-  </head>
-  <body>
-        <div style="display: flex; justify-content: center;">
-  </div>
-  
-  <div style="text-align: center; font-weight: bold;">Neighborhood Cafe</div>
-  <div style="text-align: center;">
-        <br>
-      Mov#: 055664455 
-  </div>
-  
-      <table>
-                <thead>
-                    <tr style="background-color: #e0e0e0;">
-                        <th>Item</th>
-                        <th class="text-center">Qty</th>
-                        <th class="text-center">Rate</th>
-                        <th class="text-center">Disc</th>
-                        <th class="text-center">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${itemRows}
-                    <tr>
-                        <td colspan="4"><b>Bill Excluding GST (Rs.)</b></td>
-                        <td class="text-right">${offlineData.total.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="4"><b>SALES TAX @ 16%</b></td>
-                        <td class="text-right">${offlineData.gstAmountCash.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="4"><b>Total Bill Including 16% GST Rs.</b></td>
-                        <td class="text-right">${offlineData.grand_total.toFixed(2)}</td>
-                    </tr>
-                </tbody>
-            </table>
-      </table>
-  
-      <p class="text-center" style="margin-top: 0px;"><b>Thank you for Choosing Us!</b></p>
-      <hr>
-      <p class="text-center" style="margin-top: -10px;">Prepared by Neighborhood Cafe</p>
-  </body>
+    <style>
+        .print-format table, .print-format tr, 
+        .print-format td, .print-format div, .print-format p {
+            line-height: 150%;
+            vertical-align: middle;
+            margin: 2px 0;
+        }
+        
+        @media screen {
+            .print-format {
+                width: 3.6in;
+                padding: 0.25in;
+            }
+        }
+    </style>
+</head>
+ <body>
+    <div class="print-format">
+        <div style="margin-bottom: 5px;">
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
+            <p class="text-center" style="margin-bottom: 2px;">Server: N/A</p>
+            <p class="text-center" style="margin-bottom: 2px;">No of Pax: N/A</p>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
+            <p class="text-center" style="margin-bottom: 2px;">Order No: 12345</p>
+            <p style="margin-bottom: 0;">Date: ${date}</p>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
+            <p style="margin-bottom: 0;">Table: ${tableNo}</p>
+            <p style="margin-bottom: 0;">Time: ${time}</p>
+        </div>
+        <p class="text-center" style="margin-bottom: 0.25rem; border-bottom: 2px solid black; font-size:15px;"><b>Dine In</b></p>
+        <div style="display:flex;justify-content:space-between; border-bottom: 2px solid black; font-size:15px;">
+            <p style="margin-bottom: 0;"><b>New Order</b></p>
+            <p style="margin-bottom: 0;"><b>Modified</b></p>
+        </div>
+        <table style="margin-top: 1px;" class="innertext">
+            <thead>
+                <tr style="border-bottom: 2px solid black;">
+                    <th style="width: 70%;"><b>ITEM</b></th>
+                    <th style="width: 30%;" class="text-center"><b>Qty</b></th>
+                </tr>
+            </thead>
+            <tbody>
+                ${itemRows}
+            </tbody>
+        </table>
+    </div>
+</body>
   </html>
-  
-      `);
-      newWindow.document.close();
-  
-      // Add event listener for after printing
-      newWindow.onafterprint = () => {
-        newWindow.close();
-      };
-  
-      // Open the print dialog
-      newWindow.print();
-  
-      // Fallback for browsers that don't support onafterprint
-      newWindow.addEventListener("focus", () => {
-        setTimeout(() => {
-          newWindow.close();
-        }, 500); // Adjust delay if necessary
-      });  } catch (error) {
-      console.error("Error printing invoice:", error);
+        `);
+        newWindow.document.close();
+
+        // Add event listener for after printing
+        newWindow.onafterprint = () => {
+            newWindow.close();
+        };
+
+        // Open the print dialog
+        newWindow.print();
+
+        // Fallback for browsers that don't support onafterprint
+        newWindow.addEventListener("focus", () => {
+            setTimeout(() => {
+                newWindow.close();
+            }, 500); // Adjust delay if necessary
+        });
+    } catch (error) {
+        console.error("Error printing invoice:", error);
     }
-  }
+}
