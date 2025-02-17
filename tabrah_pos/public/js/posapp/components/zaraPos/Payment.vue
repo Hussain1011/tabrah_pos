@@ -1046,7 +1046,7 @@ const submitSaleInvoice = async (
       data.customer_credit_dict = [];
       data.is_cashback = true;
       invoice_doc.value.custom_invoice_status = "In Queue";
-      invoice_doc.value.custom_is_complementary=complementaryItem.value
+      // invoice_doc.value.custom_is_complementary=complementaryItem.value
       if (
         navigator.onLine &&
         !offlineMode.value &&
