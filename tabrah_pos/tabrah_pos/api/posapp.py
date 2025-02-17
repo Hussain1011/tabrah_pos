@@ -1633,7 +1633,8 @@ def create_bundle_from_item(json_data):
             if existing_bundle_found:
                 # Add the existing bundle to created_bundles
                 total_rate = sum(item_data["rate"] for item_data in items_list)
-                created_bundles.append({"item_code": bundle_doc.name, "qty": items_list[0]["qty"], "rate": total_rate})
+                item_doc = frappe.get_doc("Item", bundle_doc.new_item_code)
+                created_bundles.append({"item_code": bundle_doc.name, "item_name": item_doc.item_name, "qty": items_list[0]["qty"], "rate": total_rate})
             else:
                 # Create a new service item for the bundle
                 first_item_code = items_list[0]["item_code"]
@@ -1657,6 +1658,7 @@ def create_bundle_from_item(json_data):
                 for item_data in items_list:
                     new_item = new_bundle.append("items", {})
                     new_item.item_code = item_data["item_code"]
+                    new_item.item_name = item_data["item_name"]  # Ensure item_name is included
                     new_item.description = item_data["item_code"]
                     new_item.qty = 1
                 
@@ -1670,7 +1672,7 @@ def create_bundle_from_item(json_data):
 
                 # Add the newly created bundle to created_bundles
                 total_rate = sum(item_data["rate"] for item_data in items_list)
-                created_bundles.append({"item_code": new_bundle.name,"item_name": service_item_doc.item_name, "qty": items_list[0]["qty"], "rate": total_rate})
+                created_bundles.append({"item_code": new_bundle.name, "item_name": service_item_doc.item_name, "qty": items_list[0]["qty"], "rate": total_rate})
         
         # Return the flat list of created bundles
         return created_bundles
