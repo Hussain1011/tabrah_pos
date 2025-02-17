@@ -11963,6 +11963,7 @@ Expected function or array of functions, received type ${typeof value}.`
       const variantPayload = ref("");
       const calledBundleApi = ref(false);
       const bundleArray = ref([]);
+      const onlyAddOn = ref(false);
       const nextStep = (index) => {
         if (index < parentItem.value.attributes.length - 1) {
           currentStep.value = index + 2;
@@ -12306,8 +12307,19 @@ Expected function or array of functions, received type ${typeof value}.`
               addon.type = "addon";
               addon.values = addon.item_add_ons;
             });
+            if (response.message[0].Attributes[0].length == 0 && response.message[0].add_ons.length > 0) {
+              onlyAddOn.value = true;
+            }
             if (response.message[0].add_ons.length > 0) {
               calledBundleApi.value = true;
+              const obj = {
+                item_code: `${product.item_code}`,
+                item_name: `${product.item_name}`,
+                item_group: product.item_group,
+                qty: 1,
+                rate: product.rate
+              };
+              bundleArray.value.push(obj);
             }
             parentItem.value.item_name = product.item_name;
             parentItem.value.attributes = [...response.message[0].Attributes[0], ...response.message[0].add_ons];
@@ -12543,7 +12555,7 @@ Expected function or array of functions, received type ${typeof value}.`
         return checkConnectionInterval;
       }, set checkConnectionInterval(v) {
         checkConnectionInterval = v;
-      }, requestComplete, itemloading, getAllItems, offlineMode, unsyncInvoice, variantsDialog, parentItem, panel, addOnPanel, variantRadio, selectedValues, selectedVariants, payload_string, variantMatch, currentStep, variantPayload, calledBundleApi, bundleArray, nextStep, closeDialog, defaultValue, prevStep, submitSelection, getItemBundle, onOptionSelect, addVariantItem, products, filteredProducts, formatNumber, handleOffline: handleOffline2, handleOnline: handleOnline2, syncSalesInvoicesFromIndexedDB, fetchUnsyncedSalesInvoiceRecords: fetchUnsyncedSalesInvoiceRecords2, syncSalesInvoiceRecord, updateInvoice, getInvoiceLog, markRecordAsSynced, openDialog, get_variants, changeCategory, scanItem, get_items, loadAllItems, offlineProfileData, checkInternetConnection, ref, onMounted, onUnmounted, computed: computed2, watch: watch2, get eventBus() {
+      }, requestComplete, itemloading, getAllItems, offlineMode, unsyncInvoice, variantsDialog, parentItem, panel, addOnPanel, variantRadio, selectedValues, selectedVariants, payload_string, variantMatch, currentStep, variantPayload, calledBundleApi, bundleArray, onlyAddOn, nextStep, closeDialog, defaultValue, prevStep, submitSelection, getItemBundle, onOptionSelect, addVariantItem, products, filteredProducts, formatNumber, handleOffline: handleOffline2, handleOnline: handleOnline2, syncSalesInvoicesFromIndexedDB, fetchUnsyncedSalesInvoiceRecords: fetchUnsyncedSalesInvoiceRecords2, syncSalesInvoiceRecord, updateInvoice, getInvoiceLog, markRecordAsSynced, openDialog, get_variants, changeCategory, scanItem, get_items, loadAllItems, offlineProfileData, checkInternetConnection, ref, onMounted, onUnmounted, computed: computed2, watch: watch2, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
@@ -13670,6 +13682,8 @@ Expected function or array of functions, received type ${typeof value}.`
             qty: item.qty,
             rate: item.rate,
             amount: item.rate,
+            complementryItem: item.complementryItem,
+            original_rate: item.original_rate,
             item_tax_template: item.tax_template,
             custom_tax_rate: item.tax_rate,
             custom_tax_amount: customGst,
@@ -13775,6 +13789,7 @@ Expected function or array of functions, received type ${typeof value}.`
           data.rate = data.custom_discounted_rate > 0 ? data.custom_discounted_rate : data.rate;
           data.netTotal = 0;
           data.netTotal = data.rate * data.qty;
+          data.complementryItem = data.complementryItem || false;
           const existingItem = items.value.find(
             (item) => item.item_code === data.item_code
           );
@@ -15426,7 +15441,6 @@ Expected function or array of functions, received type ${typeof value}.`
       const punching = ref("completed");
       const employeesList = ref([]);
       const orderBy = ref("");
-      const complementaryItem = ref(false);
       const fbrResponse = ref("");
       const requiredOrderId = ref(false);
       const setDefaultValue = () => {
@@ -16457,7 +16471,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.off("go-for-payment");
         bus_default.off("send_pos_profile");
       });
-      const __returned__ = { numpad, invoice_doc, pos_profile: pos_profile2, paymentType, paymentModes, totalPaidAmount, taxRate, amountTake, changeAmount, newTax, btnLoading, btnLoading1, selectedOrderType, orderId, discount, showDialog, splitPayment, confirmSplit, offlineMode, punching, employeesList, orderBy, complementaryItem, fbrResponse, requiredOrderId, setDefaultValue, validateDiscount, backToProductMenu, openSplitPaymentDialog, cancelSplit, closeDialog, updateRemainingAmount, submitSplitPayment, handleNumpadClick, updateDocPayment, changePaymentType, set_full_amount, offlineProfileData, cancelOrder, getFormattedPrintFormat, load_print_page, submitReturn, checkSubmitType, forExchangeSaleInvoice, submitSaleInvoice, formatNumber, ref, onMounted, watch: watch2, onUnmounted, computed: computed2, get eventBus() {
+      const __returned__ = { numpad, invoice_doc, pos_profile: pos_profile2, paymentType, paymentModes, totalPaidAmount, taxRate, amountTake, changeAmount, newTax, btnLoading, btnLoading1, selectedOrderType, orderId, discount, showDialog, splitPayment, confirmSplit, offlineMode, punching, employeesList, orderBy, fbrResponse, requiredOrderId, setDefaultValue, validateDiscount, backToProductMenu, openSplitPaymentDialog, cancelSplit, closeDialog, updateRemainingAmount, submitSplitPayment, handleNumpadClick, updateDocPayment, changePaymentType, set_full_amount, offlineProfileData, cancelOrder, getFormattedPrintFormat, load_print_page, submitReturn, checkSubmitType, forExchangeSaleInvoice, submitSaleInvoice, formatNumber, ref, onMounted, watch: watch2, onUnmounted, computed: computed2, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
@@ -16519,7 +16533,6 @@ Expected function or array of functions, received type ${typeof value}.`
     const _component_v_row = resolveComponent("v-row");
     const _component_v_divider = resolveComponent("v-divider");
     const _component_v_text_field = resolveComponent("v-text-field");
-    const _component_v_checkbox = resolveComponent("v-checkbox");
     const _component_v_card = resolveComponent("v-card");
     const _component_v_card_title = resolveComponent("v-card-title");
     const _component_v_card_text = resolveComponent("v-card-text");
@@ -16730,22 +16743,6 @@ Expected function or array of functions, received type ${typeof value}.`
               }, 512), [
                 [vShow, $setup.splitPayment]
               ]),
-              createVNode(_component_v_col, {
-                cols: "12",
-                md: "2"
-              }, {
-                default: withCtx(() => [
-                  createVNode(_component_v_checkbox, {
-                    modelValue: $setup.complementaryItem,
-                    "onUpdate:modelValue": _cache[6] || (_cache[6] = ($event) => $setup.complementaryItem = $event),
-                    color: "red",
-                    label: "Complementary Item",
-                    value: "red",
-                    "hide-details": ""
-                  }, null, 8, ["modelValue"])
-                ]),
-                _: 1
-              }),
               createCommentVNode(' <v-col cols="12" md="4">\n            <v-text-field\n              class="b-radius-8"\n              variant="outlined"\n              label="Add Discount"\n              suffix="QAR."\n            />\n          </v-col> ')
             ]),
             _: 1
@@ -16905,7 +16902,7 @@ Expected function or array of functions, received type ${typeof value}.`
                 color: "#21A0A0",
                 style: { "background-color": "#d3ecec", "border-radius": "8px" },
                 loading: $setup.btnLoading1,
-                onClick: _cache[7] || (_cache[7] = ($event) => $setup.checkSubmitType(void 0, false, true))
+                onClick: _cache[6] || (_cache[6] = ($event) => $setup.checkSubmitType(void 0, false, true))
               }, {
                 default: withCtx(() => [
                   createVNode(_component_v_icon, { left: "" }, {
@@ -16929,7 +16926,7 @@ Expected function or array of functions, received type ${typeof value}.`
                 color: "#21A0A0",
                 style: { "border-radius": "8px" },
                 class: "white--text checkout-p",
-                onClick: _cache[8] || (_cache[8] = ($event) => $setup.checkSubmitType()),
+                onClick: _cache[7] || (_cache[7] = ($event) => $setup.checkSubmitType()),
                 loading: $setup.btnLoading
               }, {
                 default: withCtx(() => [
@@ -16995,7 +16992,7 @@ Expected function or array of functions, received type ${typeof value}.`
       createCommentVNode(" Dialog for Split Payment "),
       createVNode(_component_v_dialog, {
         modelValue: $setup.showDialog,
-        "onUpdate:modelValue": _cache[9] || (_cache[9] = ($event) => $setup.showDialog = $event),
+        "onUpdate:modelValue": _cache[8] || (_cache[8] = ($event) => $setup.showDialog = $event),
         "max-width": "500px",
         persistent: ""
       }, {
@@ -17497,7 +17494,7 @@ Expected function or array of functions, received type ${typeof value}.`
                           }),
                           createBaseVNode("div", _hoisted_154, [
                             _hoisted_163,
-                            createBaseVNode("p", _hoisted_173, "Rs. " + toDisplayString(order.grand_total), 1)
+                            createBaseVNode("p", _hoisted_173, "QAR. " + toDisplayString(order.grand_total), 1)
                           ]),
                           createCommentVNode(' <div class="order-detail mt-3">\n                  <strong>By</strong>\n                  <p>{{ order.name }}</p>\n                </div>\n                <div class="order-detail mt-3 pb-3">\n                  <strong>At</strong>\n                  <p>{{ order.location }}</p>\n                </div> ')
                         ]),
@@ -18097,6 +18094,7 @@ Expected function or array of functions, received type ${typeof value}.`
       const updateQty = ref(false);
       const discount = ref("");
       const pos_profile2 = ref("");
+      const complementaryItem2 = ref(false);
       const increaseQuantity = () => {
         quantity.value++;
         selectedProduct.value.qty = quantity.value;
@@ -18162,12 +18160,24 @@ Expected function or array of functions, received type ${typeof value}.`
           selectedProduct.value.rate = selectedProduct.value.original_rate - discountAmount;
         }
       });
+      watch2(complementaryItem2, (newValue) => {
+        if (newValue) {
+          selectedProduct.value.rate = 0;
+          selectedProduct.value.complementryItem = true;
+        } else {
+          selectedProduct.value.rate = selectedProduct.value.original_rate;
+          selectedProduct.value.complementryItem = false;
+        }
+      });
       onMounted(() => {
         bus_default.on("open-product-dialog", (data) => {
           updateQty.value = data.flag;
           quantity.value = data.product.qty ? data.product.qty : 1;
           data.product.qty = quantity.value;
           selectedProduct.value = data.product;
+          if (!selectedProduct.value.original_rate) {
+            selectedProduct.value.original_rate = selectedProduct.value.rate;
+          }
           if (selectedProduct.value) {
             dialog.value = true;
           }
@@ -18189,7 +18199,8 @@ Expected function or array of functions, received type ${typeof value}.`
         discount,
         pos_profile: pos_profile2,
         validateDiscount,
-        formatNumber
+        formatNumber,
+        complementaryItem: complementaryItem2
       };
     }
   };
@@ -18235,12 +18246,13 @@ Expected function or array of functions, received type ${typeof value}.`
     const _component_v_divider = resolveComponent("v-divider");
     const _component_v_row = resolveComponent("v-row");
     const _component_v_text_field = resolveComponent("v-text-field");
+    const _component_v_checkbox = resolveComponent("v-checkbox");
     const _component_v_card_text = resolveComponent("v-card-text");
     const _component_v_card = resolveComponent("v-card");
     const _component_v_dialog = resolveComponent("v-dialog");
     return openBlock(), createBlock(_component_v_dialog, {
       modelValue: $setup.dialog,
-      "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => $setup.dialog = $event),
+      "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.dialog = $event),
       "max-width": "741px",
       height: "720",
       persistent: ""
@@ -18399,6 +18411,23 @@ Expected function or array of functions, received type ${typeof value}.`
                                   onUpdate: $setup.validateDiscount,
                                   disabled: !$setup.pos_profile.posa_max_discount_allowed
                                 }, null, 8, ["label", "modelValue", "max", "onUpdate", "disabled"])
+                              ]),
+                              _: 1
+                            }),
+                            createVNode(_component_v_col, {
+                              cols: "12",
+                              md: "12",
+                              class: "my-0"
+                            }, {
+                              default: withCtx(() => [
+                                createVNode(_component_v_checkbox, {
+                                  modelValue: $setup.complementaryItem,
+                                  "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => $setup.complementaryItem = $event),
+                                  color: "red",
+                                  label: "Complementary Item",
+                                  value: "red",
+                                  "hide-details": ""
+                                }, null, 8, ["modelValue"])
                               ]),
                               _: 1
                             }),
@@ -19033,17 +19062,17 @@ Expected function or array of functions, received type ${typeof value}.`
                                   ]),
                                   "item.difference": withCtx(({ item }) => [
                                     createCommentVNode(" {{ currencySymbol(pos_profile.currency) }} "),
-                                    createTextVNode(" Rs. " + toDisplayString(parseFloat(
+                                    createTextVNode(" QAR. " + toDisplayString(parseFloat(
                                       item.expected_amount - item.closing_amount
                                     ).toFixed(2)), 1)
                                   ]),
                                   "item.opening_amount": withCtx(({ item }) => [
                                     createCommentVNode(" {{ currencySymbol(pos_profile.currency) }} "),
-                                    createTextVNode(" Rs." + toDisplayString(parseFloat(item.opening_amount).toFixed(2)), 1)
+                                    createTextVNode(" QAR." + toDisplayString(parseFloat(item.opening_amount).toFixed(2)), 1)
                                   ]),
                                   "item.expected_amount": withCtx(({ item }) => [
                                     createCommentVNode(" {{ currencySymbol(pos_profile.currency) }} "),
-                                    createTextVNode(" Rs." + toDisplayString(parseFloat(item.expected_amount).toFixed(2)), 1)
+                                    createTextVNode(" QAR." + toDisplayString(parseFloat(item.expected_amount).toFixed(2)), 1)
                                   ]),
                                   "item.difference_detail": withCtx(({ item }) => [
                                     createVNode(_component_v_text_field, {
@@ -48302,4 +48331,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.A6EDNWM2.js.map
+//# sourceMappingURL=pos.bundle.4HFQEXO7.js.map

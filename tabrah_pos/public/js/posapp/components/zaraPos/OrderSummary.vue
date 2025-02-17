@@ -1315,6 +1315,8 @@ const makePayloadForInvoice = () => {
       qty: item.qty,
       rate: item.rate,
       amount: item.rate,
+      complementryItem: item.complementryItem,
+      original_rate: item.original_rate,
       // net_amount: taxIncludeNetamount,
       item_tax_template: item.tax_template,
       custom_tax_rate: item.tax_rate,
@@ -1489,6 +1491,7 @@ onMounted(() => {
     data.rate = data.custom_discounted_rate > 0 ? data.custom_discounted_rate : data.rate
     data.netTotal = 0;
     data.netTotal = data.rate * data.qty;
+    data.complementryItem=data.complementryItem || false
 
     // Find if the item already exists in the array
     const existingItem = items.value.find(

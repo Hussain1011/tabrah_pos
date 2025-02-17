@@ -89,6 +89,10 @@
                   :max="pos_profile.posa_max_discount_allowed" @update="validateDiscount"
                   :disabled="!pos_profile.posa_max_discount_allowed" />
               </v-col>
+              <v-col cols="12" md="12" class="my-0">
+                <v-checkbox v-model="complementaryItem" color="red" label="Complementary Item" value="red"
+                  hide-details></v-checkbox>
+              </v-col>
               <!-- <v-col cols="4" class="text-center">
                 <div class="text-quantity black--text">{{ quantity }}</div>
                 <v-divider
@@ -138,6 +142,7 @@ export default {
     const updateQty = ref(false);
     const discount = ref("");
     const pos_profile = ref("");
+    const complementaryItem = ref(false);
 
     const increaseQuantity = () => {
       quantity.value++;
@@ -225,6 +230,17 @@ export default {
           selectedProduct.value.original_rate - discountAmount;
       }
     });
+    watch(complementaryItem, (newValue) => {
+  if (newValue) {
+    selectedProduct.value.rate = 0;
+    selectedProduct.value.complementryItem=true 
+
+  } else {
+    selectedProduct.value.rate = selectedProduct.value.original_rate;
+    selectedProduct.value.complementryItem=false 
+
+  }
+});
 
     onMounted(() => {
       eventBus.on("open-product-dialog", (data) => {
@@ -232,6 +248,9 @@ export default {
         quantity.value = data.product.qty ? data.product.qty : 1;
         data.product.qty = quantity.value;
         selectedProduct.value = data.product;
+        if (!selectedProduct.value.original_rate) {
+        selectedProduct.value.original_rate = selectedProduct.value.rate;
+      }
         if (selectedProduct.value) {
           dialog.value = true;
         }
@@ -256,6 +275,7 @@ export default {
       pos_profile,
       validateDiscount,
       formatNumber,
+      complementaryItem
     };
   },
 };

@@ -59,15 +59,7 @@
             <v-icon left class="pr-2">mdi-close</v-icon>
           </v-btn>
         </v-col>
-        <v-col cols="12" md="2">
-            <v-checkbox
-            v-model="complementaryItem"
-            color="red"
-            label="Complementary Item"
-            value="red"
-            hide-details
-          ></v-checkbox>
-        </v-col>
+        
 
         <!-- <v-col cols="12" md="4">
             <v-text-field
@@ -286,7 +278,6 @@ const offlineMode = ref(false);
 const punching = ref("completed");
 const employeesList = ref([]);
 const orderBy = ref("");
-const complementaryItem = ref(false);
 
 
 

@@ -259,6 +259,8 @@ const currentStep = ref(1);
 const variantPayload = ref('')
 const calledBundleApi = ref(false);
 const bundleArray = ref([]);
+const onlyAddOn = ref(false);
+
 
 const nextStep = (index) => {
   if (index < parentItem.value.attributes.length - 1) {
@@ -827,8 +829,19 @@ const get_variants = async (product, flag) => {
         addon.type = 'addon'
         addon.values = addon.item_add_ons
       })
+      if(response.message[0].Attributes[0].length ==0 && response.message[0].add_ons.length > 0){
+        onlyAddOn.value = true
+      }
       if (response.message[0].add_ons.length > 0) {
         calledBundleApi.value = true
+        const obj = {
+          item_code: `${product.item_code}`,
+          item_name: `${product.item_name}`,
+          item_group: product.item_group,
+          qty: 1,
+          rate: product.rate,
+        };
+        bundleArray.value.push(obj)
       }
 
       parentItem.value.item_name = product.item_name
