@@ -15990,7 +15990,6 @@ Expected function or array of functions, received type ${typeof value}.`
             data.customer_credit_dict = [];
             data.is_cashback = true;
             invoice_doc.value.custom_invoice_status = "In Queue";
-            invoice_doc.value.custom_is_complementary = complementaryItem.value;
             if (navigator.onLine && !offlineMode.value && punching.value == "completed") {
               try {
                 const response = await frappe.call({
@@ -18094,7 +18093,7 @@ Expected function or array of functions, received type ${typeof value}.`
       const updateQty = ref(false);
       const discount = ref("");
       const pos_profile2 = ref("");
-      const complementaryItem2 = ref(false);
+      const complementaryItem = ref(false);
       const increaseQuantity = () => {
         quantity.value++;
         selectedProduct.value.qty = quantity.value;
@@ -18160,7 +18159,7 @@ Expected function or array of functions, received type ${typeof value}.`
           selectedProduct.value.rate = selectedProduct.value.original_rate - discountAmount;
         }
       });
-      watch2(complementaryItem2, (newValue) => {
+      watch2(complementaryItem, (newValue) => {
         if (newValue) {
           selectedProduct.value.rate = 0;
           selectedProduct.value.complementryItem = true;
@@ -18200,7 +18199,7 @@ Expected function or array of functions, received type ${typeof value}.`
         pos_profile: pos_profile2,
         validateDiscount,
         formatNumber,
-        complementaryItem: complementaryItem2
+        complementaryItem
       };
     }
   };
@@ -48331,4 +48330,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.4HFQEXO7.js.map
+//# sourceMappingURL=pos.bundle.H2IZR35T.js.map
