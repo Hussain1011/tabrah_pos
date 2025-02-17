@@ -7,6 +7,7 @@ from frappe import _
 from frappe.model.document import Document
 from erpnext.stock.doctype.item.item import get_item_defaults
 from erpnext.stock.get_item_details import get_default_bom
+from erpnext.stock.doctype.stock_entry.stock_entry import get_uom_details
 
 class AutomatedBOMManufacturing(Document):
 	def validate(self):
@@ -83,6 +84,12 @@ class AutomatedBOMManufacturing(Document):
 				# Update the quantity in Stock Entry items based on BOM items
 				bom_item = bom_items[d.item_code]
 				d.qty = bom_item.qty * self.qty  # Adjust quantity based on Stock Entry quantity
+
+				d.uom = bom_item.uom
+				conver = get_uom_details(d.item_code, d.uom, d.qty)
+				d.conversion_factor = conver['conversion_factor']
+				d.transfer_qty = conver['transfer_qty']
+
 				updated_items.append(d)
 			elif d.is_finished_item:
 				# Retain finished goods items even if they are not in bom_items
