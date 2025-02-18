@@ -1340,8 +1340,13 @@ const makePayloadForInvoice = () => {
 const deleteItem = (index) => {
   if (allowedDelete.value || !holdOrderId.value) {
     items.value.splice(index, 1);
-    console.log("holdOrderId.value", holdOrderId.value)
     if (holdOrderId.value) {
+      const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+      const updatedOrders = heldOrders.filter((order) => order.id == holdOrderId.value);
+      if(updatedOrders.length > 0) {
+        updateTableStatus(updatedOrders[0].table, "Available");
+      }
+
       eventBus.emit("update-hold-order", holdOrderId.value)
       holdOrderId.value = ''
     }

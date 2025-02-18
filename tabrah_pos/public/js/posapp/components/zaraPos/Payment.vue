@@ -14,7 +14,7 @@
               style="border-radius: 8px" @click="changePaymentType(category)">
               <v-icon class="pr-2">{{
                 category.mode_type == "Cash" ? "mdi-cash" : "mdi-credit-card"
-                }}</v-icon>
+              }}</v-icon>
               <p class="mt-2 category-p">{{ category.mode_of_payment }}</p>
             </v-btn>
           </div>
@@ -44,7 +44,7 @@
             :max="pos_profile.posa_max_discount_allowed" @update="validateDiscount"
             :disabled="!pos_profile.posa_max_discount_allowed" />
         </v-col>
-        
+
         <v-col cols="12" md="3">
           <v-btn class="mr-2 b-radius-8" :color="splitPayment ? '#F05D23' : '#21A0A0'" size="large" variant="outlined"
             :style="{
@@ -59,7 +59,7 @@
             <v-icon left class="pr-2">mdi-close</v-icon>
           </v-btn>
         </v-col>
-        
+
 
         <!-- <v-col cols="12" md="4">
             <v-text-field
@@ -278,6 +278,9 @@ const offlineMode = ref(false);
 const punching = ref("completed");
 const employeesList = ref([]);
 const orderBy = ref("");
+const complementaryItem = ref(false);
+
+
 
 
 
@@ -297,6 +300,13 @@ const setDefaultValue = () => {
   orderId.value = "";
   splitPayment.value = false;
   confirmSplit.value = false;
+  complementaryItem.value = false;
+  const complementryMode = pos_profile.value.payments
+    .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+    .map(profile => ({
+      ...profile,
+      amount: 0 // Set amount to zero
+    }));
 };
 const validateDiscount = (value) => {
   const maxAllowed = pos_profile.value.posa_max_discount_allowed;
@@ -841,20 +851,20 @@ const checkSubmitType = (event,
       const exchangeMode = invoice_doc.value.payments.find(
         (mode) => mode.custom_is_exchange_mode === 1
       );
-      if(exchangeMode){
+      if (exchangeMode) {
         submitReturn(event,
-        payment_received = false,
-        print = false)
+          payment_received = false,
+          print = false)
       }
-      else{
+      else {
         eventBus.emit("show_mesage", {
-        text: `Please enable exchange mode first to submit return invoice`,
-        color: "error",
-      })
-      return;
-        
+          text: `Please enable exchange mode first to submit return invoice`,
+          color: "error",
+        })
+        return;
+
       }
-     
+
     }
     else {
       eventBus.emit("show_mesage", {
@@ -991,6 +1001,7 @@ const submitSaleInvoice = async (
   print = false
 ) => {
   console.log("submit invoice...", invoice_doc.value);
+  console.log("pos_profile...", pos_profile.value);
   if (discount.value > pos_profile.value.posa_max_discount_allowed) {
     eventBus.emit("show_mesage", {
       text: `Only ${pos_profile.value.posa_max_discount_allowed}% discount allowed`,
@@ -1002,7 +1013,7 @@ const submitSaleInvoice = async (
     return;
   }
 
-  
+
 
   let matchingPayment = pos_profile.value.payments.find(
     (item) => item.mode_of_payment === paymentType.value.mode_of_payment
@@ -1046,7 +1057,13 @@ const submitSaleInvoice = async (
       data.customer_credit_dict = [];
       data.is_cashback = true;
       invoice_doc.value.custom_invoice_status = "In Queue";
-      // invoice_doc.value.custom_is_complementary=complementaryItem.value
+      if (complementaryItem.value) {
+        const complementryMode = pos_profile.value.payments
+          .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+        invoice_doc.value.payments.push(complementryMode[0])
+      }
+
+
       if (
         navigator.onLine &&
         !offlineMode.value &&
@@ -1081,7 +1098,7 @@ const submitSaleInvoice = async (
                 JSON.stringify(updatedHeldOrders)
               );
             }
-            eventBus.emit("update-table-status",invoice_doc.value.table_no);
+            eventBus.emit("update-table-status", invoice_doc.value.table_no);
             eventBus.emit("sync-offline-invoice");
             punching.value = "completed";
             eventBus.emit("punching-status", punching.value);
@@ -1680,6 +1697,17 @@ watch(
 
   },
   { deep: true }
+);
+watch(
+  () => invoice_doc.value?.items, // Watching items inside invoice_doc
+  (newItems) => {
+    if (newItems && newItems.some(item => item.complementryItem === true)) {
+      complementaryItem.value = true;
+    } else {
+      complementaryItem.value = false;
+    }
+  },
+  { deep: true, immediate: true } // Watch deeply & trigger on mount
 );
 const formatNumber = (num) => {
   return new Intl.NumberFormat("en-US", {

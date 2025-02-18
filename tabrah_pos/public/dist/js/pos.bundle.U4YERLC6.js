@@ -13701,8 +13701,12 @@ Expected function or array of functions, received type ${typeof value}.`
       const deleteItem = (index) => {
         if (allowedDelete.value || !holdOrderId.value) {
           items.value.splice(index, 1);
-          console.log("holdOrderId.value", holdOrderId.value);
           if (holdOrderId.value) {
+            const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+            const updatedOrders = heldOrders.filter((order) => order.id == holdOrderId.value);
+            if (updatedOrders.length > 0) {
+              updateTableStatus(updatedOrders[0].table, "Available");
+            }
             bus_default.emit("update-hold-order", holdOrderId.value);
             holdOrderId.value = "";
           }
@@ -15441,6 +15445,7 @@ Expected function or array of functions, received type ${typeof value}.`
       const punching = ref("completed");
       const employeesList = ref([]);
       const orderBy = ref("");
+      const complementaryItem = ref(false);
       const fbrResponse = ref("");
       const requiredOrderId = ref(false);
       const setDefaultValue = () => {
@@ -15451,6 +15456,10 @@ Expected function or array of functions, received type ${typeof value}.`
         orderId.value = "";
         splitPayment.value = false;
         confirmSplit.value = false;
+        complementaryItem.value = false;
+        const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
+          amount: 0
+        }));
       };
       const validateDiscount = (value) => {
         const maxAllowed = pos_profile2.value.posa_max_discount_allowed;
@@ -15945,6 +15954,7 @@ Expected function or array of functions, received type ${typeof value}.`
       };
       const submitSaleInvoice = async (event, payment_received = false, print = false) => {
         console.log("submit invoice...", invoice_doc.value);
+        console.log("pos_profile...", pos_profile2.value);
         if (discount.value > pos_profile2.value.posa_max_discount_allowed) {
           bus_default.emit("show_mesage", {
             text: `Only ${pos_profile2.value.posa_max_discount_allowed}% discount allowed`,
@@ -15990,6 +16000,10 @@ Expected function or array of functions, received type ${typeof value}.`
             data.customer_credit_dict = [];
             data.is_cashback = true;
             invoice_doc.value.custom_invoice_status = "In Queue";
+            if (complementaryItem.value) {
+              const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1);
+              invoice_doc.value.payments.push(complementryMode[0]);
+            }
             if (navigator.onLine && !offlineMode.value && punching.value == "completed") {
               try {
                 const response = await frappe.call({
@@ -16374,6 +16388,20 @@ Expected function or array of functions, received type ${typeof value}.`
         },
         { deep: true }
       );
+      watch2(
+        () => {
+          var _a2;
+          return (_a2 = invoice_doc.value) == null ? void 0 : _a2.items;
+        },
+        (newItems) => {
+          if (newItems && newItems.some((item) => item.complementryItem === true)) {
+            complementaryItem.value = true;
+          } else {
+            complementaryItem.value = false;
+          }
+        },
+        { deep: true, immediate: true }
+      );
       const formatNumber = (num) => {
         return new Intl.NumberFormat("en-US", {
           minimumFractionDigits: 2,
@@ -16470,7 +16498,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.off("go-for-payment");
         bus_default.off("send_pos_profile");
       });
-      const __returned__ = { numpad, invoice_doc, pos_profile: pos_profile2, paymentType, paymentModes, totalPaidAmount, taxRate, amountTake, changeAmount, newTax, btnLoading, btnLoading1, selectedOrderType, orderId, discount, showDialog, splitPayment, confirmSplit, offlineMode, punching, employeesList, orderBy, fbrResponse, requiredOrderId, setDefaultValue, validateDiscount, backToProductMenu, openSplitPaymentDialog, cancelSplit, closeDialog, updateRemainingAmount, submitSplitPayment, handleNumpadClick, updateDocPayment, changePaymentType, set_full_amount, offlineProfileData, cancelOrder, getFormattedPrintFormat, load_print_page, submitReturn, checkSubmitType, forExchangeSaleInvoice, submitSaleInvoice, formatNumber, ref, onMounted, watch: watch2, onUnmounted, computed: computed2, get eventBus() {
+      const __returned__ = { numpad, invoice_doc, pos_profile: pos_profile2, paymentType, paymentModes, totalPaidAmount, taxRate, amountTake, changeAmount, newTax, btnLoading, btnLoading1, selectedOrderType, orderId, discount, showDialog, splitPayment, confirmSplit, offlineMode, punching, employeesList, orderBy, complementaryItem, fbrResponse, requiredOrderId, setDefaultValue, validateDiscount, backToProductMenu, openSplitPaymentDialog, cancelSplit, closeDialog, updateRemainingAmount, submitSplitPayment, handleNumpadClick, updateDocPayment, changePaymentType, set_full_amount, offlineProfileData, cancelOrder, getFormattedPrintFormat, load_print_page, submitReturn, checkSubmitType, forExchangeSaleInvoice, submitSaleInvoice, formatNumber, ref, onMounted, watch: watch2, onUnmounted, computed: computed2, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
@@ -18163,9 +18191,18 @@ Expected function or array of functions, received type ${typeof value}.`
         if (newValue) {
           selectedProduct.value.rate = 0;
           selectedProduct.value.complementryItem = true;
+          console.log("pos_profile", pos_profile2.value);
+          const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
+            amount: selectedProduct.value.original_rate
+          }));
+          console.log("complementryMode", complementryMode);
         } else {
           selectedProduct.value.rate = selectedProduct.value.original_rate;
           selectedProduct.value.complementryItem = false;
+          const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
+            amount: 0
+          }));
+          console.log("complementryMode", complementryMode);
         }
       });
       onMounted(() => {
@@ -48330,4 +48367,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.H2IZR35T.js.map
+//# sourceMappingURL=pos.bundle.U4YERLC6.js.map
