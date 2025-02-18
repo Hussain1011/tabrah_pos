@@ -90,7 +90,7 @@
                   :disabled="!pos_profile.posa_max_discount_allowed" />
               </v-col>
               <v-col cols="12" md="12" class="my-0">
-                <v-checkbox v-model="complementaryItem" color="red" label="Complementary Item" value="red"
+                <v-checkbox v-model="complementaryItem" color="red" label="Complementary Item" value="red"     @change="handleComplementaryToggle"
                   hide-details></v-checkbox>
               </v-col>
               <!-- <v-col cols="4" class="text-center">
@@ -130,12 +130,10 @@
   </v-dialog>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted, watch } from "vue";
 import eventBus from "../../bus";
 
-export default {
-  setup() {
     const dialog = ref(false);
     const quantity = ref(1); // Initial quantity
     const selectedProduct = ref("");
@@ -169,8 +167,10 @@ export default {
         } else {
           eventBus.emit("exist-item-cart", selectedProduct.value);
         }
+        complementaryItem.value=false
         dialog.value = false;
         discount.value = "";
+
       }
     };
     const closeDialog = () => {
@@ -207,6 +207,38 @@ export default {
       }
     };
 
+    // Function triggered when checkbox is clicked
+const handleComplementaryToggle = () => {
+  if (complementaryItem.value) {
+    selectedProduct.value.rate = 0;
+    selectedProduct.value.complementryItem = true;
+
+    console.log("pos_profile", pos_profile.value);
+    // Filter complementary mode
+    const complementryMode = pos_profile.value.payments
+      .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+      .map(profile => ({
+        ...profile,
+        amount: selectedProduct.value.original_rate, // Add original amount
+      }));
+
+    console.log("complementryMode", complementryMode);
+  } else {
+    selectedProduct.value.rate = selectedProduct.value.original_rate;
+    selectedProduct.value.complementryItem = false;
+
+    // Reset the filtered complementary mode with zero amount
+    const complementryMode = pos_profile.value.payments
+      .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+      .map(profile => ({
+        ...profile,
+        amount: 0, // Set amount to zero
+      }));
+
+    console.log("complementryMode", complementryMode);
+  }
+};
+
     watch(discount, (newVal) => {
       console.log("discount value", newVal);
       if (!selectedProduct.value.original_rate) {
@@ -230,36 +262,36 @@ export default {
           selectedProduct.value.original_rate - discountAmount;
       }
     });
-    watch(complementaryItem, (newValue) => {
-      if (newValue) {
-        selectedProduct.value.rate = 0;
-        selectedProduct.value.complementryItem = true;
+    // watch(complementaryItem, (newValue) => {
+    //   if (newValue) {
+    //     selectedProduct.value.rate = 0;
+    //     selectedProduct.value.complementryItem = true;
 
-        console.log("pos_profile", pos_profile.value);
-        // Filter complementary mode
-        const complementryMode = pos_profile.value.payments
-          .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
-          .map(profile => ({
-            ...profile,
-            amount: selectedProduct.value.original_rate // Add original amount
-          }));
+    //     console.log("pos_profile", pos_profile.value);
+    //     // Filter complementary mode
+    //     const complementryMode = pos_profile.value.payments
+    //       .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+    //       .map(profile => ({
+    //         ...profile,
+    //         amount: selectedProduct.value.original_rate // Add original amount
+    //       }));
 
-        console.log("complementryMode", complementryMode);
-      } else {
-        selectedProduct.value.rate = selectedProduct.value.original_rate;
-        selectedProduct.value.complementryItem = false;
+    //     console.log("complementryMode", complementryMode);
+    //   } else {
+    //     selectedProduct.value.rate = selectedProduct.value.original_rate;
+    //     selectedProduct.value.complementryItem = false;
 
-        // Reset the filtered complementary mode with zero amount
-        const complementryMode = pos_profile.value.payments
-          .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
-          .map(profile => ({
-            ...profile,
-            amount: 0 // Set amount to zero
-          }));
+    //     // Reset the filtered complementary mode with zero amount
+    //     const complementryMode = pos_profile.value.payments
+    //       .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+    //       .map(profile => ({
+    //         ...profile,
+    //         amount: 0 // Set amount to zero
+    //       }));
 
-        console.log("complementryMode", complementryMode);
-      }
-    });
+    //     console.log("complementryMode", complementryMode);
+    //   }
+    // });
 
     onMounted(() => {
       eventBus.on("open-product-dialog", (data) => {
@@ -281,23 +313,7 @@ export default {
       });
     });
 
-    return {
-      dialog,
-      quantity,
-      increaseQuantity,
-      decreaseQuantity,
-      addToCart,
-      selectedProduct,
-      updateQty,
-      closeDialog,
-      discount,
-      pos_profile,
-      validateDiscount,
-      formatNumber,
-      complementaryItem
-    };
-  },
-};
+
 </script>
 
 <style scoped>

@@ -13797,9 +13797,13 @@ Expected function or array of functions, received type ${typeof value}.`
           const existingItem = items.value.find(
             (item) => item.item_code === data.item_code
           );
-          if (existingItem) {
-            existingItem.qty += data.qty;
-            existingItem.netTotal = existingItem.rate * existingItem.qty;
+          if (!data.complementryItem) {
+            if (existingItem) {
+              existingItem.qty += data.qty;
+              existingItem.netTotal = existingItem.rate * existingItem.qty;
+            } else {
+              items.value.push(__spreadValues({}, data));
+            }
           } else {
             items.value.push(__spreadValues({}, data));
           }
@@ -18114,7 +18118,9 @@ Expected function or array of functions, received type ${typeof value}.`
 
   // sfc-script:/home/daniyal/frappe_benches/version15/frappe-bench/apps/tabrah_pos/tabrah_pos/public/js/posapp/components/zaraPos/ProductDialog.vue?type=script
   var ProductDialog_default = {
-    setup() {
+    __name: "ProductDialog",
+    setup(__props, { expose: __expose }) {
+      __expose();
       const dialog = ref(false);
       const quantity = ref(1);
       const selectedProduct = ref("");
@@ -18145,6 +18151,7 @@ Expected function or array of functions, received type ${typeof value}.`
           } else {
             bus_default.emit("exist-item-cart", selectedProduct.value);
           }
+          complementaryItem.value = false;
           dialog.value = false;
           discount.value = "";
         }
@@ -18169,6 +18176,24 @@ Expected function or array of functions, received type ${typeof value}.`
           selectedProduct.value.rate = selectedProduct.value.original_rate - discountAmount;
         }
       };
+      const handleComplementaryToggle = () => {
+        if (complementaryItem.value) {
+          selectedProduct.value.rate = 0;
+          selectedProduct.value.complementryItem = true;
+          console.log("pos_profile", pos_profile2.value);
+          const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
+            amount: selectedProduct.value.original_rate
+          }));
+          console.log("complementryMode", complementryMode);
+        } else {
+          selectedProduct.value.rate = selectedProduct.value.original_rate;
+          selectedProduct.value.complementryItem = false;
+          const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
+            amount: 0
+          }));
+          console.log("complementryMode", complementryMode);
+        }
+      };
       watch2(discount, (newVal) => {
         console.log("discount value", newVal);
         if (!selectedProduct.value.original_rate) {
@@ -18185,24 +18210,6 @@ Expected function or array of functions, received type ${typeof value}.`
         } else {
           const discountAmount = selectedProduct.value.original_rate * discount.value / 100;
           selectedProduct.value.rate = selectedProduct.value.original_rate - discountAmount;
-        }
-      });
-      watch2(complementaryItem, (newValue) => {
-        if (newValue) {
-          selectedProduct.value.rate = 0;
-          selectedProduct.value.complementryItem = true;
-          console.log("pos_profile", pos_profile2.value);
-          const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
-            amount: selectedProduct.value.original_rate
-          }));
-          console.log("complementryMode", complementryMode);
-        } else {
-          selectedProduct.value.rate = selectedProduct.value.original_rate;
-          selectedProduct.value.complementryItem = false;
-          const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
-            amount: 0
-          }));
-          console.log("complementryMode", complementryMode);
         }
       });
       onMounted(() => {
@@ -18223,21 +18230,11 @@ Expected function or array of functions, received type ${typeof value}.`
           pos_profile2.value = profile;
         });
       });
-      return {
-        dialog,
-        quantity,
-        increaseQuantity,
-        decreaseQuantity,
-        addToCart,
-        selectedProduct,
-        updateQty,
-        closeDialog,
-        discount,
-        pos_profile: pos_profile2,
-        validateDiscount,
-        formatNumber,
-        complementaryItem
-      };
+      const __returned__ = { dialog, quantity, selectedProduct, updateQty, discount, pos_profile: pos_profile2, complementaryItem, increaseQuantity, decreaseQuantity, formatNumber, addToCart, closeDialog, validateDiscount, handleComplementaryToggle, ref, onMounted, watch: watch2, get eventBus() {
+        return bus_default;
+      } };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
     }
   };
 
@@ -18387,7 +18384,7 @@ Expected function or array of functions, received type ${typeof value}.`
                                     createTextVNode("-")
                                   ]),
                                   _: 1
-                                }, 8, ["onClick"])
+                                })
                               ]),
                               _: 1
                             }),
@@ -18422,7 +18419,7 @@ Expected function or array of functions, received type ${typeof value}.`
                                     createTextVNode("+")
                                   ]),
                                   _: 1
-                                }, 8, ["onClick"])
+                                })
                               ]),
                               _: 1
                             })
@@ -18446,7 +18443,7 @@ Expected function or array of functions, received type ${typeof value}.`
                                   max: $setup.pos_profile.posa_max_discount_allowed,
                                   onUpdate: $setup.validateDiscount,
                                   disabled: !$setup.pos_profile.posa_max_discount_allowed
-                                }, null, 8, ["label", "modelValue", "max", "onUpdate", "disabled"])
+                                }, null, 8, ["label", "modelValue", "max", "disabled"])
                               ]),
                               _: 1
                             }),
@@ -18462,6 +18459,7 @@ Expected function or array of functions, received type ${typeof value}.`
                                   color: "red",
                                   label: "Complementary Item",
                                   value: "red",
+                                  onChange: $setup.handleComplementaryToggle,
                                   "hide-details": ""
                                 }, null, 8, ["modelValue"])
                               ]),
@@ -18483,7 +18481,7 @@ Expected function or array of functions, received type ${typeof value}.`
                             createTextVNode(" ADD ")
                           ]),
                           _: 1
-                        }, 8, ["onClick"]),
+                        }),
                         _hoisted_156,
                         createBaseVNode("div", _hoisted_165, toDisplayString($setup.selectedProduct.description), 1)
                       ]),
@@ -48367,4 +48365,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.U4YERLC6.js.map
+//# sourceMappingURL=pos.bundle.WMPOTCMS.js.map

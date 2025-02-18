@@ -748,14 +748,14 @@ const createPreInvoice = async () => {
     doc.grand_total = grandTotal.value
     doc.gstAmountCash = gstAmount.value
     const now = new Date();
-    
+
     // Format date as YYYY-MM-DD
     doc.date = now.toISOString().split('T')[0];
 
     // Format time as HH:MM:SS
     doc.time = now.toLocaleTimeString('en-US', { hour12: false });
-  
- 
+
+
     console.log("pre-invoice", doc);
     printPreInvoice(
       doc,
@@ -948,24 +948,24 @@ const holdOrder = () => {
 };
 
 const updateTableStatus = async (table, status) => {
-  if(table){
-  try {
-    const response = await frappe.call({
-      method:
-        "tabrah_pos.tabrah_pos.api.posapp.update_table_status",
-      args: {
-        table_name: table,
-        status: status
-      },
-    });
+  if (table) {
+    try {
+      const response = await frappe.call({
+        method:
+          "tabrah_pos.tabrah_pos.api.posapp.update_table_status",
+        args: {
+          table_name: table,
+          status: status
+        },
+      });
 
-    if (response && response.message) {
-      eventBus.emit("reserved-table", selectedTable.value);
+      if (response && response.message) {
+        eventBus.emit("reserved-table", selectedTable.value);
+      }
+    } catch (error) {
+      console.error("Error updating invoice from order:", error);
     }
-  } catch (error) {
-    console.error("Error updating invoice from order:", error);
   }
-}
 
 };
 
@@ -1343,7 +1343,7 @@ const deleteItem = (index) => {
     if (holdOrderId.value) {
       const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
       const updatedOrders = heldOrders.filter((order) => order.id == holdOrderId.value);
-      if(updatedOrders.length > 0) {
+      if (updatedOrders.length > 0) {
         updateTableStatus(updatedOrders[0].table, "Available");
       }
 
@@ -1496,22 +1496,28 @@ onMounted(() => {
     data.rate = data.custom_discounted_rate > 0 ? data.custom_discounted_rate : data.rate
     data.netTotal = 0;
     data.netTotal = data.rate * data.qty;
-    data.complementryItem=data.complementryItem || false
+    data.complementryItem = data.complementryItem || false
 
     // Find if the item already exists in the array
     const existingItem = items.value.find(
       (item) => item.item_code === data.item_code
     );
+    if (!data.complementryItem) {
 
-    if (existingItem) {
-      // If item exists, add the new quantity
-      existingItem.qty += data.qty;
-      existingItem.netTotal = existingItem.rate * existingItem.qty;
-    } else {
-      // If item doesn't exist, add it to the array
-      // selectedProduct.value.netTotal =
-      //   selectedProduct.value.rate * selectedProduct.value.qty;
+      if (existingItem) {
+        // If item exists, add the new quantity
+        existingItem.qty += data.qty;
+        existingItem.netTotal = existingItem.rate * existingItem.qty;
+      } else {
+        // If item doesn't exist, add it to the array
+        // selectedProduct.value.netTotal =
+        //   selectedProduct.value.rate * selectedProduct.value.qty;
+        items.value.push({ ...data });
+      }
+    }
+    else {
       items.value.push({ ...data });
+
     }
 
     makePayloadForInvoice();
