@@ -231,16 +231,35 @@ export default {
       }
     });
     watch(complementaryItem, (newValue) => {
-  if (newValue) {
-    selectedProduct.value.rate = 0;
-    selectedProduct.value.complementryItem=true 
+      if (newValue) {
+        selectedProduct.value.rate = 0;
+        selectedProduct.value.complementryItem = true;
 
-  } else {
-    selectedProduct.value.rate = selectedProduct.value.original_rate;
-    selectedProduct.value.complementryItem=false 
+        console.log("pos_profile", pos_profile.value);
+        // Filter complementary mode
+        const complementryMode = pos_profile.value.payments
+          .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+          .map(profile => ({
+            ...profile,
+            amount: selectedProduct.value.original_rate // Add original amount
+          }));
 
-  }
-});
+        console.log("complementryMode", complementryMode);
+      } else {
+        selectedProduct.value.rate = selectedProduct.value.original_rate;
+        selectedProduct.value.complementryItem = false;
+
+        // Reset the filtered complementary mode with zero amount
+        const complementryMode = pos_profile.value.payments
+          .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+          .map(profile => ({
+            ...profile,
+            amount: 0 // Set amount to zero
+          }));
+
+        console.log("complementryMode", complementryMode);
+      }
+    });
 
     onMounted(() => {
       eventBus.on("open-product-dialog", (data) => {
@@ -249,8 +268,8 @@ export default {
         data.product.qty = quantity.value;
         selectedProduct.value = data.product;
         if (!selectedProduct.value.original_rate) {
-        selectedProduct.value.original_rate = selectedProduct.value.rate;
-      }
+          selectedProduct.value.original_rate = selectedProduct.value.rate;
+        }
         if (selectedProduct.value) {
           dialog.value = true;
         }
