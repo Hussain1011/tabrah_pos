@@ -13701,8 +13701,12 @@ Expected function or array of functions, received type ${typeof value}.`
       const deleteItem = (index) => {
         if (allowedDelete.value || !holdOrderId.value) {
           items.value.splice(index, 1);
-          console.log("holdOrderId.value", holdOrderId.value);
           if (holdOrderId.value) {
+            const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+            const updatedOrders = heldOrders.filter((order) => order.id == holdOrderId.value);
+            if (updatedOrders.length > 0) {
+              updateTableStatus(updatedOrders[0].table, "Available");
+            }
             bus_default.emit("update-hold-order", holdOrderId.value);
             holdOrderId.value = "";
           }
@@ -48363,4 +48367,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.RXWN76CH.js.map
+//# sourceMappingURL=pos.bundle.U4YERLC6.js.map
