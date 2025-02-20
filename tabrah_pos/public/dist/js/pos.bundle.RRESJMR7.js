@@ -18154,6 +18154,7 @@ Expected function or array of functions, received type ${typeof value}.`
           complementaryItem.value = false;
           dialog.value = false;
           discount.value = "";
+          selectedProduct.value.rate = selectedProduct.value.original_rate;
         }
       };
       const closeDialog = () => {
@@ -48365,4 +48366,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.3KS4IWIQ.js.map
+//# sourceMappingURL=pos.bundle.RRESJMR7.js.map

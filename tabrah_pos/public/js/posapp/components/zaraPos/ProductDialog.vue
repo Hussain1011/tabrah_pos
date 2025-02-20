@@ -170,7 +170,7 @@ import eventBus from "../../bus";
         complementaryItem.value=false
         dialog.value = false;
         discount.value = "";
-
+        selectedProduct.value.rate=selectedProduct.value.original_rate
       }
     };
     const closeDialog = () => {
