@@ -13794,10 +13794,10 @@ Expected function or array of functions, received type ${typeof value}.`
           data.netTotal = 0;
           data.netTotal = data.rate * data.qty;
           data.complementryItem = data.complementryItem || false;
-          const existingItem = items.value.find(
-            (item) => item.item_code === data.item_code
-          );
           if (!data.complementryItem) {
+            const existingItem = items.value.find(
+              (item) => item.item_code === data.item_code
+            );
             if (existingItem) {
               existingItem.qty += data.qty;
               existingItem.netTotal = existingItem.rate * existingItem.qty;
@@ -48366,4 +48366,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.RRESJMR7.js.map
+//# sourceMappingURL=pos.bundle.7RRUSAZ4.js.map

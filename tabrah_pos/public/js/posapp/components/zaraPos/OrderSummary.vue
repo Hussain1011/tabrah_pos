@@ -1499,10 +1499,11 @@ onMounted(() => {
     data.complementryItem = data.complementryItem || false
 
     // Find if the item already exists in the array
+    if (!data.complementryItem) {
+
     const existingItem = items.value.find(
       (item) => item.item_code === data.item_code
     );
-    if (!data.complementryItem) {
 
       if (existingItem) {
         // If item exists, add the new quantity
