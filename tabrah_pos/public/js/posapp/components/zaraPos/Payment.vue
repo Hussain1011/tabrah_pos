@@ -38,11 +38,17 @@
           <v-text-field class="b-radius-8" variant="outlined" label="Paid Amount" suffix="QAR." v-model="amountTake"
             :disabled="paymentType.mode_type !== 'Cash' || splitPayment" />
         </v-col>
-        <v-col cols="12" md="3">
+        <v-col cols="12" md="2">
           <v-text-field class="b-radius-8" variant="outlined"
             :label="`Discount (max ${pos_profile.posa_max_discount_allowed} %)`" v-model="discount" type="number"
             :max="pos_profile.posa_max_discount_allowed" @update="validateDiscount"
             :disabled="!pos_profile.posa_max_discount_allowed" />
+        </v-col>
+        <v-col cols="12" md="2">
+          <v-text-field class="b-radius-8" variant="outlined"
+            :label="`Tip`" v-model="tip" type="number"
+            :min="0" 
+             />
         </v-col>
 
         <v-col cols="12" md="3">
@@ -264,6 +270,7 @@ const paymentModes = ref([]);
 const totalPaidAmount = ref(0);
 const taxRate = ref("");
 const amountTake = ref("");
+const tip = ref("");
 const changeAmount = ref(0);
 const newTax = ref({});
 const btnLoading = ref(false);
@@ -301,6 +308,7 @@ const setDefaultValue = () => {
   splitPayment.value = false;
   confirmSplit.value = false;
   complementaryItem.value = false;
+  tip.value = "";
   const complementryMode = pos_profile.value.payments
     .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
     .map(profile => ({
@@ -1047,7 +1055,7 @@ const submitSaleInvoice = async (
       if (invoice_doc.value.is_return && totalPayedAmount == 0) {
         invoice_doc.value.is_pos = 0;
       }
-
+      invoice_doc.value.tip=tip.value
       let data = {};
       let totalChange = -changeAmount.value;
       data.paid_change = changeAmount.value;
