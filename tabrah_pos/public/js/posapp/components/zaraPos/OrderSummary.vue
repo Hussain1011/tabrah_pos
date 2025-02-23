@@ -1343,7 +1343,9 @@ const deleteItem = (index) => {
     if (holdOrderId.value) {
       const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
       const updatedOrders = heldOrders.filter((order) => order.id == holdOrderId.value);
+      // console.log("updatedOrders.....",updatedOrders);
       if (updatedOrders.length > 0) {
+        // console.log("eenter inn deletee.....")
         updateTableStatus(updatedOrders[0].table, "Available");
       }
 

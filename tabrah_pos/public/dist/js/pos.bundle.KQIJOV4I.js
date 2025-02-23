@@ -15435,6 +15435,7 @@ Expected function or array of functions, received type ${typeof value}.`
       const totalPaidAmount = ref(0);
       const taxRate = ref("");
       const amountTake = ref("");
+      const tip = ref("");
       const changeAmount = ref(0);
       const newTax = ref({});
       const btnLoading = ref(false);
@@ -15461,6 +15462,7 @@ Expected function or array of functions, received type ${typeof value}.`
         splitPayment.value = false;
         confirmSplit.value = false;
         complementaryItem.value = false;
+        tip.value = "";
         const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
           amount: 0
         }));
@@ -15995,6 +15997,7 @@ Expected function or array of functions, received type ${typeof value}.`
             if (invoice_doc.value.is_return && totalPayedAmount == 0) {
               invoice_doc.value.is_pos = 0;
             }
+            invoice_doc.value.tip = tip.value;
             let data = {};
             let totalChange = -changeAmount.value;
             data.paid_change = changeAmount.value;
@@ -16400,6 +16403,11 @@ Expected function or array of functions, received type ${typeof value}.`
         (newItems) => {
           if (newItems && newItems.some((item) => item.complementryItem === true)) {
             complementaryItem.value = true;
+            newItems.forEach((item) => {
+              if (item.complementryItem === true) {
+                item.rate = item.original_rate;
+              }
+            });
           } else {
             complementaryItem.value = false;
           }
@@ -16502,7 +16510,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.off("go-for-payment");
         bus_default.off("send_pos_profile");
       });
-      const __returned__ = { numpad, invoice_doc, pos_profile: pos_profile2, paymentType, paymentModes, totalPaidAmount, taxRate, amountTake, changeAmount, newTax, btnLoading, btnLoading1, selectedOrderType, orderId, discount, showDialog, splitPayment, confirmSplit, offlineMode, punching, employeesList, orderBy, complementaryItem, fbrResponse, requiredOrderId, setDefaultValue, validateDiscount, backToProductMenu, openSplitPaymentDialog, cancelSplit, closeDialog, updateRemainingAmount, submitSplitPayment, handleNumpadClick, updateDocPayment, changePaymentType, set_full_amount, offlineProfileData, cancelOrder, getFormattedPrintFormat, load_print_page, submitReturn, checkSubmitType, forExchangeSaleInvoice, submitSaleInvoice, formatNumber, ref, onMounted, watch: watch2, onUnmounted, computed: computed2, get eventBus() {
+      const __returned__ = { numpad, invoice_doc, pos_profile: pos_profile2, paymentType, paymentModes, totalPaidAmount, taxRate, amountTake, tip, changeAmount, newTax, btnLoading, btnLoading1, selectedOrderType, orderId, discount, showDialog, splitPayment, confirmSplit, offlineMode, punching, employeesList, orderBy, complementaryItem, fbrResponse, requiredOrderId, setDefaultValue, validateDiscount, backToProductMenu, openSplitPaymentDialog, cancelSplit, closeDialog, updateRemainingAmount, submitSplitPayment, handleNumpadClick, updateDocPayment, changePaymentType, set_full_amount, offlineProfileData, cancelOrder, getFormattedPrintFormat, load_print_page, submitReturn, checkSubmitType, forExchangeSaleInvoice, submitSaleInvoice, formatNumber, ref, onMounted, watch: watch2, onUnmounted, computed: computed2, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
@@ -16694,7 +16702,7 @@ Expected function or array of functions, received type ${typeof value}.`
               }),
               createVNode(_component_v_col, {
                 cols: "12",
-                md: "3"
+                md: "2"
               }, {
                 default: withCtx(() => [
                   createVNode(_component_v_text_field, {
@@ -16713,6 +16721,23 @@ Expected function or array of functions, received type ${typeof value}.`
               }),
               createVNode(_component_v_col, {
                 cols: "12",
+                md: "2"
+              }, {
+                default: withCtx(() => [
+                  createVNode(_component_v_text_field, {
+                    class: "b-radius-8",
+                    variant: "outlined",
+                    label: `Tip`,
+                    modelValue: $setup.tip,
+                    "onUpdate:modelValue": _cache[4] || (_cache[4] = ($event) => $setup.tip = $event),
+                    type: "number",
+                    min: 0
+                  }, null, 8, ["modelValue"])
+                ]),
+                _: 1
+              }),
+              createVNode(_component_v_col, {
+                cols: "12",
                 md: "3"
               }, {
                 default: withCtx(() => [
@@ -16724,7 +16749,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     style: normalizeStyle({
                       backgroundColor: $setup.splitPayment ? "#fcdfd3" : "#d3ecec"
                     }),
-                    onClick: _cache[4] || (_cache[4] = ($event) => $setup.openSplitPaymentDialog())
+                    onClick: _cache[5] || (_cache[5] = ($event) => $setup.openSplitPaymentDialog())
                   }, {
                     default: withCtx(() => [
                       createVNode(_component_v_icon, {
@@ -16754,7 +16779,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     size: "large",
                     variant: "outlined",
                     style: { "background-color": "#d3ecec" },
-                    onClick: _cache[5] || (_cache[5] = ($event) => $setup.cancelSplit())
+                    onClick: _cache[6] || (_cache[6] = ($event) => $setup.cancelSplit())
                   }, {
                     default: withCtx(() => [
                       createVNode(_component_v_icon, {
@@ -16933,7 +16958,7 @@ Expected function or array of functions, received type ${typeof value}.`
                 color: "#21A0A0",
                 style: { "background-color": "#d3ecec", "border-radius": "8px" },
                 loading: $setup.btnLoading1,
-                onClick: _cache[6] || (_cache[6] = ($event) => $setup.checkSubmitType(void 0, false, true))
+                onClick: _cache[7] || (_cache[7] = ($event) => $setup.checkSubmitType(void 0, false, true))
               }, {
                 default: withCtx(() => [
                   createVNode(_component_v_icon, { left: "" }, {
@@ -16957,7 +16982,7 @@ Expected function or array of functions, received type ${typeof value}.`
                 color: "#21A0A0",
                 style: { "border-radius": "8px" },
                 class: "white--text checkout-p",
-                onClick: _cache[7] || (_cache[7] = ($event) => $setup.checkSubmitType()),
+                onClick: _cache[8] || (_cache[8] = ($event) => $setup.checkSubmitType()),
                 loading: $setup.btnLoading
               }, {
                 default: withCtx(() => [
@@ -17023,7 +17048,7 @@ Expected function or array of functions, received type ${typeof value}.`
       createCommentVNode(" Dialog for Split Payment "),
       createVNode(_component_v_dialog, {
         modelValue: $setup.showDialog,
-        "onUpdate:modelValue": _cache[8] || (_cache[8] = ($event) => $setup.showDialog = $event),
+        "onUpdate:modelValue": _cache[9] || (_cache[9] = ($event) => $setup.showDialog = $event),
         "max-width": "500px",
         persistent: ""
       }, {
@@ -48366,4 +48391,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.7RRUSAZ4.js.map
+//# sourceMappingURL=pos.bundle.KQIJOV4I.js.map
