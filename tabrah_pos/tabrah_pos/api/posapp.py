@@ -1163,7 +1163,10 @@ def sales_invoice(data, invoice=None, taxvalue=None):
     ):
         invoice_doc.set_posting_time = 1
     invoice_doc.order_summery_for_pos = json.dumps(invoice_doc.order_summery_for_pos)
-
+    
+    # Handle tips ledger posting
+    if invoice_doc.get("tip"):
+        create_tip_ledger_entry(invoice_doc)
     # Process submission if invoice data exists
     if invoice:
         invoice = json.loads(invoice)
@@ -1309,6 +1312,71 @@ def sales_invoice(data, invoice=None, taxvalue=None):
             )
 
     return {"name": invoice_doc.name, "status": invoice_doc.docstatus}
+
+
+import frappe
+from frappe.utils import flt, getdate
+
+def create_tip_ledger_entry(invoice_doc):
+    try:
+        print(f"Processing invoice: {invoice_doc.name}")  # Debugging
+
+        # Fetch POS Profile
+        pos_profile = frappe.get_doc("POS Profile", invoice_doc.pos_profile)
+        print(f"POS Profile: {pos_profile.name}")
+
+        # Ensure tip amount is a float
+        tip_amount = flt(invoice_doc.get("tip"))
+        print(f"Tip Amount: {tip_amount}")
+
+        if not tip_amount or tip_amount <= 0:
+            print("No valid tip amount found. Skipping journal entry.")
+            return
+
+        # Check if required accounts exist
+        if not pos_profile.custom_tip_account:
+            frappe.throw("Custom Tip Account is not set in POS Profile.")
+        if not pos_profile.cost_center:
+            frappe.throw("Cost Center is not set in POS Profile.")
+
+        cash_account = frappe.get_value("Company", pos_profile.company, "default_cash_account")
+        if not cash_account:
+            frappe.throw("Default Cash Account is not set in Company settings.")
+
+        print(f"Tip Account: {pos_profile.custom_tip_account}, Cash Account: {cash_account}")
+
+        # Create Journal Entry
+        journal_entry = frappe.get_doc({
+            "doctype": "Journal Entry",
+            "posting_date": getdate(),
+            "company": pos_profile.company,
+            "voucher_type": "Journal Entry",
+            "accounts": [
+                {
+                    "account": pos_profile.custom_tip_account,
+                    "debit_in_account_currency": tip_amount,
+                    "cost_center": pos_profile.cost_center,
+                },
+                {
+                    "account": cash_account,
+                    "credit_in_account_currency": tip_amount,
+                    "cost_center": pos_profile.cost_center,
+                }
+            ],
+            "remark": f"Tip collected from invoice {invoice_doc.name}",
+        })
+
+        journal_entry.flags.ignore_permissions = True
+        journal_entry.save()
+        print(f"Journal Entry {journal_entry.name} saved successfully.")
+
+        journal_entry.submit()
+        print(f"Journal Entry {journal_entry.name} submitted successfully.")
+
+    except Exception as e:
+        frappe.throw(f"Error in create_tip_ledger_entry: {str(e)}")
+
+
 
 
 def set_batch_nos_for_bundels(doc, warehouse_field, throw=False):
