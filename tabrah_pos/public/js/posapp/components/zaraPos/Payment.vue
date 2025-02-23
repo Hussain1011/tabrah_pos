@@ -1711,6 +1711,11 @@ watch(
   (newItems) => {
     if (newItems && newItems.some(item => item.complementryItem === true)) {
       complementaryItem.value = true;
+      newItems.forEach(item => {
+        if (item.complementryItem === true) {
+          item.rate = item.original_rate; // Assuming 'original_rate' exists in item
+        }
+      });
     } else {
       complementaryItem.value = false;
     }

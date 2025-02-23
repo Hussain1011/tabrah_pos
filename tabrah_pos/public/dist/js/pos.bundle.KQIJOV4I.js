@@ -16403,6 +16403,11 @@ Expected function or array of functions, received type ${typeof value}.`
         (newItems) => {
           if (newItems && newItems.some((item) => item.complementryItem === true)) {
             complementaryItem.value = true;
+            newItems.forEach((item) => {
+              if (item.complementryItem === true) {
+                item.rate = item.original_rate;
+              }
+            });
           } else {
             complementaryItem.value = false;
           }
@@ -48386,4 +48391,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.RWWY7LKK.js.map
+//# sourceMappingURL=pos.bundle.KQIJOV4I.js.map
