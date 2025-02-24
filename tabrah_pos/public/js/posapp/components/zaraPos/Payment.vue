@@ -510,11 +510,6 @@ const submitSplitPayment = () => {
   showDialog.value = false;
 };
 const handleNumpadClick = (button) => {
-  console.log(
-    "paymentType.value.custom_expense_chrages",
-    paymentType.value.custom_expense_chrages
-  );
-  if (paymentType.value.custom_expense_chrages) {
     if (button === "+") {
       amountTake.value += 1; // Add 1 to the current value
     } else if (button === "-") {
@@ -537,7 +532,6 @@ const handleNumpadClick = (button) => {
       (item) => item.mode_of_payment == paymentType.value.mode_of_payment
     );
     updatePaymentAmount.amount = amountTake.value;
-  }
 };
 const updateDocPayment = (flag) => {
   let selectedPaymentMode = pos_profile.value.payments.find(

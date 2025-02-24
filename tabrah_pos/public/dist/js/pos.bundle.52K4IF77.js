@@ -15589,32 +15589,26 @@ Expected function or array of functions, received type ${typeof value}.`
         showDialog.value = false;
       };
       const handleNumpadClick = (button) => {
-        console.log(
-          "paymentType.value.custom_expense_chrages",
-          paymentType.value.custom_expense_chrages
-        );
-        if (paymentType.value.custom_expense_chrages) {
-          if (button === "+") {
-            amountTake.value += 1;
-          } else if (button === "-") {
-            amountTake.value -= 1;
-          } else if (button === "Back") {
-            amountTake.value = amountTake.value.slice(0, -1);
-          } else {
-            amountTake.value += button.toString();
-          }
-          if (amountTake.value >= invoice_doc.value.rounded_total) {
-            changeAmount.value = amountTake.value - invoice_doc.value.rounded_total;
-          }
-          invoice_doc.value.paid_amount = amountTake.value;
-          invoice_doc.value.payments.forEach((item) => {
-            item.amount = 0;
-          });
-          let updatePaymentAmount = invoice_doc.value.payments.find(
-            (item) => item.mode_of_payment == paymentType.value.mode_of_payment
-          );
-          updatePaymentAmount.amount = amountTake.value;
+        if (button === "+") {
+          amountTake.value += 1;
+        } else if (button === "-") {
+          amountTake.value -= 1;
+        } else if (button === "Back") {
+          amountTake.value = amountTake.value.slice(0, -1);
+        } else {
+          amountTake.value += button.toString();
         }
+        if (amountTake.value >= invoice_doc.value.rounded_total) {
+          changeAmount.value = amountTake.value - invoice_doc.value.rounded_total;
+        }
+        invoice_doc.value.paid_amount = amountTake.value;
+        invoice_doc.value.payments.forEach((item) => {
+          item.amount = 0;
+        });
+        let updatePaymentAmount = invoice_doc.value.payments.find(
+          (item) => item.mode_of_payment == paymentType.value.mode_of_payment
+        );
+        updatePaymentAmount.amount = amountTake.value;
       };
       const updateDocPayment = (flag) => {
         let selectedPaymentMode = pos_profile2.value.payments.find(
@@ -48407,4 +48401,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.E4YY4Y7U.js.map
+//# sourceMappingURL=pos.bundle.52K4IF77.js.map
