@@ -590,7 +590,6 @@ const updateDocPayment = (flag) => {
 };
 
 const changePaymentType = (type) => {
-  console.log("Lucum invice", type);
   if (!invoice_doc.value.original_grand_total) {
     invoice_doc.value.original_grand_total = invoice_doc.value.grand_total;
   }
@@ -614,8 +613,8 @@ const changePaymentType = (type) => {
             payment.amount = parseInt(invoice_doc.value.grand_total, 10);
             amountTake.value = payment.amount; // Reflect the selected mode's amount in the input
             if (!type.custom_expense_chrages) {
-              amountTake.value = amountTake.value + 1;
-              invoice_doc.value.grand_total = invoice_doc.value.grand_total + 1;
+              amountTake.value = amountTake.value;
+              invoice_doc.value.grand_total = invoice_doc.value.grand_total;
             }
           } else {
             // Clear the amount for cash mode (can be user-inputted later)

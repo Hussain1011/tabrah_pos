@@ -15655,7 +15655,6 @@ Expected function or array of functions, received type ${typeof value}.`
         }
       };
       const changePaymentType = (type) => {
-        console.log("Lucum invice", type);
         if (!invoice_doc.value.original_grand_total) {
           invoice_doc.value.original_grand_total = invoice_doc.value.grand_total;
         }
@@ -15674,8 +15673,8 @@ Expected function or array of functions, received type ${typeof value}.`
                   payment.amount = parseInt(invoice_doc.value.grand_total, 10);
                   amountTake.value = payment.amount;
                   if (!type.custom_expense_chrages) {
-                    amountTake.value = amountTake.value + 1;
-                    invoice_doc.value.grand_total = invoice_doc.value.grand_total + 1;
+                    amountTake.value = amountTake.value;
+                    invoice_doc.value.grand_total = invoice_doc.value.grand_total;
                   }
                 } else {
                   const originalGrandTotal = Number(invoice_doc.value.original_grand_total) || 0;
@@ -15969,7 +15968,6 @@ Expected function or array of functions, received type ${typeof value}.`
       };
       const submitSaleInvoice = async (event, payment_received = false, print = false) => {
         console.log("submit invoice...", invoice_doc.value);
-        console.log("pos_profile...", pos_profile2.value);
         if (discount.value > pos_profile2.value.posa_max_discount_allowed) {
           bus_default.emit("show_mesage", {
             text: `Only ${pos_profile2.value.posa_max_discount_allowed}% discount allowed`,
@@ -48387,4 +48385,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.DXZIL2WO.js.map
+//# sourceMappingURL=pos.bundle.H64JIBMT.js.map
