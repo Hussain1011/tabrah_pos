@@ -15991,9 +15991,11 @@ Expected function or array of functions, received type ${typeof value}.`
         if (totalAmount >= invoice_doc.value.grand_total) {
           if (!btnLoading.value && !btnLoading1.value) {
             if (print) {
+              console.log("enter in print ");
               btnLoading1.value = true;
             } else {
               btnLoading.value = true;
+              console.log("enter in checkout ");
             }
             invoice_doc.value.payments = invoice_doc.value.payments.map((payment) => {
               const matchedPayment = paymentModes.value.find(
@@ -16068,26 +16070,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     }
                   }
                   if (print) {
-                    try {
-                      const responseCode = await sync_fbr(
-                        invoice_doc.value,
-                        pos_profile2.value,
-                        false
-                      );
-                      console.log("fbr-response", responseCode);
-                      if (responseCode) {
-                        load_print_page(response.message.name);
-                      } else {
-                        console.error(
-                          "FBR synchronization failed. Print page will not be loaded."
-                        );
-                      }
-                    } catch (error) {
-                      console.error(
-                        "Error during FBR sync and print handling:",
-                        error
-                      );
-                    }
+                    load_print_page(response.message.name);
                   }
                   bus_default.emit("show_mesage", {
                     text: `Invoice ${response.message.name} is Submitted`,
@@ -16971,7 +16954,7 @@ Expected function or array of functions, received type ${typeof value}.`
                 color: "#21A0A0",
                 style: { "background-color": "#d3ecec", "border-radius": "8px" },
                 loading: $setup.btnLoading1,
-                onClick: _cache[7] || (_cache[7] = ($event) => $setup.checkSubmitType(void 0, false, true))
+                onClick: _cache[7] || (_cache[7] = ($event) => $setup.submitSaleInvoice(void 0, false, true))
               }, {
                 default: withCtx(() => [
                   createVNode(_component_v_icon, { left: "" }, {
@@ -16995,7 +16978,7 @@ Expected function or array of functions, received type ${typeof value}.`
                 color: "#21A0A0",
                 style: { "border-radius": "8px" },
                 class: "white--text checkout-p",
-                onClick: _cache[8] || (_cache[8] = ($event) => $setup.checkSubmitType()),
+                onClick: _cache[8] || (_cache[8] = ($event) => $setup.submitSaleInvoice()),
                 loading: $setup.btnLoading
               }, {
                 default: withCtx(() => [
@@ -48404,4 +48387,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.K6CAK5Q4.js.map
+//# sourceMappingURL=pos.bundle.DXZIL2WO.js.map
