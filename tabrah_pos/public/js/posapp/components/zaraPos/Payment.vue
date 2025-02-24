@@ -286,6 +286,9 @@ const punching = ref("completed");
 const employeesList = ref([]);
 const orderBy = ref("");
 const complementaryItem = ref(false);
+const complementaryItemDetails = ref('');
+
+
 
 
 
@@ -298,7 +301,7 @@ const requiredOrderId = ref(false);
 const setDefaultValue = () => {
   amountTake.value = null;
   discount.value = "";
-
+  complementaryItemDetails.value = '';
   invoice_doc.value = {};
   // subTotal.value = 0;
   // orderSummary.value = [];
@@ -1067,8 +1070,13 @@ const submitSaleInvoice = async (
       invoice_doc.value.custom_invoice_status = "In Queue";
       if (complementaryItem.value) {
         const complementryMode = pos_profile.value.payments
-          .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
-        invoice_doc.value.payments.push(complementryMode[0])
+      .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+      .map(profile => ({
+        ...profile,
+        amount: complementaryItemDetails.value.original_rate, // Add original amount
+      }));
+      console.log("complementryMode", complementryMode);
+      invoice_doc.value.payments.push(complementryMode[0])
       }
 
 
@@ -1713,7 +1721,9 @@ watch(
       complementaryItem.value = true;
       newItems.forEach(item => {
         if (item.complementryItem === true) {
-          item.rate = item.original_rate; // Assuming 'original_rate' exists in item
+          item.rate = item.original_rate; 
+          complementaryItemDetails.value = item;
+       
         }
       });
     } else {

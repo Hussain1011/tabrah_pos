@@ -12523,6 +12523,13 @@ Expected function or array of functions, received type ${typeof value}.`
               console.error("Error saving to IndexedDB:", error);
             });
           }
+          const complementryMode = pos_profile2.value.payments.filter((profile2) => profile2.custom_is_complementary_mode_of_payment == 1);
+          if (complementryMode.length === 0) {
+            bus_default.emit("show_mesage", {
+              text: `Please Set Complementary Mode of Payment in POS Profile`,
+              color: "error"
+            });
+          }
         });
         bus_default.on("update_get_item", (data) => {
           orderType.value = data;
@@ -15451,11 +15458,13 @@ Expected function or array of functions, received type ${typeof value}.`
       const employeesList = ref([]);
       const orderBy = ref("");
       const complementaryItem = ref(false);
+      const complementaryItemDetails = ref("");
       const fbrResponse = ref("");
       const requiredOrderId = ref(false);
       const setDefaultValue = () => {
         amountTake.value = null;
         discount.value = "";
+        complementaryItemDetails.value = "";
         invoice_doc.value = {};
         changeAmount.value = 0;
         orderId.value = "";
@@ -16008,7 +16017,10 @@ Expected function or array of functions, received type ${typeof value}.`
             data.is_cashback = true;
             invoice_doc.value.custom_invoice_status = "In Queue";
             if (complementaryItem.value) {
-              const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1);
+              const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
+                amount: complementaryItemDetails.value.original_rate
+              }));
+              console.log("complementryMode", complementryMode);
               invoice_doc.value.payments.push(complementryMode[0]);
             }
             if (navigator.onLine && !offlineMode.value && punching.value == "completed") {
@@ -16406,6 +16418,7 @@ Expected function or array of functions, received type ${typeof value}.`
             newItems.forEach((item) => {
               if (item.complementryItem === true) {
                 item.rate = item.original_rate;
+                complementaryItemDetails.value = item;
               }
             });
           } else {
@@ -16510,7 +16523,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.off("go-for-payment");
         bus_default.off("send_pos_profile");
       });
-      const __returned__ = { numpad, invoice_doc, pos_profile: pos_profile2, paymentType, paymentModes, totalPaidAmount, taxRate, amountTake, tip, changeAmount, newTax, btnLoading, btnLoading1, selectedOrderType, orderId, discount, showDialog, splitPayment, confirmSplit, offlineMode, punching, employeesList, orderBy, complementaryItem, fbrResponse, requiredOrderId, setDefaultValue, validateDiscount, backToProductMenu, openSplitPaymentDialog, cancelSplit, closeDialog, updateRemainingAmount, submitSplitPayment, handleNumpadClick, updateDocPayment, changePaymentType, set_full_amount, offlineProfileData, cancelOrder, getFormattedPrintFormat, load_print_page, submitReturn, checkSubmitType, forExchangeSaleInvoice, submitSaleInvoice, formatNumber, ref, onMounted, watch: watch2, onUnmounted, computed: computed2, get eventBus() {
+      const __returned__ = { numpad, invoice_doc, pos_profile: pos_profile2, paymentType, paymentModes, totalPaidAmount, taxRate, amountTake, tip, changeAmount, newTax, btnLoading, btnLoading1, selectedOrderType, orderId, discount, showDialog, splitPayment, confirmSplit, offlineMode, punching, employeesList, orderBy, complementaryItem, complementaryItemDetails, fbrResponse, requiredOrderId, setDefaultValue, validateDiscount, backToProductMenu, openSplitPaymentDialog, cancelSplit, closeDialog, updateRemainingAmount, submitSplitPayment, handleNumpadClick, updateDocPayment, changePaymentType, set_full_amount, offlineProfileData, cancelOrder, getFormattedPrintFormat, load_print_page, submitReturn, checkSubmitType, forExchangeSaleInvoice, submitSaleInvoice, formatNumber, ref, onMounted, watch: watch2, onUnmounted, computed: computed2, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
@@ -48391,4 +48404,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.KQIJOV4I.js.map
+//# sourceMappingURL=pos.bundle.RJL56YVO.js.map
