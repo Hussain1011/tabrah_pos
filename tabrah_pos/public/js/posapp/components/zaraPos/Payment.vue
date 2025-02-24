@@ -14,7 +14,7 @@
               style="border-radius: 8px" @click="changePaymentType(category)">
               <v-icon class="pr-2">{{
                 category.mode_type == "Cash" ? "mdi-cash" : "mdi-credit-card"
-              }}</v-icon>
+                }}</v-icon>
               <p class="mt-2 category-p">{{ category.mode_of_payment }}</p>
             </v-btn>
           </div>
@@ -45,10 +45,7 @@
             :disabled="!pos_profile.posa_max_discount_allowed" />
         </v-col>
         <v-col cols="12" md="2">
-          <v-text-field class="b-radius-8" variant="outlined"
-            :label="`Tip`" v-model="tip" type="number"
-            :min="0" 
-             />
+          <v-text-field class="b-radius-8" variant="outlined" :label="`Tip`" v-model="tip" type="number" :min="0" />
         </v-col>
 
         <v-col cols="12" md="3">
@@ -181,13 +178,13 @@
       <v-col cols="2">
         <v-btn size="x-large" variant="outlined" class="text-capitalize" color="#21A0A0"
           style="background-color: #d3ecec; border-radius: 8px" :loading="btnLoading1"
-          @click="checkSubmitType(undefined, false, true)">
+          @click="submitSaleInvoice(undefined, false, true)">
           <v-icon left>mdi-printer</v-icon> Print Receipt
         </v-btn>
       </v-col>
       <v-col cols="6">
         <v-btn block size="x-large" color="#21A0A0" style="border-radius: 8px" class="white--text checkout-p"
-          @click="checkSubmitType()" :loading="btnLoading">
+          @click="submitSaleInvoice()" :loading="btnLoading">
           <p class="checkout-p mt-3">CHECKOUT</p>
         </v-btn>
       </v-col>
@@ -286,6 +283,9 @@ const punching = ref("completed");
 const employeesList = ref([]);
 const orderBy = ref("");
 const complementaryItem = ref(false);
+const complementaryItemDetails = ref('');
+
+
 
 
 
@@ -298,7 +298,7 @@ const requiredOrderId = ref(false);
 const setDefaultValue = () => {
   amountTake.value = null;
   discount.value = "";
-
+  complementaryItemDetails.value = '';
   invoice_doc.value = {};
   // subTotal.value = 0;
   // orderSummary.value = [];
@@ -1009,7 +1009,6 @@ const submitSaleInvoice = async (
   print = false
 ) => {
   console.log("submit invoice...", invoice_doc.value);
-  console.log("pos_profile...", pos_profile.value);
   if (discount.value > pos_profile.value.posa_max_discount_allowed) {
     eventBus.emit("show_mesage", {
       text: `Only ${pos_profile.value.posa_max_discount_allowed}% discount allowed`,
@@ -1035,10 +1034,14 @@ const submitSaleInvoice = async (
 
   if (totalAmount >= invoice_doc.value.grand_total) {
     if (!btnLoading.value && !btnLoading1.value) {
+
       if (print) {
+        console.log("enter in print ")
         btnLoading1.value = true;
       } else {
         btnLoading.value = true;
+        console.log("enter in checkout ")
+
       }
 
       invoice_doc.value.payments = invoice_doc.value.payments.map((payment) => {
@@ -1055,7 +1058,7 @@ const submitSaleInvoice = async (
       if (invoice_doc.value.is_return && totalPayedAmount == 0) {
         invoice_doc.value.is_pos = 0;
       }
-      invoice_doc.value.tip=tip.value
+      invoice_doc.value.tip = tip.value
       let data = {};
       let totalChange = -changeAmount.value;
       data.paid_change = changeAmount.value;
@@ -1068,6 +1071,11 @@ const submitSaleInvoice = async (
       if (complementaryItem.value) {
         const complementryMode = pos_profile.value.payments
           .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+          .map(profile => ({
+            ...profile,
+            amount: complementaryItemDetails.value.original_rate, // Add original amount
+          }));
+        console.log("complementryMode", complementryMode);
         invoice_doc.value.payments.push(complementryMode[0])
       }
 
@@ -1129,26 +1137,28 @@ const submitSaleInvoice = async (
             }
 
             if (print) {
-              try {
-                const responseCode = await sync_fbr(
-                  invoice_doc.value,
-                  pos_profile.value,
-                  false
-                );
-                console.log("fbr-response", responseCode);
-                if (responseCode) {
-                  load_print_page(response.message.name);
-                } else {
-                  console.error(
-                    "FBR synchronization failed. Print page will not be loaded."
-                  );
-                }
-              } catch (error) {
-                console.error(
-                  "Error during FBR sync and print handling:",
-                  error
-                );
-              }
+              load_print_page(response.message.name);
+
+              // try {
+              //   const responseCode = await sync_fbr(
+              //     invoice_doc.value,
+              //     pos_profile.value,
+              //     false
+              //   );
+              //   console.log("fbr-response", responseCode);
+              //   if (responseCode) {
+              //     load_print_page(response.message.name);
+              //   } else {
+              //     console.error(
+              //       "FBR synchronization failed. Print page will not be loaded."
+              //     );
+              //   }
+              // } catch (error) {
+              //   console.error(
+              //     "Error during FBR sync and print handling:",
+              //     error
+              //   );
+              // }
             }
 
             eventBus.emit("show_mesage", {
@@ -1713,7 +1723,9 @@ watch(
       complementaryItem.value = true;
       newItems.forEach(item => {
         if (item.complementryItem === true) {
-          item.rate = item.original_rate; // Assuming 'original_rate' exists in item
+          item.rate = item.original_rate;
+          complementaryItemDetails.value = item;
+
         }
       });
     } else {

@@ -47,10 +47,10 @@
               <div style="width: 140px">
                 <v-card-title class="item-name py-0 mt-3">{{
                   product.item_name
-                  }}</v-card-title>
+                }}</v-card-title>
                 <v-tooltip activator="parent" location="top">{{
                   product.item_name
-                  }}</v-tooltip>
+                }}</v-tooltip>
 
                 <v-card-subtitle v-if="product.custom_discounted_rate > 0" class="actual-item-price mb-2"
                   style=" text-decoration: line-through!important;color: grey;font-size: 0.9em;margin-right: 5px;">Rs.{{
@@ -304,7 +304,7 @@ const submitSelection = () => {
   }
   else {
     variantsDialog.value = false;
-    if(variantPayload.value){
+    if (variantPayload.value) {
       bundleArray.value.push(variantPayload.value);
     }
     variantRadio.value.forEach((item) => {
@@ -829,7 +829,7 @@ const get_variants = async (product, flag) => {
         addon.type = 'addon'
         addon.values = addon.item_add_ons
       })
-      if(response.message[0].Attributes[0].length ==0 && response.message[0].add_ons.length > 0){
+      if (response.message[0].Attributes[0].length == 0 && response.message[0].add_ons.length > 0) {
         onlyAddOn.value = true
       }
       if (response.message[0].add_ons.length > 0) {
@@ -1152,6 +1152,16 @@ onMounted(() => {
         });
     }
     // get_items(profile, selectedCategory.value);
+    const complementryMode = pos_profile.value.payments
+      .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+    if (complementryMode.length === 0) {
+      eventBus.emit("show_mesage", {
+        text: `Please Set Complementary Mode of Payment in POS Profile`,
+        color: "error",
+      });
+    }
+
+
   });
 
   eventBus.on("update_get_item", (data) => {
