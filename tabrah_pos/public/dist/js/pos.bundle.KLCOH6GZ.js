@@ -12958,12 +12958,25 @@ Expected function or array of functions, received type ${typeof value}.`
       const date2 = (offlineData == null ? void 0 : offlineData.date) || now.toISOString().split("T")[0];
       const time = (offlineData == null ? void 0 : offlineData.time) || now.toLocaleTimeString("en-US", { hour12: true });
       const itemRows = items.map((item) => {
-        const { item_name, qty, rate, discount = 0 } = item;
+        var _a2;
+        const { item_name, qty, comment, product_bundle } = item;
+        let bundleRows = "";
+        if ((_a2 = product_bundle == null ? void 0 : product_bundle.items) == null ? void 0 : _a2.length) {
+          bundleRows = product_bundle.items.map((bundleItem) => `
+                            <tr>
+                                <td style="padding-left: 20px;">- ${bundleItem.name}</td>
+                                <td class="text-center">1</td>
+                            </tr>
+                        `).join("");
+        }
+        let commentRow = comment ? `<tr><td colspan="2" style="font-style: italic; color: grey;">Note: ${comment}</td></tr>` : "";
         return `
                     <tr style="border-bottom: 2px solid black;">
                         <td>${item_name || "N/A"}</td>
                         <td class="text-center">${qty || 0}</td>
                     </tr>
+                    ${bundleRows}
+                    ${commentRow}
                 `;
       }).join("");
       const newWindow = window.open("", "_blank");
@@ -13260,7 +13273,7 @@ Expected function or array of functions, received type ${typeof value}.`
           const now = new Date();
           doc3.date = now.toISOString().split("T")[0];
           doc3.time = now.toLocaleTimeString("en-US", { hour12: false });
-          console.log("pre-invoice", doc3);
+          console.log("kot-invoice", doc3);
           printPreInvoice(
             doc3
           );
@@ -13691,6 +13704,7 @@ Expected function or array of functions, received type ${typeof value}.`
             amount: item.rate,
             complementryItem: item.complementryItem,
             comment: item.comment,
+            product_bundle: item.product_bundle,
             original_rate: item.original_rate,
             item_tax_template: item.tax_template,
             custom_tax_rate: item.tax_rate,
@@ -48401,4 +48415,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.52K4IF77.js.map
+//# sourceMappingURL=pos.bundle.KLCOH6GZ.js.map
