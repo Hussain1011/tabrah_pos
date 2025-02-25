@@ -307,6 +307,7 @@ const handleComplementaryToggle = () => {
 
     onMounted(() => {
       eventBus.on("open-product-dialog", (data) => {
+        itemComment.value=''
         updateQty.value = data.flag;
         quantity.value = data.product.qty ? data.product.qty : 1;
         data.product.qty = quantity.value;
