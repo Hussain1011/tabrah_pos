@@ -17,7 +17,7 @@ export async function printPreInvoice(offlineData) {
                     bundleRows = product_bundle.items
                         .map(bundleItem => `
                             <tr>
-                                <td style="padding-left: 20px;">- ${bundleItem.item_name}</td>
+                                <td style="padding-left: 20px;">- ${bundleItem.custom_item_name}</td>
                                 <td class="text-center">1</td>
                             </tr>
                         `)
