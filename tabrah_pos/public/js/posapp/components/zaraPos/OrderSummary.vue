@@ -754,9 +754,9 @@ const createPreInvoice = async () => {
 
     // Format time as HH:MM:SS
     doc.time = now.toLocaleTimeString('en-US', { hour12: false });
+   
 
-
-    console.log("pre-invoice", doc);
+    console.log("kot-invoice", doc);
     printPreInvoice(
       doc,
     );
@@ -1317,6 +1317,7 @@ const makePayloadForInvoice = () => {
       amount: item.rate,
       complementryItem: item.complementryItem,
       comment:item.comment,
+      product_bundle: item.product_bundle,
       original_rate: item.original_rate,
       // net_amount: taxIncludeNetamount,
       item_tax_template: item.tax_template,

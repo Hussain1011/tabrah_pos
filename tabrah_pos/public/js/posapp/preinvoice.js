@@ -9,12 +9,33 @@ export async function printPreInvoice(offlineData) {
         // Dynamically generate table rows for the items
         const itemRows = items
             .map(item => {
-                const { item_name, qty, rate, discount = 0 } = item;
+                const { item_name, qty, comment, product_bundle } = item;
+                let bundleRows = "";
+
+                // If the item has a product bundle, add its items below the main item
+                if (product_bundle?.items?.length) {
+                    bundleRows = product_bundle.items
+                        .map(bundleItem => `
+                            <tr>
+                                <td style="padding-left: 20px;">- ${bundleItem.name}</td>
+                                <td class="text-center">1</td>
+                            </tr>
+                        `)
+                        .join("");
+                }
+
+                // If the item has a comment, show it below the item
+                let commentRow = comment
+                    ? `<tr><td colspan="2" style="font-style: italic; color: grey;">Note: ${comment}</td></tr>`
+                    : "";
+
                 return `
                     <tr style="border-bottom: 2px solid black;">
                         <td>${item_name || "N/A"}</td>
                         <td class="text-center">${qty || 0}</td>
                     </tr>
+                    ${bundleRows}
+                    ${commentRow}
                 `;
             })
             .join("");
