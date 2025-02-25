@@ -18249,6 +18249,7 @@ Expected function or array of functions, received type ${typeof value}.`
       });
       onMounted(() => {
         bus_default.on("open-product-dialog", (data) => {
+          itemComment.value = "";
           updateQty.value = data.flag;
           quantity.value = data.product.qty ? data.product.qty : 1;
           data.product.qty = quantity.value;
@@ -48415,4 +48416,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.KLCOH6GZ.js.map
+//# sourceMappingURL=pos.bundle.I6MFP6ZI.js.map
