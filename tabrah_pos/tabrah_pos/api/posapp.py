@@ -1668,10 +1668,11 @@ def create_bundle_from_item(json_data):
             # Process the normal bundle creation flow
             items_to_add = []
             existing_bundle_found = False
-            
+            matched_bundle = None
+
             # Check for existing bundles that match the items list and item specifics
-            bundle_list = frappe.get_list("Product Bundle")
-            
+            bundle_list = frappe.get_all("Product Bundle", pluck="name")
+
             for bundle_name in bundle_list:
                 bundle_doc = frappe.get_doc("Product Bundle", bundle_name)
                 
@@ -1696,13 +1697,21 @@ def create_bundle_from_item(json_data):
                             
                             if all_specifics_matched:
                                 existing_bundle_found = True
+                                matched_bundle = bundle_doc
                                 break
             
             if existing_bundle_found:
                 # Add the existing bundle to created_bundles
                 total_rate = sum(item_data["rate"] for item_data in items_list)
-                item_doc = frappe.get_doc("Item", bundle_doc.new_item_code)
-                created_bundles.append({"item_code": bundle_doc.name, "item_name": item_doc.item_name, "qty": items_list[0]["qty"], "rate": total_rate})
+                item_doc = frappe.get_doc("Item", matched_bundle.new_item_code)
+
+                created_bundles.append({
+                    "item_code": matched_bundle.name,
+                    "item_name": item_doc.item_name,
+                    "qty": items_list[0]["qty"],
+                    "rate": total_rate,
+                    "product_bundle": matched_bundle.as_dict()
+                })
             else:
                 # Create a new service item for the bundle
                 first_item_code = items_list[0]["item_code"]
@@ -1726,7 +1735,7 @@ def create_bundle_from_item(json_data):
                 for item_data in items_list:
                     new_item = new_bundle.append("items", {})
                     new_item.item_code = item_data["item_code"]
-                    new_item.item_name = item_data["item_name"]  # Ensure item_name is included
+                    new_item.item_name = item_data.get("item_name", "")
                     new_item.description = item_data["item_code"]
                     new_item.qty = 1
                 
@@ -1740,10 +1749,21 @@ def create_bundle_from_item(json_data):
 
                 # Add the newly created bundle to created_bundles
                 total_rate = sum(item_data["rate"] for item_data in items_list)
-                created_bundles.append({"item_code": new_bundle.name, "item_name": service_item_doc.item_name, "qty": items_list[0]["qty"], "rate": total_rate})
-        
+                created_bundles.append({
+                    "item_code": new_bundle.name,
+                    "item_name": service_item_doc.item_name,
+                    "qty": items_list[0]["qty"],
+                    "rate": total_rate,
+                    "product_bundle": new_bundle.as_dict()
+                })
+
         # Return the flat list of created bundles
         return created_bundles
+
+    except Exception as e:
+        frappe.response["http_status_code"] = 500
+        return {"error": str(e)}
+
 
     except ValueError:
         # Return a 400 error if JSON data is invalid
