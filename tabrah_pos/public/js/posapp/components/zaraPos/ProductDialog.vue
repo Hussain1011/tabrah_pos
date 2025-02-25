@@ -44,16 +44,16 @@
               <div>{{ selectedProduct.item_code }}</div>
             </div>
 
-            <div class="mt-7 d-flex justify-between">
+            <div class="mt-3 d-flex justify-between">
               <div class="black--text item-title">Item Detail</div>
               <div>{{ selectedProduct.item_name }}</div>
             </div>
-            <div class="mt-8 d-flex justify-between">
+            <div class="mt-4 d-flex justify-between">
               <div class="black--text item-title">Inventory</div>
               <div>{{ selectedProduct.actual_qty }}</div>
             </div>
 
-            <div class="mt-7 d-flex justify-between"></div>
+            <div class="mt-3 d-flex justify-between"></div>
 
             <div class="d-flex justify-between">
               <!-- <div class="black--text item-title">Embroidery Lawn Dupatta</div>
@@ -88,6 +88,12 @@
                   :label="`Discount (max ${pos_profile.posa_max_discount_allowed} %)`" v-model="discount" type="number"
                   :max="pos_profile.posa_max_discount_allowed" @update="validateDiscount"
                   :disabled="!pos_profile.posa_max_discount_allowed" />
+              </v-col>
+              <v-col cols="12" class="text-right">
+                <v-text-field class="b-radius-8" variant="outlined"
+                  :label="`Additional Comment`" v-model="itemComment" 
+                  
+                   />
               </v-col>
               <v-col cols="12" md="12" class="my-0">
                 <v-checkbox v-model="complementaryItem" color="red" label="Complementary Item" value="red"     @change="handleComplementaryToggle"
@@ -141,6 +147,7 @@ import eventBus from "../../bus";
     const discount = ref("");
     const pos_profile = ref("");
     const complementaryItem = ref(false);
+    const itemComment = ref('')
 
     const increaseQuantity = () => {
       quantity.value++;
@@ -262,6 +269,11 @@ const handleComplementaryToggle = () => {
           selectedProduct.value.original_rate - discountAmount;
       }
     });
+    watch(itemComment, (newVal) => {
+      if(newVal){
+        selectedProduct.value.comment=newVal
+      }
+    })
     // watch(complementaryItem, (newValue) => {
     //   if (newValue) {
     //     selectedProduct.value.rate = 0;

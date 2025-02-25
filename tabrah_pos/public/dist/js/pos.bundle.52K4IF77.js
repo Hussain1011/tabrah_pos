@@ -13690,6 +13690,7 @@ Expected function or array of functions, received type ${typeof value}.`
             rate: item.rate,
             amount: item.rate,
             complementryItem: item.complementryItem,
+            comment: item.comment,
             original_rate: item.original_rate,
             item_tax_template: item.tax_template,
             custom_tax_rate: item.tax_rate,
@@ -15588,32 +15589,26 @@ Expected function or array of functions, received type ${typeof value}.`
         showDialog.value = false;
       };
       const handleNumpadClick = (button) => {
-        console.log(
-          "paymentType.value.custom_expense_chrages",
-          paymentType.value.custom_expense_chrages
-        );
-        if (paymentType.value.custom_expense_chrages) {
-          if (button === "+") {
-            amountTake.value += 1;
-          } else if (button === "-") {
-            amountTake.value -= 1;
-          } else if (button === "Back") {
-            amountTake.value = amountTake.value.slice(0, -1);
-          } else {
-            amountTake.value += button.toString();
-          }
-          if (amountTake.value >= invoice_doc.value.rounded_total) {
-            changeAmount.value = amountTake.value - invoice_doc.value.rounded_total;
-          }
-          invoice_doc.value.paid_amount = amountTake.value;
-          invoice_doc.value.payments.forEach((item) => {
-            item.amount = 0;
-          });
-          let updatePaymentAmount = invoice_doc.value.payments.find(
-            (item) => item.mode_of_payment == paymentType.value.mode_of_payment
-          );
-          updatePaymentAmount.amount = amountTake.value;
+        if (button === "+") {
+          amountTake.value += 1;
+        } else if (button === "-") {
+          amountTake.value -= 1;
+        } else if (button === "Back") {
+          amountTake.value = amountTake.value.slice(0, -1);
+        } else {
+          amountTake.value += button.toString();
         }
+        if (amountTake.value >= invoice_doc.value.rounded_total) {
+          changeAmount.value = amountTake.value - invoice_doc.value.rounded_total;
+        }
+        invoice_doc.value.paid_amount = amountTake.value;
+        invoice_doc.value.payments.forEach((item) => {
+          item.amount = 0;
+        });
+        let updatePaymentAmount = invoice_doc.value.payments.find(
+          (item) => item.mode_of_payment == paymentType.value.mode_of_payment
+        );
+        updatePaymentAmount.amount = amountTake.value;
       };
       const updateDocPayment = (flag) => {
         let selectedPaymentMode = pos_profile2.value.payments.find(
@@ -18147,6 +18142,7 @@ Expected function or array of functions, received type ${typeof value}.`
       const discount = ref("");
       const pos_profile2 = ref("");
       const complementaryItem = ref(false);
+      const itemComment = ref("");
       const increaseQuantity = () => {
         quantity.value++;
         selectedProduct.value.qty = quantity.value;
@@ -18232,6 +18228,11 @@ Expected function or array of functions, received type ${typeof value}.`
           selectedProduct.value.rate = selectedProduct.value.original_rate - discountAmount;
         }
       });
+      watch2(itemComment, (newVal) => {
+        if (newVal) {
+          selectedProduct.value.comment = newVal;
+        }
+      });
       onMounted(() => {
         bus_default.on("open-product-dialog", (data) => {
           updateQty.value = data.flag;
@@ -18250,7 +18251,7 @@ Expected function or array of functions, received type ${typeof value}.`
           pos_profile2.value = profile;
         });
       });
-      const __returned__ = { dialog, quantity, selectedProduct, updateQty, discount, pos_profile: pos_profile2, complementaryItem, increaseQuantity, decreaseQuantity, formatNumber, addToCart, closeDialog, validateDiscount, handleComplementaryToggle, ref, onMounted, watch: watch2, get eventBus() {
+      const __returned__ = { dialog, quantity, selectedProduct, updateQty, discount, pos_profile: pos_profile2, complementaryItem, itemComment, increaseQuantity, decreaseQuantity, formatNumber, addToCart, closeDialog, validateDiscount, handleComplementaryToggle, ref, onMounted, watch: watch2, get eventBus() {
         return bus_default;
       } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
@@ -18273,11 +18274,11 @@ Expected function or array of functions, received type ${typeof value}.`
   };
   var _hoisted_58 = { class: "d-flex justify-between" };
   var _hoisted_68 = /* @__PURE__ */ _withScopeId8(() => /* @__PURE__ */ createBaseVNode("div", { class: "black--text item-title" }, "Item Number", -1));
-  var _hoisted_78 = { class: "mt-7 d-flex justify-between" };
+  var _hoisted_78 = { class: "mt-3 d-flex justify-between" };
   var _hoisted_88 = /* @__PURE__ */ _withScopeId8(() => /* @__PURE__ */ createBaseVNode("div", { class: "black--text item-title" }, "Item Detail", -1));
-  var _hoisted_98 = { class: "mt-8 d-flex justify-between" };
+  var _hoisted_98 = { class: "mt-4 d-flex justify-between" };
   var _hoisted_108 = /* @__PURE__ */ _withScopeId8(() => /* @__PURE__ */ createBaseVNode("div", { class: "black--text item-title" }, "Inventory", -1));
-  var _hoisted_1110 = /* @__PURE__ */ _withScopeId8(() => /* @__PURE__ */ createBaseVNode("div", { class: "mt-7 d-flex justify-between" }, null, -1));
+  var _hoisted_1110 = /* @__PURE__ */ _withScopeId8(() => /* @__PURE__ */ createBaseVNode("div", { class: "mt-3 d-flex justify-between" }, null, -1));
   var _hoisted_128 = /* @__PURE__ */ _withScopeId8(() => /* @__PURE__ */ createBaseVNode("div", { class: "d-flex justify-between" }, [
     /* @__PURE__ */ createCommentVNode(' <div class="black--text item-title">Embroidery Lawn Dupatta</div>\n              <div>2.50 m</div> ')
   ], -1));
@@ -18305,7 +18306,7 @@ Expected function or array of functions, received type ${typeof value}.`
     const _component_v_dialog = resolveComponent("v-dialog");
     return openBlock(), createBlock(_component_v_dialog, {
       modelValue: $setup.dialog,
-      "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.dialog = $event),
+      "onUpdate:modelValue": _cache[4] || (_cache[4] = ($event) => $setup.dialog = $event),
       "max-width": "741px",
       height: "720",
       persistent: ""
@@ -18469,13 +18470,28 @@ Expected function or array of functions, received type ${typeof value}.`
                             }),
                             createVNode(_component_v_col, {
                               cols: "12",
+                              class: "text-right"
+                            }, {
+                              default: withCtx(() => [
+                                createVNode(_component_v_text_field, {
+                                  class: "b-radius-8",
+                                  variant: "outlined",
+                                  label: `Additional Comment`,
+                                  modelValue: $setup.itemComment,
+                                  "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => $setup.itemComment = $event)
+                                }, null, 8, ["modelValue"])
+                              ]),
+                              _: 1
+                            }),
+                            createVNode(_component_v_col, {
+                              cols: "12",
                               md: "12",
                               class: "my-0"
                             }, {
                               default: withCtx(() => [
                                 createVNode(_component_v_checkbox, {
                                   modelValue: $setup.complementaryItem,
-                                  "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => $setup.complementaryItem = $event),
+                                  "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.complementaryItem = $event),
                                   color: "red",
                                   label: "Complementary Item",
                                   value: "red",
@@ -48385,4 +48401,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.H64JIBMT.js.map
+//# sourceMappingURL=pos.bundle.52K4IF77.js.map
