@@ -13,8 +13,9 @@ export async function printPreInvoice(offlineData) {
                 let bundleRows = "";
 
                 // If the item has a product bundle, add its items below the main item
-                if (product_bundle?.items?.length) {
+                if (product_bundle?.items?.length > 1) {
                     bundleRows = product_bundle.items
+                        .slice(1) // Skip the first item in the product bundle
                         .map(bundleItem => `
                             <tr>
                                 <td style="padding-left: 20px;">- ${bundleItem.custom_item_name}</td>
