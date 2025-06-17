@@ -47,10 +47,10 @@
               <div style="width: 140px">
                 <v-card-title class="item-name py-0 mt-3">{{
                   product.item_name
-                }}</v-card-title>
+                  }}</v-card-title>
                 <v-tooltip activator="parent" location="top">{{
                   product.item_name
-                }}</v-tooltip>
+                  }}</v-tooltip>
 
                 <v-card-subtitle v-if="product.custom_discounted_rate > 0" class="actual-item-price mb-2"
                   style=" text-decoration: line-through!important;color: grey;font-size: 0.9em;margin-right: 5px;">Rs.{{
@@ -136,76 +136,6 @@
             </v-stepper-window>
           </v-stepper>
         </v-card-text>
-
-
-
-
-        <!-- <v-card-title class="text-h5 d-flex justify-end pt-3 pr-3">
-        <v-icon class="d-flex justify-end pt-3 pr-3" @click="closeDialog" :ripple="false">
-          mdi-close
-        </v-icon>
-      </v-card-title>
-      <v-card-title class="text-h5 d-flex justify-center pt-7 px-10 pb-0">
-        <p class="title-p">Select Your Business Meal Item</p>
-      </v-card-title>
-      <p class="d-flex justify-center parent-p">{{ parentItem.item_name }}</p>
-
-      <v-card-text class="pt-4 pb-0 add-on-div" v-if="parentItem.attributes">
-        <v-expansion-panels v-model="panel" multiple class="mb-6">
-          <v-expansion-panel v-for="(item, i) in parentItem.attributes" :key="i">
-            <v-expansion-panel-title>
-              {{ item.attribute }}
-              <template v-slot:actions>
-                <p v-if="item.required && !item.valueSelect" class="required-p mt-1">Required</p>
-                <div v-if="item.valueSelect" class="py-0">
-                  <p class="added-p mt-1">Added</p>
-                </div>
-                <v-icon color="#718096">{{ panel.includes(i) ? "mdi-chevron-up" : "mdi-plus" }}</v-icon>
-              </template>
-</v-expansion-panel-title>
-<v-expansion-panel-text v-if="item.values.length > 0">
-  <v-radio-group v-model="variantRadio[i]" @update:modelValue="onRadioChange(i, $event)">
-    <v-radio v-for="(option, index) in item.values" :key="index" :value="option">
-      <template v-slot:label>
-                    <div class="mt-2">{{ option.abbr }}</div>
-                  </template>
-    </v-radio>
-  </v-radio-group>
-</v-expansion-panel-text>
-</v-expansion-panel>
-</v-expansion-panels>
-</v-card-text> -->
-
-        <!-- <v-card-text class="pt-0 add-on-content" v-if="parentItem.add_ons">
-        <v-expansion-panels v-model="addOnPanel" multiple class="mb-6">
-          <v-expansion-panel v-for="(item, i) in parentItem.add_ons" :key="i">
-            <v-expansion-panel-title>
-              {{ item.display_name }}
-              <template v-slot:actions>
-                <v-icon color="#718096">{{ addOnPanel.includes(i) ? "mdi-chevron-up" : "mdi-plus" }}</v-icon>
-              </template>
-            </v-expansion-panel-title>
-            <v-expansion-panel-text v-if="item.item_add_ons.length > 0">
-              <div v-for="(option, index) in item.item_add_ons" :key="index" class="d-flex justify-space-between radio-div">
-                <v-checkbox v-model="selectedValues[i]" :value="option">
-                  <template v-slot:label>
-                    <div class="mt-2">{{ option.display_name }}</div>
-                  </template>
-                </v-checkbox>
-                <div class="mt-4">
-                  <span>QAR. {{ option.rate || 0 }}</span>
-                </div>
-              </div>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-        </v-expansion-panels>
-      </v-card-text> -->
-
-        <!-- <v-card-actions class="pb-6 px-6">
-        <v-btn  block class="white--text font-weight-bold payment-button" height="45" style="background:#21A0A0 ;"  color="#21A0A0" @click="addVariantItem" :disabled="selectedVariants.length !== parentItem.attributes.length">
-          <span class="btn-title" style="color: white;">Add Item</span>
-        </v-btn>
-      </v-card-actions> -->
       </v-card>
     </v-dialog>
   </div>

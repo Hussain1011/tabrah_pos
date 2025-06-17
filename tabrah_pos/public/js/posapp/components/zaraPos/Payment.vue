@@ -486,17 +486,7 @@ const submitSplitPayment = () => {
     return;
   }
 
-  // if (totalPaidAmount > invoice_doc.value.grand_total) {
-  //   eventBus.emit("show_mesage", {
-  //     text: `The total amount paid exceeds the grand total!`,
-  //     color: "error",
-  //   });
-  //   return;
-  // }
 
-  // console.log("Split Payment Details:", paymentModes.value);
-  // console.log("Total Entered Amount:", totalPaidAmount);
-  // console.log("Remaining Amount:", invoice_doc.value.remaining_amount);
 
   // Update invoice_doc remaining value to reflect the current state
   if (totalPaidAmount < invoice_doc.value.grand_total) {
@@ -1441,18 +1431,18 @@ watch(
       paymentModes.value.forEach((payment) => {
         let paymentAmount = Number(payment.amount) || 0;
 
-        if (
-          payment.mode_type !== "Cash" &&
-          paymentAmount > 0 &&
-          !payment.custom_expense_chrages &&
-          !posFeeAdded
-        ) {
-          // Add 1 rupee fee for the first eligible non-cash payment
-          payment.amount = Number(payment.amount) + 1;
-          invoice_doc.value.grand_total = invoice_doc.value.grand_total + 1;
-          posFeeAdded = true;
-        }
-        console.log("fee addeed", payment.amount);
+        // if (
+        //   payment.mode_type !== "Cash" &&
+        //   paymentAmount > 0 &&
+        //   !payment.custom_expense_chrages &&
+        //   !posFeeAdded
+        // ) {
+        //   // Add 1 rupee fee for the first eligible non-cash payment
+        //   payment.amount = Number(payment.amount) + 1;
+        //   invoice_doc.value.grand_total = invoice_doc.value.grand_total + 1;
+        //   posFeeAdded = true;
+        // }
+        // console.log("fee addeed", payment.amount);
       });
     }
   },
@@ -1681,23 +1671,23 @@ watch(discount, (newVal) => {
 watch(
   invoice_doc,
   (newVal) => {
-    console.log("watcher for invoice_doc", newVal);
-    localStorage.setItem("invoice-data", JSON.stringify(newVal));
-    //    invoice_doc.value.remaining_amount = invoice_doc.value.grand_total - invoice_doc.value.advanceAmount
+    // console.log("watcher for invoice_doc", newVal);
+    // localStorage.setItem("invoice-data", JSON.stringify(newVal));
+    // //    invoice_doc.value.remaining_amount = invoice_doc.value.grand_total - invoice_doc.value.advanceAmount
 
-    // if (!paymentType.value.custom_expense_chrages) {
-    //   // amountTake.value = amountTake.value + 1;
-    //   invoice_doc.value.grand_total = invoice_doc.value.original_grand_total + 1;
+    // // if (!paymentType.value.custom_expense_chrages) {
+    // //   // amountTake.value = amountTake.value + 1;
+    // //   invoice_doc.value.grand_total = invoice_doc.value.original_grand_total + 1;
+    // // }
+    // // console.log("amountTake",amountTake.value)
+    // if (amountTake.value) {
+    //   invoice_doc.value.remaining_amount = invoice_doc.value.grand_total - invoice_doc.value.advanceAmount - amountTake.value
+
     // }
-    // console.log("amountTake",amountTake.value)
-    if (amountTake.value) {
-      invoice_doc.value.remaining_amount = invoice_doc.value.grand_total - invoice_doc.value.advanceAmount - amountTake.value
+    // else {
+    //   invoice_doc.value.remaining_amount = invoice_doc.value.grand_total - invoice_doc.value.advanceAmount
 
-    }
-    else {
-      invoice_doc.value.remaining_amount = invoice_doc.value.grand_total - invoice_doc.value.advanceAmount
-
-    }
+    // }
     // let total=0;
     // total=invoice_doc.value.advanceAmount+amountTake.value
     // console.log("exchange-total",total);
