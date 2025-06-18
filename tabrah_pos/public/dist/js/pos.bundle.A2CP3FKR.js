@@ -12930,10 +12930,7 @@ Expected function or array of functions, received type ${typeof value}.`
                   }, 8, ["modelValue"])
                 ]),
                 _: 1
-              })) : createCommentVNode("v-if", true),
-              createCommentVNode(' <v-card-title class="text-h5 d-flex justify-end pt-3 pr-3">\n        <v-icon class="d-flex justify-end pt-3 pr-3" @click="closeDialog" :ripple="false">\n          mdi-close\n        </v-icon>\n      </v-card-title>\n      <v-card-title class="text-h5 d-flex justify-center pt-7 px-10 pb-0">\n        <p class="title-p">Select Your Business Meal Item</p>\n      </v-card-title>\n      <p class="d-flex justify-center parent-p">{{ parentItem.item_name }}</p>\n\n      <v-card-text class="pt-4 pb-0 add-on-div" v-if="parentItem.attributes">\n        <v-expansion-panels v-model="panel" multiple class="mb-6">\n          <v-expansion-panel v-for="(item, i) in parentItem.attributes" :key="i">\n            <v-expansion-panel-title>\n              {{ item.attribute }}\n              <template v-slot:actions>\n                <p v-if="item.required && !item.valueSelect" class="required-p mt-1">Required</p>\n                <div v-if="item.valueSelect" class="py-0">\n                  <p class="added-p mt-1">Added</p>\n                </div>\n                <v-icon color="#718096">{{ panel.includes(i) ? "mdi-chevron-up" : "mdi-plus" }}</v-icon>\n              </template>\n</v-expansion-panel-title>\n<v-expansion-panel-text v-if="item.values.length > 0">\n  <v-radio-group v-model="variantRadio[i]" @update:modelValue="onRadioChange(i, $event)">\n    <v-radio v-for="(option, index) in item.values" :key="index" :value="option">\n      <template v-slot:label>\n                    <div class="mt-2">{{ option.abbr }}</div>\n                  </template>\n    </v-radio>\n  </v-radio-group>\n</v-expansion-panel-text>\n</v-expansion-panel>\n</v-expansion-panels>\n</v-card-text> '),
-              createCommentVNode(' <v-card-text class="pt-0 add-on-content" v-if="parentItem.add_ons">\n        <v-expansion-panels v-model="addOnPanel" multiple class="mb-6">\n          <v-expansion-panel v-for="(item, i) in parentItem.add_ons" :key="i">\n            <v-expansion-panel-title>\n              {{ item.display_name }}\n              <template v-slot:actions>\n                <v-icon color="#718096">{{ addOnPanel.includes(i) ? "mdi-chevron-up" : "mdi-plus" }}</v-icon>\n              </template>\n            </v-expansion-panel-title>\n            <v-expansion-panel-text v-if="item.item_add_ons.length > 0">\n              <div v-for="(option, index) in item.item_add_ons" :key="index" class="d-flex justify-space-between radio-div">\n                <v-checkbox v-model="selectedValues[i]" :value="option">\n                  <template v-slot:label>\n                    <div class="mt-2">{{ option.display_name }}</div>\n                  </template>\n                </v-checkbox>\n                <div class="mt-4">\n                  <span>QAR. {{ option.rate || 0 }}</span>\n                </div>\n              </div>\n            </v-expansion-panel-text>\n          </v-expansion-panel>\n        </v-expansion-panels>\n      </v-card-text> '),
-              createCommentVNode(' <v-card-actions class="pb-6 px-6">\n        <v-btn  block class="white--text font-weight-bold payment-button" height="45" style="background:#21A0A0 ;"  color="#21A0A0" @click="addVariantItem" :disabled="selectedVariants.length !== parentItem.attributes.length">\n          <span class="btn-title" style="color: white;">Add Item</span>\n        </v-btn>\n      </v-card-actions> ')
+              })) : createCommentVNode("v-if", true)
             ]),
             _: 1
           })) : createCommentVNode("v-if", true)
@@ -16288,12 +16285,6 @@ Expected function or array of functions, received type ${typeof value}.`
             }
             paymentModes.value.forEach((payment) => {
               let paymentAmount = Number(payment.amount) || 0;
-              if (payment.mode_type !== "Cash" && paymentAmount > 0 && !payment.custom_expense_chrages && !posFeeAdded) {
-                payment.amount = Number(payment.amount) + 1;
-                invoice_doc.value.grand_total = invoice_doc.value.grand_total + 1;
-                posFeeAdded = true;
-              }
-              console.log("fee addeed", payment.amount);
             });
           }
         },
@@ -16387,13 +16378,6 @@ Expected function or array of functions, received type ${typeof value}.`
       watch2(
         invoice_doc,
         (newVal) => {
-          console.log("watcher for invoice_doc", newVal);
-          localStorage.setItem("invoice-data", JSON.stringify(newVal));
-          if (amountTake.value) {
-            invoice_doc.value.remaining_amount = invoice_doc.value.grand_total - invoice_doc.value.advanceAmount - amountTake.value;
-          } else {
-            invoice_doc.value.remaining_amount = invoice_doc.value.grand_total - invoice_doc.value.advanceAmount;
-          }
         },
         { deep: true }
       );
@@ -48416,4 +48400,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.FVU4EBI2.js.map
+//# sourceMappingURL=pos.bundle.A2CP3FKR.js.map
