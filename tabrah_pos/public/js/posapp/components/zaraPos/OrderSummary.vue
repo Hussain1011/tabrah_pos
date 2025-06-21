@@ -151,33 +151,57 @@
           </v-row>
 
           <!-- Payment Button -->
-          <v-row class="mt-1 px-6 pb-1">
+         <v-row class="mt-3 px-6 pb-1">
             <v-col cols="12">
-              <v-btn block class="white--text font-weight-bold payment-button" height="48" color="#21A0A0"
-                @click="goForPayment" :loading="loadingBtn" :disabled="loadingBtn">
+              <v-btn
+                block
+                class="white--text font-weight-bold payment-button"
+                height="48"
+                color="#21A0A0"
+                @click="goForPayment"
+                :loading="loadingBtn"
+              >
                 <p class="mt-2 payment-p">PAYMENT</p>
               </v-btn>
             </v-col>
           </v-row>
-          <v-row class="mt-1 px-6 pb-1">
-            <v-col cols="6">
-              <v-btn block class="white--text font-weight-bold payment-button" height="48" color="#21A0A0"
-                @click="holdOrder()" :loading="loadingBtn">
+          <v-row class="mt-3 px-6 pb-1">
+            <v-col cols="4">
+              <v-btn
+                block
+                class="white--text font-weight-bold payment-button"
+                height="48"
+                color="#21A0A0"
+                @click="holdOrder()"
+                :loading="loadingBtn"
+              >
                 <p class="mt-2 payment-p">Hold</p>
               </v-btn>
             </v-col>
-            <v-col cols="6">
-              <v-btn block class="white--text font-weight-bold payment-button" height="48" color="#F05D23"
-                @click="createPreInvoice()" :disabled="screen != 0">
+            <v-col cols="4">
+              <v-btn
+                block
+                class="white--text font-weight-bold payment-button"
+                height="48"
+                color="#F05D23"
+                @click="createPreInvoice()"
+                :disabled="screen != 0"
+              >
+                <p class="mt-2 print-p">Pre Invoice</p>
+              </v-btn>
+            </v-col>
+            <v-col cols="4">
+              <v-btn
+                block
+                class="white--text font-weight-bold payment-button"
+                height="48"
+                color="#F05D23"
+                @click="generateKotPrint()"
+                :disabled="screen != 0"
+              >
                 <p class="mt-2 print-p">KOT Print</p>
               </v-btn>
             </v-col>
-            <!-- <v-col cols="6">
-              <v-btn block class="white--text font-weight-bold payment-button" height="48" color="#F05D23"
-                @click="openReturnDialog()" :disabled="screen != 0">
-                <p class="mt-2 payment-p">Return</p>
-              </v-btn>
-            </v-col> -->
           </v-row>
         </v-card>
       </v-col>
@@ -438,6 +462,7 @@ import {
 import eventBus from "../../bus.js";
 import indexedDBService from "../../indexedDB";
 import { printPreInvoice } from "../../preinvoice";
+import { printKot } from "../../kotPrint.js";
 
 const items = ref([
   // {
@@ -528,8 +553,10 @@ const pindialog = ref(false);
 const otp = ref("");
 const pinloading = ref(false);
 
-
-
+const grandTotalCard = computed(() => {
+  return grandTotal.value; // Default to grand total, can be customized based on card payment logic
+});
+const orderType = ref([]);
 
 const selected = ref([]);
 const headers = [
@@ -742,8 +769,8 @@ const openDialog = (product, flag) => {
     eventBus.emit("open-product-dialog", obj);
   }
 };
-const createPreInvoice = async () => {
-  if (items.value.length > 0) {
+const generateKotPrint = async () => {
+    if (items.value.length > 0) {
     const doc = await get_invoice_doc();
     doc.grand_total = grandTotal.value
     doc.gstAmountCash = gstAmount.value
@@ -757,12 +784,54 @@ const createPreInvoice = async () => {
    
 
     console.log("kot-invoice", doc);
-    printPreInvoice(
+    printKot(
       doc,
     );
     holdOrder()
 
   }
+};
+const createPreInvoice = async () => {
+  if (items.value.length === 0) return;
+
+  const doc = get_invoice_doc();
+
+  console.log("doc-------", doc);
+
+  // Assigning totals
+  doc.grand_total = grandTotal.value;
+  doc.gstAmountCash = gstAmount.value;
+  doc.grand_total_card = grandTotalCard.value;
+
+  // Constructing cart items
+  doc.cart_items = items.value.map(item => ({
+    item_name:!item.bundle_doc ? item.item_name
+    : !item.bundle_doc.items
+      ? item.bundle_doc.item_name
+      : item.bundle_doc.items.length === 0
+        ? item.item_name
+        : item.bundle_doc.custom_parent_item_name,
+    qty: item.qty,
+    rate: item.rate,
+    item_group: !item.bundle_doc ? item.item_group
+    : !item.bundle_doc.items
+      ? item.bundle_doc.item_group
+        : item.bundle_doc.items.length === 0
+          ? item.item_group
+            : item.bundle_doc.items[0]?.custom_item_group || item.item_group || item.custom_item_group,
+    amount: item.rate * item.qty,
+    bundle_items: (item.bundle_doc?.items || []).map(bundleItem => ({
+      item_name: bundleItem.custom_item_name,
+      rate: bundleItem.rate,
+      item_group: bundleItem.custom_item_group
+    }))
+  }));
+
+
+
+  // Proceed with printing and holding order
+  printPreInvoice(doc);
+  holdOrder();
 };
 const goForReturnProceed = () => {
   if (returnType.value) {
@@ -1621,6 +1690,9 @@ onUnmounted(() => {
   eventBus.off("load-hold-order");
   eventBus.off("current-screen");
   eventBus.off("enter-key-called");
+  eventBus.off("selected_table");
+  eventBus.off("order-taker");
+  eventBus.off("update-table-status");
 });
 </script>
 
