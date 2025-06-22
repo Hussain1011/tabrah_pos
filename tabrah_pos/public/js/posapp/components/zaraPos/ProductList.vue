@@ -44,8 +44,9 @@
             </p>
 
             <div style="display: flex; justify-content: space-between">
-              <div style="width: 140px">
-                <v-card-title class="item-name py-0 mt-3">{{
+              <div style="width: 180px; word-wrap: break-word;">
+                <v-card-title class="item-name py-0 mt-3" style="white-space: normal; word-break: break-word;">
+                  {{
                   product.item_name
                   }}</v-card-title>
                 <v-tooltip activator="parent" location="top">{{
