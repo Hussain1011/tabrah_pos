@@ -50,7 +50,7 @@
                       outlined
                       dense
                       hide-details="auto"
-                      readonly
+                      :readonly="item.type !== 'Cash'"
                     ></v-text-field>
                   </template>
                 </v-data-table>
@@ -273,6 +273,7 @@ export default {
             mode_of_payment: element.mode_of_payment,
             amount: element.type === "Cash" ? balance : 0,
             currency: element.currency,
+            type: element.type,
           };
         });
     });
