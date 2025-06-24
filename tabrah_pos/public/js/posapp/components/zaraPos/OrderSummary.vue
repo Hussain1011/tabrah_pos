@@ -771,24 +771,75 @@ const openDialog = (product, flag) => {
 };
 const generateKotPrint = async () => {
     if (items.value.length > 0) {
+    // --- KOT PRINTED ITEMS LOGIC START ---
+    const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+    const currentOrder = heldOrders.find(order => order.id === holdOrderId.value);
+    let printedItems = {};
+    if (currentOrder) {
+      printedItems = { ...(currentOrder.printed_items || {}) };
+    }
+    
+    // Only print items that haven't been printed before or have new quantities
+    let itemsToPrint = items.value.filter(item => {
+      const printedQty = printedItems[item.item_code]?.qty || 0;
+      return item.qty > printedQty;
+    });
+    
+    if (itemsToPrint.length === 0) {
+      eventBus.emit("show_mesage", {
+        text: "You printed these items already.",
+        color: "error",
+      });
+      return;
+    }
+    
     const doc = await get_invoice_doc();
     doc.grand_total = grandTotal.value
     doc.gstAmountCash = gstAmount.value
     const now = new Date();
-
-    // Format date as YYYY-MM-DD
     doc.date = now.toISOString().split('T')[0];
-
-    // Format time as HH:MM:SS
     doc.time = now.toLocaleTimeString('en-US', { hour12: false });
-   
-
-    console.log("kot-invoice", doc);
-    printKot(
-      doc,
-    );
-    holdOrder()
-
+    
+    // Calculate KOT items with proper quantities
+    doc.kot_items = itemsToPrint.map(item => {
+      let finalQty;
+      const hasBeenPrinted = printedItems[item.item_code] !== undefined;
+      
+      if (!hasBeenPrinted) {
+        // If item has never been printed, use full quantity
+        finalQty = item.qty;
+      } else {
+        // If item has been printed before, use the difference
+        const printedQty = printedItems[item.item_code].qty;
+        finalQty = item.qty - printedQty;
+      }
+      
+      return {
+        item_name: item.item_name,
+        qty: finalQty,
+        rate: item.rate,
+        comment: item.comment || "",
+        product_bundle: item.product_bundle
+      };
+    });
+    
+    // Create a new doc object with only the filtered items for printing
+    const printDoc = {
+      ...doc,
+      items: doc.kot_items // Use kot_items instead of all items
+    };
+    
+    // Update printedItems for items being printed
+    itemsToPrint.forEach(item => {
+      printedItems[item.item_code] = {
+        qty: item.qty,
+        timestamp: new Date().toISOString(),
+      };
+    });
+    
+    // Pass only the updated printedItems (merged) to holdOrder
+    holdOrder(printedItems);
+    printKot(printDoc);
   }
 };
 const createPreInvoice = async () => {
@@ -957,8 +1008,7 @@ const getFormattedPrintFormat = () => {
   const printFormat = pos_profile.value.print_format || "";
   return encodeURIComponent(printFormat.trim());
 };
-const holdOrder = () => {
-
+const holdOrder = (printedItems = {}) => {
   if (items.value.length > 0) {
     loadingHold.value = true; // Start loading indicator
 
@@ -972,12 +1022,15 @@ const holdOrder = () => {
       );
 
       if (existingOrderIndex !== -1) {
-        // Update the existing order
+        // Merge previous printed_items with new ones (only update those printed now)
+        const prevPrinted = heldOrders[existingOrderIndex].printed_items || {};
+        const mergedPrinted = { ...prevPrinted, ...printedItems };
         heldOrders[existingOrderIndex] = {
           ...heldOrders[existingOrderIndex],
           items: items.value,
           grand_total: grandTotal.value,
           timestamp: new Date().toISOString(),
+          printed_items: mergedPrinted,
         };
         console.log(
           `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
@@ -999,6 +1052,7 @@ const holdOrder = () => {
         orderByName: employee.employee_name,
 
         timestamp: new Date().toISOString(),
+        printed_items: { ...printedItems },
       };
       heldOrders.push(currentOrder);
       console.log("Order held successfully:", currentOrder);
