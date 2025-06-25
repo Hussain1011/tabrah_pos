@@ -52,9 +52,16 @@
         </v-col>
       </v-row>
     </v-card>
+    <!-- Persons field above customer select -->
+    <v-row class="px-4">
+      <v-col cols="12" class="mb-0">
+        <v-text-field v-model="cover" label="Persons" type="number" min="1" max="99" variant="outlined" class="mr-2 mb-2"></v-text-field>
+      </v-col>
+    </v-row>
+    <!-- Customer select row -->
     <v-row class="px-4">
       <v-col cols="8" class="" style="  height: 64px;">
-        <v-select v-model="selectedCustomer" :items="customers" item-title="customer_name" item-value="name	"
+        <v-select v-model="selectedCustomer" :items="customers" item-title="customer_name" item-value="name\t"
           label="Select Customer" variant="outlined" class="mr-2"></v-select>
       </v-col>
       <v-col cols="4" class="" style="  height: 64px;">
@@ -552,6 +559,7 @@ const allowedDelete = ref(true);
 const pindialog = ref(false);
 const otp = ref("");
 const pinloading = ref(false);
+const cover = ref(1); // Default to 1 person
 
 const grandTotalCard = computed(() => {
   return grandTotal.value; // Default to grand total, can be customized based on card payment logic
@@ -778,13 +786,14 @@ const generateKotPrint = async () => {
     if (currentOrder) {
       printedItems = { ...(currentOrder.printed_items || {}) };
     }
-    
     // Only print items that haven't been printed before or have new quantities
     let itemsToPrint = items.value.filter(item => {
       const printedQty = printedItems[item.item_code]?.qty || 0;
+      // Exclude beverages and juices (case-insensitive)
+      const group = (item.item_group || '').toLowerCase();
+      if (group === 'beverages' || group === 'juices') return false;
       return item.qty > printedQty;
     });
-    
     if (itemsToPrint.length === 0) {
       eventBus.emit("show_mesage", {
         text: "You printed these items already.",
@@ -792,19 +801,17 @@ const generateKotPrint = async () => {
       });
       return;
     }
-    
     const doc = await get_invoice_doc();
     doc.grand_total = grandTotal.value
     doc.gstAmountCash = gstAmount.value
+    doc.cover = cover.value; // Add cover to KOT print
     const now = new Date();
     doc.date = now.toISOString().split('T')[0];
     doc.time = now.toLocaleTimeString('en-US', { hour12: false });
-    
     // Calculate KOT items with proper quantities
     doc.kot_items = itemsToPrint.map(item => {
       let finalQty;
       const hasBeenPrinted = printedItems[item.item_code] !== undefined;
-      
       if (!hasBeenPrinted) {
         // If item has never been printed, use full quantity
         finalQty = item.qty;
@@ -813,7 +820,6 @@ const generateKotPrint = async () => {
         const printedQty = printedItems[item.item_code].qty;
         finalQty = item.qty - printedQty;
       }
-      
       return {
         item_name: item.item_name,
         qty: finalQty,
@@ -822,13 +828,11 @@ const generateKotPrint = async () => {
         product_bundle: item.product_bundle
       };
     });
-    
     // Create a new doc object with only the filtered items for printing
     const printDoc = {
       ...doc,
       items: doc.kot_items // Use kot_items instead of all items
     };
-    
     // Update printedItems for items being printed
     itemsToPrint.forEach(item => {
       printedItems[item.item_code] = {
@@ -836,7 +840,6 @@ const generateKotPrint = async () => {
         timestamp: new Date().toISOString(),
       };
     });
-    
     // Pass only the updated printedItems (merged) to holdOrder
     holdOrder(printedItems);
     printKot(printDoc);
@@ -853,6 +856,7 @@ const createPreInvoice = async () => {
   doc.grand_total = grandTotal.value;
   doc.gstAmountCash = gstAmount.value;
   doc.grand_total_card = grandTotalCard.value;
+  doc.cover = cover.value; // Add cover to pre-invoice
 
   // Constructing cart items
   doc.cart_items = items.value.map(item => ({
@@ -1031,6 +1035,7 @@ const holdOrder = (printedItems = {}) => {
           grand_total: grandTotal.value,
           timestamp: new Date().toISOString(),
           printed_items: mergedPrinted,
+          cover: cover.value, // Save persons in hold order
         };
         console.log(
           `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
@@ -1050,9 +1055,9 @@ const holdOrder = (printedItems = {}) => {
         table: selectedTable.value,
         orderBy: orderBy.value,
         orderByName: employee.employee_name,
-
         timestamp: new Date().toISOString(),
         printed_items: { ...printedItems },
+        cover: cover.value, // Save persons in hold order
       };
       heldOrders.push(currentOrder);
       console.log("Order held successfully:", currentOrder);
@@ -1064,6 +1069,7 @@ const holdOrder = (printedItems = {}) => {
 
     // Clear the current order for a new one
     items.value = [];
+    cover.value = 0; // Clear persons field after hold order
     loadingHold.value = false; // Stop loading indicator
     eventBus.emit("open-product-menu");
     eventBus.emit("set-default-value");
@@ -1129,7 +1135,7 @@ const goForPayment = async () => {
       }
 
     }
-
+    cover.value = 0; // Clear persons field after payment
   }
 };
 const paymentProcess = (doc) => {
@@ -1237,6 +1243,7 @@ const get_invoice_doc = () => {
   doc.advanceAmount = advanceAmount.value;
   doc.exchangeItem = exchangeItem.value
   doc.returnDoc = returnDoc.value
+  doc.cover = cover.value; // Add cover to invoice_doc
   return doc;
 };
 const get_payments = () => {
@@ -1714,6 +1721,7 @@ onMounted(() => {
     eventBus.emit("open-product-menu");
     allowedDelete.value = false
     items.value = order.items;
+    cover.value = order.cover || 0; // Load persons from hold order
     makePayloadForInvoice();
   });
   eventBus.on("current-screen", (newVal) => {

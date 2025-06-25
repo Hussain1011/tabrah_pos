@@ -49,6 +49,7 @@
 
               <span v-if="order.orderBy">Order Taker:{{ order.orderByName }}</span>
 
+              <span v-if="order.cover">Persons: {{ order.cover }}</span>
 
             </div>
             <div class="mt-3">
