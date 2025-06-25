@@ -71,7 +71,6 @@ export async function printKot(offlineData) {
         <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
             <p class="text-center" style="margin-bottom: 2px;">Server: N/A</p>
             <p class="text-center" style="margin-bottom: 2px;">No of Pax: N/A</p>
-            <p class="text-center" style="margin-bottom: 2px;">Persons: ${offlineData.cover || 'N/A'}</p>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
             <p class="text-center" style="margin-bottom: 2px;">Order No: 12345</p>
@@ -79,6 +78,7 @@ export async function printKot(offlineData) {
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
             <p style="margin-bottom: 0;">Table: ${tableNo}</p>
+            <p class="text-center" style="margin-bottom: 2px;">Persons: ${offlineData.cover || 'N/A'}</p>
             <p style="margin-bottom: 0;">Time: ${time}</p>
         </div>
         <p class="text-center" style="margin-bottom: 0.25rem; border-bottom: 2px solid black; font-size:15px;"><b>Dine In</b></p>
