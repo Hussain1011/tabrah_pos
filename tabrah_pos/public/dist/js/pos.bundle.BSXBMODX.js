@@ -13672,6 +13672,10 @@ Expected function or array of functions, received type ${typeof value}.`
                             <td><b>No of Pax:</b></td>
                             <td>${offlineData.total_qty || ""}</td>
                         </tr>
+                        <tr class="innertext">
+                            <td><b>Persons:</b></td>
+                            <td>${offlineData.cover || ""}</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -13822,6 +13826,7 @@ Expected function or array of functions, received type ${typeof value}.`
         <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
             <p class="text-center" style="margin-bottom: 2px;">Server: N/A</p>
             <p class="text-center" style="margin-bottom: 2px;">No of Pax: N/A</p>
+            <p class="text-center" style="margin-bottom: 2px;">Persons: ${offlineData.cover || "N/A"}</p>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
             <p class="text-center" style="margin-bottom: 2px;">Order No: 12345</p>
@@ -13924,6 +13929,7 @@ Expected function or array of functions, received type ${typeof value}.`
       const pindialog = ref(false);
       const otp = ref("");
       const pinloading = ref(false);
+      const cover = ref(1);
       const grandTotalCard = computed2(() => {
         return grandTotal.value;
       });
@@ -14096,6 +14102,9 @@ Expected function or array of functions, received type ${typeof value}.`
           let itemsToPrint = items.value.filter((item) => {
             var _a2;
             const printedQty = ((_a2 = printedItems[item.item_code]) == null ? void 0 : _a2.qty) || 0;
+            const group = (item.item_group || "").toLowerCase();
+            if (group === "beverages" || group === "juices")
+              return false;
             return item.qty > printedQty;
           });
           if (itemsToPrint.length === 0) {
@@ -14108,6 +14117,7 @@ Expected function or array of functions, received type ${typeof value}.`
           const doc3 = await get_invoice_doc();
           doc3.grand_total = grandTotal.value;
           doc3.gstAmountCash = gstAmount.value;
+          doc3.cover = cover.value;
           const now = new Date();
           doc3.date = now.toISOString().split("T")[0];
           doc3.time = now.toLocaleTimeString("en-US", { hour12: false });
@@ -14149,6 +14159,7 @@ Expected function or array of functions, received type ${typeof value}.`
         doc3.grand_total = grandTotal.value;
         doc3.gstAmountCash = gstAmount.value;
         doc3.grand_total_card = grandTotalCard.value;
+        doc3.cover = cover.value;
         doc3.cart_items = items.value.map((item) => {
           var _a2, _b;
           return {
@@ -14284,7 +14295,8 @@ Expected function or array of functions, received type ${typeof value}.`
                 items: items.value,
                 grand_total: grandTotal.value,
                 timestamp: new Date().toISOString(),
-                printed_items: mergedPrinted
+                printed_items: mergedPrinted,
+                cover: cover.value
               });
               console.log(
                 `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
@@ -14304,7 +14316,8 @@ Expected function or array of functions, received type ${typeof value}.`
               orderBy: orderBy.value,
               orderByName: employee.employee_name,
               timestamp: new Date().toISOString(),
-              printed_items: __spreadValues({}, printedItems)
+              printed_items: __spreadValues({}, printedItems),
+              cover: cover.value
             };
             heldOrders.push(currentOrder);
             console.log("Order held successfully:", currentOrder);
@@ -14312,6 +14325,7 @@ Expected function or array of functions, received type ${typeof value}.`
           }
           localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
           items.value = [];
+          cover.value = 0;
           loadingHold.value = false;
           bus_default.emit("open-product-menu");
           bus_default.emit("set-default-value");
@@ -14364,6 +14378,7 @@ Expected function or array of functions, received type ${typeof value}.`
               }
             }
           }
+          cover.value = 0;
         }
       };
       const paymentProcess = (doc3) => {
@@ -14456,6 +14471,7 @@ Expected function or array of functions, received type ${typeof value}.`
         doc3.advanceAmount = advanceAmount.value;
         doc3.exchangeItem = exchangeItem.value;
         doc3.returnDoc = returnDoc.value;
+        doc3.cover = cover.value;
         return doc3;
       };
       const get_payments = () => {
@@ -14782,6 +14798,7 @@ Expected function or array of functions, received type ${typeof value}.`
           bus_default.emit("open-product-menu");
           allowedDelete.value = false;
           items.value = order.items;
+          cover.value = order.cover || 0;
           makePayloadForInvoice();
         });
         bus_default.on("current-screen", (newVal) => {
@@ -14814,7 +14831,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.off("order-taker");
         bus_default.off("update-table-status");
       });
-      const __returned__ = { items, paymentModes, selectedCustomer, customers, showDialog, isFormValid, customerLoading, formData, rules, pos_profile: pos_profile2, pos_opening_shift, invoice_doc, invoiceItems, selectedPaymentMode, loadingBtn, saleOrder, loadingHold, saleOrderDetail, selectedOrderType, offlineMode, punching, screen, speedMbps, getSpeedRes, holdOrderId, dialog, exchangeItem, submitLoading, search, returnDoc, returnType, selectedTable, advanceAmount, orderBy, allowedDelete, pindialog, otp, pinloading, grandTotalCard, orderType, selected, headers, returnItems, returnDialog, returnitems, totalQuantity, totalItems, netTotal, gstAmount, grandTotal, formatNumber, addNewCustomer, checkAuthAccess, submitCustomerDialog, closeCustomerDialog, getCustomerNames, changePaymentMode, openDialog, generateKotPrint, createPreInvoice, goForReturnProceed, openReturnDialog, closeReturnDialog, searchReturnInvoice, loadReturn, submitReturn, load_print_page, getFormattedPrintFormat, holdOrder, updateTableStatus, goForPayment, paymentProcess, processInvoiceFromOrder, getInvoiceFromOrderDoc, updateInvoiceFromOrder, get_invoice_doc, get_payments, getCurrentDate, onEnterKey, update_invoice, checkInternetSpeed, makePayloadForInvoice, deleteItem, toggleDelete, offlineProfileData, createSaleOrder, ref, onMounted, computed: computed2, watch: watch2, onUnmounted, onBeforeUnmount, get eventBus() {
+      const __returned__ = { items, paymentModes, selectedCustomer, customers, showDialog, isFormValid, customerLoading, formData, rules, pos_profile: pos_profile2, pos_opening_shift, invoice_doc, invoiceItems, selectedPaymentMode, loadingBtn, saleOrder, loadingHold, saleOrderDetail, selectedOrderType, offlineMode, punching, screen, speedMbps, getSpeedRes, holdOrderId, dialog, exchangeItem, submitLoading, search, returnDoc, returnType, selectedTable, advanceAmount, orderBy, allowedDelete, pindialog, otp, pinloading, cover, grandTotalCard, orderType, selected, headers, returnItems, returnDialog, returnitems, totalQuantity, totalItems, netTotal, gstAmount, grandTotal, formatNumber, addNewCustomer, checkAuthAccess, submitCustomerDialog, closeCustomerDialog, getCustomerNames, changePaymentMode, openDialog, generateKotPrint, createPreInvoice, goForReturnProceed, openReturnDialog, closeReturnDialog, searchReturnInvoice, loadReturn, submitReturn, load_print_page, getFormattedPrintFormat, holdOrder, updateTableStatus, goForPayment, paymentProcess, processInvoiceFromOrder, getInvoiceFromOrderDoc, updateInvoiceFromOrder, get_invoice_doc, get_payments, getCurrentDate, onEnterKey, update_invoice, checkInternetSpeed, makePayloadForInvoice, deleteItem, toggleDelete, offlineProfileData, createSaleOrder, ref, onMounted, computed: computed2, watch: watch2, onUnmounted, onBeforeUnmount, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
@@ -14926,10 +14943,10 @@ Expected function or array of functions, received type ${typeof value}.`
     const _component_v_divider = resolveComponent("v-divider");
     const _component_v_icon = resolveComponent("v-icon");
     const _component_v_card = resolveComponent("v-card");
+    const _component_v_text_field = resolveComponent("v-text-field");
     const _component_v_select = resolveComponent("v-select");
     const _component_v_btn = resolveComponent("v-btn");
     const _component_v_card_title = resolveComponent("v-card-title");
-    const _component_v_text_field = resolveComponent("v-text-field");
     const _component_v_data_table = resolveComponent("v-data-table");
     const _component_v_spacer = resolveComponent("v-spacer");
     const _component_v_card_actions = resolveComponent("v-card-actions");
@@ -15054,6 +15071,31 @@ Expected function or array of functions, received type ${typeof value}.`
           ]),
           _: 1
         }),
+        createCommentVNode(" Persons field above customer select "),
+        createVNode(_component_v_row, { class: "px-4" }, {
+          default: withCtx(() => [
+            createVNode(_component_v_col, {
+              cols: "12",
+              class: "mb-0"
+            }, {
+              default: withCtx(() => [
+                createVNode(_component_v_text_field, {
+                  modelValue: $setup.cover,
+                  "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $setup.cover = $event),
+                  label: "Persons",
+                  type: "number",
+                  min: "1",
+                  max: "99",
+                  variant: "outlined",
+                  class: "mr-2 mb-2"
+                }, null, 8, ["modelValue"])
+              ]),
+              _: 1
+            })
+          ]),
+          _: 1
+        }),
+        createCommentVNode(" Customer select row "),
         createVNode(_component_v_row, { class: "px-4" }, {
           default: withCtx(() => [
             createVNode(_component_v_col, {
@@ -15064,10 +15106,10 @@ Expected function or array of functions, received type ${typeof value}.`
               default: withCtx(() => [
                 createVNode(_component_v_select, {
                   modelValue: $setup.selectedCustomer,
-                  "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $setup.selectedCustomer = $event),
+                  "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => $setup.selectedCustomer = $event),
                   items: $setup.customers,
                   "item-title": "customer_name",
-                  "item-value": "name	",
+                  "item-value": "name\\t",
                   label: "Select Customer",
                   variant: "outlined",
                   class: "mr-2"
@@ -15086,7 +15128,7 @@ Expected function or array of functions, received type ${typeof value}.`
                   class: "white--text font-weight-bold payment-button",
                   height: "52",
                   color: "#21A0A0",
-                  onClick: _cache[1] || (_cache[1] = ($event) => $setup.addNewCustomer())
+                  onClick: _cache[2] || (_cache[2] = ($event) => $setup.addNewCustomer())
                 }, {
                   default: withCtx(() => [
                     createVNode(_component_v_icon, {
@@ -15377,7 +15419,7 @@ Expected function or array of functions, received type ${typeof value}.`
                               class: "white--text font-weight-bold payment-button",
                               height: "48",
                               color: "#21A0A0",
-                              onClick: _cache[2] || (_cache[2] = ($event) => $setup.holdOrder()),
+                              onClick: _cache[3] || (_cache[3] = ($event) => $setup.holdOrder()),
                               loading: $setup.loadingBtn
                             }, {
                               default: withCtx(() => [
@@ -15395,7 +15437,7 @@ Expected function or array of functions, received type ${typeof value}.`
                               class: "white--text font-weight-bold payment-button",
                               height: "48",
                               color: "#F05D23",
-                              onClick: _cache[3] || (_cache[3] = ($event) => $setup.createPreInvoice()),
+                              onClick: _cache[4] || (_cache[4] = ($event) => $setup.createPreInvoice()),
                               disabled: $setup.screen != 0
                             }, {
                               default: withCtx(() => [
@@ -15413,7 +15455,7 @@ Expected function or array of functions, received type ${typeof value}.`
                               class: "white--text font-weight-bold payment-button",
                               height: "48",
                               color: "#F05D23",
-                              onClick: _cache[4] || (_cache[4] = ($event) => $setup.generateKotPrint()),
+                              onClick: _cache[5] || (_cache[5] = ($event) => $setup.generateKotPrint()),
                               disabled: $setup.screen != 0
                             }, {
                               default: withCtx(() => [
@@ -15439,7 +15481,7 @@ Expected function or array of functions, received type ${typeof value}.`
         createCommentVNode(" Return dialog "),
         createVNode(_component_v_dialog, {
           modelValue: $setup.dialog,
-          "onUpdate:modelValue": _cache[10] || (_cache[10] = ($event) => $setup.dialog = $event),
+          "onUpdate:modelValue": _cache[11] || (_cache[11] = ($event) => $setup.dialog = $event),
           "max-width": "800px",
           persistent: ""
         }, {
@@ -15451,7 +15493,7 @@ Expected function or array of functions, received type ${typeof value}.`
                   default: withCtx(() => [
                     _hoisted_132,
                     createVNode(_component_v_icon, {
-                      onClick: _cache[5] || (_cache[5] = ($event) => $setup.closeReturnDialog())
+                      onClick: _cache[6] || (_cache[6] = ($event) => $setup.closeReturnDialog())
                     }, {
                       default: withCtx(() => [
                         createTextVNode("mdi-close")
@@ -15466,7 +15508,7 @@ Expected function or array of functions, received type ${typeof value}.`
                   default: withCtx(() => [
                     createVNode(_component_v_text_field, {
                       modelValue: $setup.search,
-                      "onUpdate:modelValue": _cache[6] || (_cache[6] = ($event) => $setup.search = $event),
+                      "onUpdate:modelValue": _cache[7] || (_cache[7] = ($event) => $setup.search = $event),
                       label: "Search",
                       variant: "outlined",
                       clearable: "",
@@ -15477,7 +15519,7 @@ Expected function or array of functions, received type ${typeof value}.`
                       class: "white--text font-weight-bold payment-button mt-3",
                       height: "48",
                       color: "#F05D23",
-                      onClick: _cache[7] || (_cache[7] = ($event) => $setup.searchReturnInvoice()),
+                      onClick: _cache[8] || (_cache[8] = ($event) => $setup.searchReturnInvoice()),
                       loading: $setup.loadingBtn
                     }, {
                       default: withCtx(() => [
@@ -15506,7 +15548,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     createVNode(_component_v_spacer),
                     createVNode(_component_v_btn, {
                       color: "error",
-                      onClick: _cache[8] || (_cache[8] = ($event) => $setup.dialog = false)
+                      onClick: _cache[9] || (_cache[9] = ($event) => $setup.dialog = false)
                     }, {
                       default: withCtx(() => [
                         createTextVNode("Close")
@@ -15516,7 +15558,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     $setup.returnItems.length > 0 ? (openBlock(), createBlock(_component_v_btn, {
                       key: 0,
                       color: "#009688",
-                      onClick: _cache[9] || (_cache[9] = ($event) => $setup.loadReturn()),
+                      onClick: _cache[10] || (_cache[10] = ($event) => $setup.loadReturn()),
                       loading: $setup.submitLoading
                     }, {
                       default: withCtx(() => [
@@ -15536,7 +15578,7 @@ Expected function or array of functions, received type ${typeof value}.`
         createCommentVNode(" return Dialog "),
         createVNode(_component_v_dialog, {
           modelValue: $setup.returnDialog,
-          "onUpdate:modelValue": _cache[15] || (_cache[15] = ($event) => $setup.returnDialog = $event),
+          "onUpdate:modelValue": _cache[16] || (_cache[16] = ($event) => $setup.returnDialog = $event),
           "max-width": "741px",
           height: "820",
           persistent: ""
@@ -15573,7 +15615,7 @@ Expected function or array of functions, received type ${typeof value}.`
                                   density: "default",
                                   color: "white",
                                   style: { "background": "#F05D23" },
-                                  onClick: _cache[11] || (_cache[11] = ($event) => $setup.closeReturnDialog())
+                                  onClick: _cache[12] || (_cache[12] = ($event) => $setup.closeReturnDialog())
                                 }, {
                                   default: withCtx(() => [
                                     createVNode(_component_v_icon, null, {
@@ -15607,7 +15649,7 @@ Expected function or array of functions, received type ${typeof value}.`
                       default: withCtx(() => [
                         createVNode(_component_v_radio_group, {
                           modelValue: $setup.returnType,
-                          "onUpdate:modelValue": _cache[14] || (_cache[14] = ($event) => $setup.returnType = $event),
+                          "onUpdate:modelValue": _cache[15] || (_cache[15] = ($event) => $setup.returnType = $event),
                           color: "#21A0A0",
                           inline: ""
                         }, {
@@ -15615,12 +15657,12 @@ Expected function or array of functions, received type ${typeof value}.`
                             createVNode(_component_v_radio, {
                               label: "Exchange",
                               value: "exchange",
-                              onClick: _cache[12] || (_cache[12] = withModifiers(($event) => $setup.returnType = "exchange", ["stop"]))
+                              onClick: _cache[13] || (_cache[13] = withModifiers(($event) => $setup.returnType = "exchange", ["stop"]))
                             }),
                             createVNode(_component_v_radio, {
                               label: "Return",
                               value: "return",
-                              onClick: _cache[13] || (_cache[13] = withModifiers(($event) => $setup.returnType = "replace", ["stop"])),
+                              onClick: _cache[14] || (_cache[14] = withModifiers(($event) => $setup.returnType = "replace", ["stop"])),
                               style: { "margin-left": "153px" }
                             })
                           ]),
@@ -15807,7 +15849,7 @@ Expected function or array of functions, received type ${typeof value}.`
         createCommentVNode(" Add Customer "),
         createVNode(_component_v_dialog, {
           modelValue: $setup.showDialog,
-          "onUpdate:modelValue": _cache[21] || (_cache[21] = ($event) => $setup.showDialog = $event),
+          "onUpdate:modelValue": _cache[22] || (_cache[22] = ($event) => $setup.showDialog = $event),
           "max-width": "500px"
         }, {
           default: withCtx(() => [
@@ -15848,12 +15890,12 @@ Expected function or array of functions, received type ${typeof value}.`
                     createVNode(_component_v_form, {
                       ref: "form",
                       modelValue: $setup.isFormValid,
-                      "onUpdate:modelValue": _cache[20] || (_cache[20] = ($event) => $setup.isFormValid = $event)
+                      "onUpdate:modelValue": _cache[21] || (_cache[21] = ($event) => $setup.isFormValid = $event)
                     }, {
                       default: withCtx(() => [
                         createVNode(_component_v_text_field, {
                           modelValue: $setup.formData.name,
-                          "onUpdate:modelValue": _cache[16] || (_cache[16] = ($event) => $setup.formData.name = $event),
+                          "onUpdate:modelValue": _cache[17] || (_cache[17] = ($event) => $setup.formData.name = $event),
                           label: "Name",
                           outlined: "",
                           required: "",
@@ -15861,7 +15903,7 @@ Expected function or array of functions, received type ${typeof value}.`
                         }, null, 8, ["modelValue", "rules"]),
                         createVNode(_component_v_text_field, {
                           modelValue: $setup.formData.phone,
-                          "onUpdate:modelValue": _cache[17] || (_cache[17] = ($event) => $setup.formData.phone = $event),
+                          "onUpdate:modelValue": _cache[18] || (_cache[18] = ($event) => $setup.formData.phone = $event),
                           label: "Phone Number",
                           outlined: "",
                           required: "",
@@ -15869,13 +15911,13 @@ Expected function or array of functions, received type ${typeof value}.`
                         }, null, 8, ["modelValue", "rules"]),
                         createVNode(_component_v_text_field, {
                           modelValue: $setup.formData.email,
-                          "onUpdate:modelValue": _cache[18] || (_cache[18] = ($event) => $setup.formData.email = $event),
+                          "onUpdate:modelValue": _cache[19] || (_cache[19] = ($event) => $setup.formData.email = $event),
                           label: "Email Address",
                           outlined: ""
                         }, null, 8, ["modelValue"]),
                         createVNode(_component_v_text_field, {
                           modelValue: $setup.formData.address,
-                          "onUpdate:modelValue": _cache[19] || (_cache[19] = ($event) => $setup.formData.address = $event),
+                          "onUpdate:modelValue": _cache[20] || (_cache[20] = ($event) => $setup.formData.address = $event),
                           label: "Postal Address",
                           outlined: ""
                         }, null, 8, ["modelValue"]),
@@ -15910,7 +15952,7 @@ Expected function or array of functions, received type ${typeof value}.`
         }, 8, ["modelValue"]),
         createVNode(_component_v_dialog, {
           modelValue: $setup.pindialog,
-          "onUpdate:modelValue": _cache[25] || (_cache[25] = ($event) => $setup.pindialog = $event),
+          "onUpdate:modelValue": _cache[26] || (_cache[26] = ($event) => $setup.pindialog = $event),
           "max-width": "400",
           persistent: ""
         }, {
@@ -15921,7 +15963,7 @@ Expected function or array of functions, received type ${typeof value}.`
                   default: withCtx(() => [
                     _hoisted_432,
                     createVNode(_component_v_icon, {
-                      onClick: _cache[22] || (_cache[22] = ($event) => $setup.pindialog = false),
+                      onClick: _cache[23] || (_cache[23] = ($event) => $setup.pindialog = false),
                       class: "cursor-pointer"
                     }, {
                       default: withCtx(() => [
@@ -15938,7 +15980,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     createBaseVNode("div", _hoisted_44, [
                       createVNode(_component_v_otp_input, {
                         modelValue: $setup.otp,
-                        "onUpdate:modelValue": _cache[23] || (_cache[23] = ($event) => $setup.otp = $event),
+                        "onUpdate:modelValue": _cache[24] || (_cache[24] = ($event) => $setup.otp = $event),
                         type: "password",
                         loading: $setup.pinloading,
                         length: "5"
@@ -15951,7 +15993,7 @@ Expected function or array of functions, received type ${typeof value}.`
                   default: withCtx(() => [
                     createVNode(_component_v_btn, {
                       text: "Cancel",
-                      onClick: _cache[24] || (_cache[24] = ($event) => $setup.pindialog = false)
+                      onClick: _cache[25] || (_cache[25] = ($event) => $setup.pindialog = false)
                     }),
                     createVNode(_component_v_btn, {
                       disabled: $setup.otp.length < 5 || $setup.pinloading,
@@ -18329,17 +18371,18 @@ Expected function or array of functions, received type ${typeof value}.`
   var _hoisted_76 = { class: "text-grey" };
   var _hoisted_86 = { key: 0 };
   var _hoisted_96 = { key: 1 };
-  var _hoisted_106 = { class: "mt-3" };
-  var _hoisted_116 = /* @__PURE__ */ _withScopeId6(() => /* @__PURE__ */ createBaseVNode("p", null, "Order Detail:", -1));
-  var _hoisted_126 = {
+  var _hoisted_106 = { key: 2 };
+  var _hoisted_116 = { class: "mt-3" };
+  var _hoisted_126 = /* @__PURE__ */ _withScopeId6(() => /* @__PURE__ */ createBaseVNode("p", null, "Order Detail:", -1));
+  var _hoisted_135 = {
     class: "d-flex ml-2",
     style: { "height": "80px" }
   };
-  var _hoisted_135 = { class: "ml-2 text-grey" };
-  var _hoisted_145 = { key: 0 };
-  var _hoisted_154 = { class: "order-detail" };
-  var _hoisted_163 = /* @__PURE__ */ _withScopeId6(() => /* @__PURE__ */ createBaseVNode("strong", null, "Grand Total", -1));
-  var _hoisted_173 = { class: "grand-p" };
+  var _hoisted_145 = { class: "ml-2 text-grey" };
+  var _hoisted_154 = { key: 0 };
+  var _hoisted_163 = { class: "order-detail" };
+  var _hoisted_173 = /* @__PURE__ */ _withScopeId6(() => /* @__PURE__ */ createBaseVNode("strong", null, "Grand Total", -1));
+  var _hoisted_183 = { class: "grand-p" };
   function render7(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_v_col = resolveComponent("v-col");
     const _component_v_icon = resolveComponent("v-icon");
@@ -18429,21 +18472,22 @@ Expected function or array of functions, received type ${typeof value}.`
                               createBaseVNode("span", _hoisted_76, "Date:" + toDisplayString($setup.formatDeliveryDate(order.timestamp)), 1)
                             ]),
                             order.table ? (openBlock(), createElementBlock("span", _hoisted_86, "Table:" + toDisplayString(order.table), 1)) : createCommentVNode("v-if", true),
-                            order.orderBy ? (openBlock(), createElementBlock("span", _hoisted_96, "Order Taker:" + toDisplayString(order.orderByName), 1)) : createCommentVNode("v-if", true)
+                            order.orderBy ? (openBlock(), createElementBlock("span", _hoisted_96, "Order Taker:" + toDisplayString(order.orderByName), 1)) : createCommentVNode("v-if", true),
+                            order.cover ? (openBlock(), createElementBlock("span", _hoisted_106, "Persons: " + toDisplayString(order.cover), 1)) : createCommentVNode("v-if", true)
                           ]),
-                          createBaseVNode("div", _hoisted_106, [
-                            _hoisted_116,
-                            createBaseVNode("div", _hoisted_126, [
+                          createBaseVNode("div", _hoisted_116, [
+                            _hoisted_126,
+                            createBaseVNode("div", _hoisted_135, [
                               createVNode(_component_v_icon, null, {
                                 default: withCtx(() => [
                                   createTextVNode("mdi-clipboard-list-outline")
                                 ]),
                                 _: 1
                               }),
-                              createBaseVNode("p", _hoisted_135, [
+                              createBaseVNode("p", _hoisted_145, [
                                 createCommentVNode(' Display items with "+x more" if more than 6 items '),
                                 createTextVNode(" " + toDisplayString(order.items.slice(0, 6).map((item) => item.item_name).join(", ")), 1),
-                                order.items.length > 6 ? (openBlock(), createElementBlock("span", _hoisted_145, ", +" + toDisplayString(order.items.length - 6) + " more", 1)) : createCommentVNode("v-if", true)
+                                order.items.length > 6 ? (openBlock(), createElementBlock("span", _hoisted_154, ", +" + toDisplayString(order.items.length - 6) + " more", 1)) : createCommentVNode("v-if", true)
                               ])
                             ])
                           ]),
@@ -18451,9 +18495,9 @@ Expected function or array of functions, received type ${typeof value}.`
                             class: "mt-3 dotted-divider",
                             thickness: 3
                           }),
-                          createBaseVNode("div", _hoisted_154, [
-                            _hoisted_163,
-                            createBaseVNode("p", _hoisted_173, "QAR. " + toDisplayString(order.grand_total), 1)
+                          createBaseVNode("div", _hoisted_163, [
+                            _hoisted_173,
+                            createBaseVNode("p", _hoisted_183, "QAR. " + toDisplayString(order.grand_total), 1)
                           ]),
                           createCommentVNode(' <div class="order-detail mt-3">\n                  <strong>By</strong>\n                  <p>{{ order.name }}</p>\n                </div>\n                <div class="order-detail mt-3 pb-3">\n                  <strong>At</strong>\n                  <p>{{ order.location }}</p>\n                </div> ')
                         ]),
@@ -18597,7 +18641,7 @@ Expected function or array of functions, received type ${typeof value}.`
     style: { "background": "#F3F3F3", "border-radius": "12px" },
     class: "px-15 py-5"
   };
-  var _hoisted_183 = { class: "dis-grid" };
+  var _hoisted_184 = { class: "dis-grid" };
   var _hoisted_193 = { class: "d-flex justify-space-between px-2" };
   var _hoisted_203 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ createBaseVNode("div", {
     class: "",
@@ -18886,7 +18930,7 @@ Expected function or array of functions, received type ${typeof value}.`
                                 default: withCtx(() => [
                                   createVNode(_component_v_card_text, { class: "pb-0" }, {
                                     default: withCtx(() => [
-                                      createBaseVNode("div", _hoisted_183, [
+                                      createBaseVNode("div", _hoisted_184, [
                                         createBaseVNode("div", _hoisted_193, [
                                           _hoisted_203,
                                           createVNode(_component_v_chip, {
@@ -48768,7 +48812,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
     class: "mt-3"
   }, null, -1));
   var _hoisted_175 = /* @__PURE__ */ _withScopeId12(() => /* @__PURE__ */ createBaseVNode("h5", { class: "title py-2" }, "Net Total", -1));
-  var _hoisted_184 = {
+  var _hoisted_185 = {
     class: "amount py-2",
     style: { "color": "#818181" }
   };
@@ -48947,7 +48991,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
                               default: withCtx(() => [
                                 createBaseVNode("div", null, [
                                   _hoisted_175,
-                                  createBaseVNode("h6", _hoisted_184, " Rs. " + toDisplayString(parseFloat($setup.netTotal).toFixed(2)), 1),
+                                  createBaseVNode("h6", _hoisted_185, " Rs. " + toDisplayString(parseFloat($setup.netTotal).toFixed(2)), 1),
                                   _hoisted_194
                                 ])
                               ]),
@@ -49159,4 +49203,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.CGWCRWEL.js.map
+//# sourceMappingURL=pos.bundle.BSXBMODX.js.map
