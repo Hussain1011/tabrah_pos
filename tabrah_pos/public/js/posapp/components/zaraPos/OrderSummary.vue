@@ -44,7 +44,7 @@
 
         <v-col cols="1" class="text-right pb-0" v-show="screen == 0">
           <!-- Delete icon -->
-          <v-icon @click.stop="deleteItem(index)" color="red">mdi-delete</v-icon>
+          <v-icon @click.stop="requestDeleteItem(index)" color="red">mdi-delete</v-icon>
         </v-col>
 
         <v-col cols="12" class="py-0">
@@ -353,7 +353,7 @@
                     </v-col>
                     <v-col cols="1" class="text-right pb-0" v-show="returnDoc.items.length > 1">
                       <!-- Delete icon -->
-                      <v-icon @click.stop="deleteItem(index)" color="red">mdi-delete</v-icon>
+                      <v-icon @click.stop="requestDeleteItem(index)" color="red">mdi-delete</v-icon>
                     </v-col>
                   </div>
                   <v-col cols="12" class="py-0 my-0 px-0">
@@ -560,6 +560,7 @@ const pindialog = ref(false);
 const otp = ref("");
 const pinloading = ref(false);
 const cover = ref(1); // Default to 1 person
+const pendingDeleteIndex = ref(null);
 
 const grandTotalCard = computed(() => {
   return grandTotal.value; // Default to grand total, can be customized based on card payment logic
@@ -679,6 +680,11 @@ const checkAuthAccess = () => {
     allowedDelete.value = true;
     pindialog.value = false;
     otp.value = ''
+    // If there is a pending delete, perform it now
+    if (pendingDeleteIndex.value !== null) {
+      deleteItem(pendingDeleteIndex.value);
+      pendingDeleteIndex.value = null;
+    }
   }
   else {
     eventBus.emit("show_mesage", {
@@ -688,7 +694,6 @@ const checkAuthAccess = () => {
   }
 
   pinloading.value = false;
-
 };
 
 const submitCustomerDialog = async () => {
@@ -786,12 +791,15 @@ const generateKotPrint = async () => {
     if (currentOrder) {
       printedItems = { ...(currentOrder.printed_items || {}) };
     }
+    // Debug logging
+    console.log('KOT Print: items.value', items.value);
+    console.log('KOT Print: printedItems', printedItems);
     // Only print items that haven't been printed before or have new quantities
     let itemsToPrint = items.value.filter(item => {
       const printedQty = printedItems[item.item_code]?.qty || 0;
       // Exclude beverages and juices (case-insensitive)
       const group = (item.item_group || '').toLowerCase();
-      if (group === 'beverages' || group === 'juices') return false;
+      if (group === 'Beverage' || group === 'JUICE') return false;
       return item.qty > printedQty;
     });
     if (itemsToPrint.length === 0) {
@@ -1013,24 +1021,36 @@ const getFormattedPrintFormat = () => {
   return encodeURIComponent(printFormat.trim());
 };
 const holdOrder = (printedItems = {}) => {
+  // If no items left and this is an existing hold order, remove it from localStorage
+  if (items.value.length === 0 && holdOrderId.value) {
+    const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+    const orderIndex = heldOrders.findIndex(order => order.id == holdOrderId.value);
+    if (orderIndex !== -1) {
+      heldOrders.splice(orderIndex, 1);
+      localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
+    }
+    items.value = [];
+    cover.value = 0;
+    loadingHold.value = false;
+    eventBus.emit("open-product-menu");
+    eventBus.emit("set-default-value");
+    return;
+  }
   if (items.value.length > 0) {
     loadingHold.value = true; // Start loading indicator
-
     // Retrieve held orders from localStorage
     const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
-
     if (holdOrderId.value) {
       // Update existing order if holdOrderId is present
-      const existingOrderIndex = heldOrders.findIndex(
+      const orderIndex = heldOrders.findIndex(
         (order) => order.id === holdOrderId.value
       );
-
-      if (existingOrderIndex !== -1) {
+      if (orderIndex !== -1) {
         // Merge previous printed_items with new ones (only update those printed now)
-        const prevPrinted = heldOrders[existingOrderIndex].printed_items || {};
+        const prevPrinted = heldOrders[orderIndex].printed_items || {};
         const mergedPrinted = { ...prevPrinted, ...printedItems };
-        heldOrders[existingOrderIndex] = {
-          ...heldOrders[existingOrderIndex],
+        heldOrders[orderIndex] = {
+          ...heldOrders[orderIndex],
           items: items.value,
           grand_total: grandTotal.value,
           timestamp: new Date().toISOString(),
@@ -1038,13 +1058,13 @@ const holdOrder = (printedItems = {}) => {
           cover: cover.value, // Save persons in hold order
         };
         console.log(
-          `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
+          `Order updated successfully: ${heldOrders[orderIndex].id}`
         );
       } else {
         console.warn(`Order with ID ${holdOrderId.value} not found.`);
       }
     } else {
-      // Create a new order if no holdOrderId    is present
+      // Create a new order if no holdOrderId is present
       const employee = pos_profile.value.employee_list.find(emp => emp.employee === orderBy.value) || '';
       console.log("orderby....", employee)
       const nextOrderId = `Hold-Order-${heldOrders.length + 1}`;
@@ -1063,10 +1083,8 @@ const holdOrder = (printedItems = {}) => {
       console.log("Order held successfully:", currentOrder);
       updateTableStatus(selectedTable.value, "Reserved");
     }
-
     // Update localStorage with the modified held orders
     localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
-
     // Clear the current order for a new one
     items.value = [];
     cover.value = 0; // Clear persons field after hold order
@@ -1469,28 +1487,34 @@ const makePayloadForInvoice = () => {
   // checkInternetSpeed();
 };
 
-const deleteItem = (index) => {
+const requestDeleteItem = (index) => {
   if (allowedDelete.value || !holdOrderId.value) {
-    items.value.splice(index, 1);
-    if (holdOrderId.value) {
-      const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
-      const updatedOrders = heldOrders.filter((order) => order.id == holdOrderId.value);
-      // console.log("updatedOrders.....",updatedOrders);
-      if (updatedOrders.length > 0) {
-        // console.log("eenter inn deletee.....")
-        updateTableStatus(updatedOrders[0].table, "Available");
-      }
-
-      eventBus.emit("update-hold-order", holdOrderId.value)
-      holdOrderId.value = ''
+    deleteItem(index);
+  } else {
+    pendingDeleteIndex.value = index;
+    pindialog.value = true;
+  }
+};
+const deleteItem = (index) => {
+  console.log('Before delete:', items.value.map(i => i.item_name));
+  items.value.splice(index, 1);
+  console.log('After delete:', items.value.map(i => i.item_name));
+  // If last item was deleted, remove hold order immediately and clear fields
+  if (items.value.length === 0 && holdOrderId.value) {
+    const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+    const orderIndex = heldOrders.findIndex(order => order.id == holdOrderId.value);
+    if (orderIndex !== -1) {
+      heldOrders.splice(orderIndex, 1);
+      localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
     }
-    makePayloadForInvoice();
-
+    holdOrderId.value = '';
+    items.value = [];
+    cover.value = 0;
+    loadingHold.value = false;
+    eventBus.emit("open-product-menu");
+    eventBus.emit("set-default-value");
   }
-  else {
-    pindialog.value = true
-  }
-
+  makePayloadForInvoice();
 };
 const toggleDelete = (index) => {
   // Toggle the visibility of the delete button for the clicked item

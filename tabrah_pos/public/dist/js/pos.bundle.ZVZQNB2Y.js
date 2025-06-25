@@ -13670,10 +13670,6 @@ Expected function or array of functions, received type ${typeof value}.`
                         </tr>
                         <tr class="innertext">
                             <td><b>No of Pax:</b></td>
-                            <td>${offlineData.total_qty || ""}</td>
-                        </tr>
-                        <tr class="innertext">
-                            <td><b>Persons:</b></td>
                             <td>${offlineData.cover || ""}</td>
                         </tr>
                     </tbody>
@@ -13825,8 +13821,7 @@ Expected function or array of functions, received type ${typeof value}.`
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
             <p class="text-center" style="margin-bottom: 2px;">Server: N/A</p>
-            <p class="text-center" style="margin-bottom: 2px;">No of Pax: N/A</p>
-            <p class="text-center" style="margin-bottom: 2px;">Persons: ${offlineData.cover || "N/A"}</p>
+            <p class="text-center" style="margin-bottom: 2px;">No of Pax: ${offlineData.cover || "N/A"}</p>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
             <p class="text-center" style="margin-bottom: 2px;">Order No: 12345</p>
@@ -13930,6 +13925,7 @@ Expected function or array of functions, received type ${typeof value}.`
       const otp = ref("");
       const pinloading = ref(false);
       const cover = ref(1);
+      const pendingDeleteIndex = ref(null);
       const grandTotalCard = computed2(() => {
         return grandTotal.value;
       });
@@ -14002,6 +13998,10 @@ Expected function or array of functions, received type ${typeof value}.`
           allowedDelete.value = true;
           pindialog.value = false;
           otp.value = "";
+          if (pendingDeleteIndex.value !== null) {
+            deleteItem(pendingDeleteIndex.value);
+            pendingDeleteIndex.value = null;
+          }
         } else {
           bus_default.emit("show_mesage", {
             text: "Invalid Pin. Please try again!",
@@ -14099,11 +14099,13 @@ Expected function or array of functions, received type ${typeof value}.`
           if (currentOrder) {
             printedItems = __spreadValues({}, currentOrder.printed_items || {});
           }
+          console.log("KOT Print: items.value", items.value);
+          console.log("KOT Print: printedItems", printedItems);
           let itemsToPrint = items.value.filter((item) => {
             var _a2;
             const printedQty = ((_a2 = printedItems[item.item_code]) == null ? void 0 : _a2.qty) || 0;
             const group = (item.item_group || "").toLowerCase();
-            if (group === "beverages" || group === "juices")
+            if (group === "Beverage" || group === "JUICE")
               return false;
             return item.qty > printedQty;
           });
@@ -14281,17 +14283,31 @@ Expected function or array of functions, received type ${typeof value}.`
         return encodeURIComponent(printFormat.trim());
       };
       const holdOrder = (printedItems = {}) => {
+        if (items.value.length === 0 && holdOrderId.value) {
+          const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+          const orderIndex = heldOrders.findIndex((order) => order.id == holdOrderId.value);
+          if (orderIndex !== -1) {
+            heldOrders.splice(orderIndex, 1);
+            localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
+          }
+          items.value = [];
+          cover.value = 0;
+          loadingHold.value = false;
+          bus_default.emit("open-product-menu");
+          bus_default.emit("set-default-value");
+          return;
+        }
         if (items.value.length > 0) {
           loadingHold.value = true;
           const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
           if (holdOrderId.value) {
-            const existingOrderIndex = heldOrders.findIndex(
+            const orderIndex = heldOrders.findIndex(
               (order) => order.id === holdOrderId.value
             );
-            if (existingOrderIndex !== -1) {
-              const prevPrinted = heldOrders[existingOrderIndex].printed_items || {};
+            if (orderIndex !== -1) {
+              const prevPrinted = heldOrders[orderIndex].printed_items || {};
               const mergedPrinted = __spreadValues(__spreadValues({}, prevPrinted), printedItems);
-              heldOrders[existingOrderIndex] = __spreadProps(__spreadValues({}, heldOrders[existingOrderIndex]), {
+              heldOrders[orderIndex] = __spreadProps(__spreadValues({}, heldOrders[orderIndex]), {
                 items: items.value,
                 grand_total: grandTotal.value,
                 timestamp: new Date().toISOString(),
@@ -14299,7 +14315,7 @@ Expected function or array of functions, received type ${typeof value}.`
                 cover: cover.value
               });
               console.log(
-                `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
+                `Order updated successfully: ${heldOrders[orderIndex].id}`
               );
             } else {
               console.warn(`Order with ID ${holdOrderId.value} not found.`);
@@ -14627,22 +14643,33 @@ Expected function or array of functions, received type ${typeof value}.`
         localStorage.setItem("net-total", JSON.stringify(netTotal.value));
         localStorage.setItem("gst-amount", JSON.stringify(gstAmount.value));
       };
-      const deleteItem = (index) => {
+      const requestDeleteItem = (index) => {
         if (allowedDelete.value || !holdOrderId.value) {
-          items.value.splice(index, 1);
-          if (holdOrderId.value) {
-            const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
-            const updatedOrders = heldOrders.filter((order) => order.id == holdOrderId.value);
-            if (updatedOrders.length > 0) {
-              updateTableStatus(updatedOrders[0].table, "Available");
-            }
-            bus_default.emit("update-hold-order", holdOrderId.value);
-            holdOrderId.value = "";
-          }
-          makePayloadForInvoice();
+          deleteItem(index);
         } else {
+          pendingDeleteIndex.value = index;
           pindialog.value = true;
         }
+      };
+      const deleteItem = (index) => {
+        console.log("Before delete:", items.value.map((i) => i.item_name));
+        items.value.splice(index, 1);
+        console.log("After delete:", items.value.map((i) => i.item_name));
+        if (items.value.length === 0 && holdOrderId.value) {
+          const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+          const orderIndex = heldOrders.findIndex((order) => order.id == holdOrderId.value);
+          if (orderIndex !== -1) {
+            heldOrders.splice(orderIndex, 1);
+            localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
+          }
+          holdOrderId.value = "";
+          items.value = [];
+          cover.value = 0;
+          loadingHold.value = false;
+          bus_default.emit("open-product-menu");
+          bus_default.emit("set-default-value");
+        }
+        makePayloadForInvoice();
       };
       const toggleDelete = (index) => {
         items.value[index].showDelete = !items.value[index].showDelete;
@@ -14831,7 +14858,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.off("order-taker");
         bus_default.off("update-table-status");
       });
-      const __returned__ = { items, paymentModes, selectedCustomer, customers, showDialog, isFormValid, customerLoading, formData, rules, pos_profile: pos_profile2, pos_opening_shift, invoice_doc, invoiceItems, selectedPaymentMode, loadingBtn, saleOrder, loadingHold, saleOrderDetail, selectedOrderType, offlineMode, punching, screen, speedMbps, getSpeedRes, holdOrderId, dialog, exchangeItem, submitLoading, search, returnDoc, returnType, selectedTable, advanceAmount, orderBy, allowedDelete, pindialog, otp, pinloading, cover, grandTotalCard, orderType, selected, headers, returnItems, returnDialog, returnitems, totalQuantity, totalItems, netTotal, gstAmount, grandTotal, formatNumber, addNewCustomer, checkAuthAccess, submitCustomerDialog, closeCustomerDialog, getCustomerNames, changePaymentMode, openDialog, generateKotPrint, createPreInvoice, goForReturnProceed, openReturnDialog, closeReturnDialog, searchReturnInvoice, loadReturn, submitReturn, load_print_page, getFormattedPrintFormat, holdOrder, updateTableStatus, goForPayment, paymentProcess, processInvoiceFromOrder, getInvoiceFromOrderDoc, updateInvoiceFromOrder, get_invoice_doc, get_payments, getCurrentDate, onEnterKey, update_invoice, checkInternetSpeed, makePayloadForInvoice, deleteItem, toggleDelete, offlineProfileData, createSaleOrder, ref, onMounted, computed: computed2, watch: watch2, onUnmounted, onBeforeUnmount, get eventBus() {
+      const __returned__ = { items, paymentModes, selectedCustomer, customers, showDialog, isFormValid, customerLoading, formData, rules, pos_profile: pos_profile2, pos_opening_shift, invoice_doc, invoiceItems, selectedPaymentMode, loadingBtn, saleOrder, loadingHold, saleOrderDetail, selectedOrderType, offlineMode, punching, screen, speedMbps, getSpeedRes, holdOrderId, dialog, exchangeItem, submitLoading, search, returnDoc, returnType, selectedTable, advanceAmount, orderBy, allowedDelete, pindialog, otp, pinloading, cover, pendingDeleteIndex, grandTotalCard, orderType, selected, headers, returnItems, returnDialog, returnitems, totalQuantity, totalItems, netTotal, gstAmount, grandTotal, formatNumber, addNewCustomer, checkAuthAccess, submitCustomerDialog, closeCustomerDialog, getCustomerNames, changePaymentMode, openDialog, generateKotPrint, createPreInvoice, goForReturnProceed, openReturnDialog, closeReturnDialog, searchReturnInvoice, loadReturn, submitReturn, load_print_page, getFormattedPrintFormat, holdOrder, updateTableStatus, goForPayment, paymentProcess, processInvoiceFromOrder, getInvoiceFromOrderDoc, updateInvoiceFromOrder, get_invoice_doc, get_payments, getCurrentDate, onEnterKey, update_invoice, checkInternetSpeed, makePayloadForInvoice, requestDeleteItem, deleteItem, toggleDelete, offlineProfileData, createSaleOrder, ref, onMounted, computed: computed2, watch: watch2, onUnmounted, onBeforeUnmount, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
@@ -15042,7 +15069,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     default: withCtx(() => [
                       createCommentVNode(" Delete icon "),
                       createVNode(_component_v_icon, {
-                        onClick: withModifiers(($event) => $setup.deleteItem(index), ["stop"]),
+                        onClick: withModifiers(($event) => $setup.requestDeleteItem(index), ["stop"]),
                         color: "red"
                       }, {
                         default: withCtx(() => [
@@ -15769,7 +15796,7 @@ Expected function or array of functions, received type ${typeof value}.`
                                         default: withCtx(() => [
                                           createCommentVNode(" Delete icon "),
                                           createVNode(_component_v_icon, {
-                                            onClick: withModifiers(($event) => $setup.deleteItem(index), ["stop"]),
+                                            onClick: withModifiers(($event) => $setup.requestDeleteItem(index), ["stop"]),
                                             color: "red"
                                           }, {
                                             default: withCtx(() => [
@@ -49203,4 +49230,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.BSXBMODX.js.map
+//# sourceMappingURL=pos.bundle.ZVZQNB2Y.js.map

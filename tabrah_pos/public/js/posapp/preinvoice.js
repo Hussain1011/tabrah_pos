@@ -172,10 +172,6 @@ export async function printPreInvoice(offlineData) {
                         </tr>
                         <tr class="innertext">
                             <td><b>No of Pax:</b></td>
-                            <td>${offlineData.total_qty || ''}</td>
-                        </tr>
-                        <tr class="innertext">
-                            <td><b>Persons:</b></td>
                             <td>${offlineData.cover || ''}</td>
                         </tr>
                     </tbody>
