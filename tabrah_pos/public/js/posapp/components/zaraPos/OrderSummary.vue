@@ -1021,78 +1021,82 @@ const getFormattedPrintFormat = () => {
   return encodeURIComponent(printFormat.trim());
 };
 const holdOrder = (printedItems = {}) => {
-  // If no items left and this is an existing hold order, remove it from localStorage
-  if (items.value.length === 0 && holdOrderId.value) {
-    const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
-    const orderIndex = heldOrders.findIndex(order => order.id == holdOrderId.value);
-    if (orderIndex !== -1) {
-      heldOrders.splice(orderIndex, 1);
-      localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
-    }
-    items.value = [];
-    cover.value = 0;
-    loadingHold.value = false;
-    eventBus.emit("open-product-menu");
-    eventBus.emit("set-default-value");
-    return;
-  }
   if (items.value.length > 0) {
-    loadingHold.value = true; // Start loading indicator
-    // Retrieve held orders from localStorage
+    loadingHold.value = true;
+
     const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+
     if (holdOrderId.value) {
-      // Update existing order if holdOrderId is present
-      const orderIndex = heldOrders.findIndex(
+      const existingOrderIndex = heldOrders.findIndex(
         (order) => order.id === holdOrderId.value
       );
-      if (orderIndex !== -1) {
-        // Merge previous printed_items with new ones (only update those printed now)
-        const prevPrinted = heldOrders[orderIndex].printed_items || {};
+
+      if (existingOrderIndex !== -1) {
+        const prevPrinted = heldOrders[existingOrderIndex].printed_items || {};
         const mergedPrinted = { ...prevPrinted, ...printedItems };
-        heldOrders[orderIndex] = {
-          ...heldOrders[orderIndex],
+        heldOrders[existingOrderIndex] = {
+          ...heldOrders[existingOrderIndex],
           items: items.value,
           grand_total: grandTotal.value,
           timestamp: new Date().toISOString(),
           printed_items: mergedPrinted,
-          cover: cover.value, // Save persons in hold order
+          cover: cover.value,
         };
         console.log(
-          `Order updated successfully: ${heldOrders[orderIndex].id}`
+          `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
         );
       } else {
         console.warn(`Order with ID ${holdOrderId.value} not found.`);
       }
     } else {
-      // Create a new order if no holdOrderId is present
-      const employee = pos_profile.value.employee_list.find(emp => emp.employee === orderBy.value) || '';
-      console.log("orderby....", employee)
-      const nextOrderId = `Hold-Order-${heldOrders.length + 1}`;
+      // Generate new order ID
+      let nextOrderNumber = 1;
+
+      if (heldOrders.length > 0) {
+        const maxIdNumber = heldOrders.reduce((max, order) => {
+          const match = order.id.match(/Hold-Order-(\d+)/);
+          const number = match ? parseInt(match[1], 10) : 0;
+          return number > max ? number : max;
+        }, 0);
+
+        nextOrderNumber = maxIdNumber + 1;
+      }
+
+      const nextOrderId = `Hold-Order-${nextOrderNumber}`;
+
+      const employee =
+        pos_profile.value.employee_list.find(
+          (emp) => emp.employee === orderBy.value
+        ) || {};
+
       const currentOrder = {
         id: nextOrderId,
         items: items.value,
         grand_total: grandTotal.value,
         table: selectedTable.value,
         orderBy: orderBy.value,
-        orderByName: employee.employee_name,
+        orderByName: employee.employee_name || "",
         timestamp: new Date().toISOString(),
         printed_items: { ...printedItems },
-        cover: cover.value, // Save persons in hold order
+        cover: cover.value,
       };
+
       heldOrders.push(currentOrder);
       console.log("Order held successfully:", currentOrder);
+
       updateTableStatus(selectedTable.value, "Reserved");
     }
-    // Update localStorage with the modified held orders
+
     localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
-    // Clear the current order for a new one
     items.value = [];
-    cover.value = 0; // Clear persons field after hold order
-    loadingHold.value = false; // Stop loading indicator
+    cover.value = 0;
+    loadingHold.value = false;
     eventBus.emit("open-product-menu");
     eventBus.emit("set-default-value");
   }
 };
+
+
 
 const updateTableStatus = async (table, status) => {
   if (table) {
