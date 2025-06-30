@@ -12609,7 +12609,7 @@ Expected function or array of functions, received type ${typeof value}.`
           const obj = {
             item_code: `${variantMatch.value.item_code}`,
             item_name: `${variantMatch.value.item_name}`,
-            item_group: variantMatch.value.item_group,
+            item_group: variantMatch.value.item_group || selectedCategory.value && selectedCategory.value.item_group || "",
             qty: 1,
             rate: variantMatch.value.rate
           };
@@ -12920,8 +12920,10 @@ Expected function or array of functions, received type ${typeof value}.`
         );
         if (searchValue.value) {
           if (exactMatchItem) {
-            console.log("Exact match found:", exactMatchItem);
             exactMatchItem.qty = 1;
+            if (!exactMatchItem.item_group && selectedCategory.value && selectedCategory.value.item_group) {
+              exactMatchItem.item_group = selectedCategory.value.item_group;
+            }
             bus_default.emit("add-to-cart", exactMatchItem);
           } else {
             bus_default.emit("show_mesage", {
@@ -14103,8 +14105,17 @@ Expected function or array of functions, received type ${typeof value}.`
           let itemsToPrint = items.value.filter((item) => {
             var _a2;
             const printedQty = ((_a2 = printedItems[item.item_code]) == null ? void 0 : _a2.qty) || 0;
-            const group = (item.item_group || "").toLowerCase();
-            if (group === "Beverage" || group === "JUICE")
+            let group = (item.item_group || "").toLowerCase();
+            let isJuiceOrBeverage = group === "Beverage" || group === "JUICE";
+            if (item.product_bundle && Array.isArray(item.product_bundle.items)) {
+              for (const sub of item.product_bundle.items) {
+                if ((sub.custom_item_group || "").toLowerCase() === "Beverage" || (sub.custom_item_group || "").toLowerCase() === "JUICE") {
+                  isJuiceOrBeverage = true;
+                  break;
+                }
+              }
+            }
+            if (isJuiceOrBeverage)
               return false;
             return item.qty > printedQty;
           });
@@ -14293,7 +14304,7 @@ Expected function or array of functions, received type ${typeof value}.`
               const prevPrinted = heldOrders[existingOrderIndex].printed_items || {};
               const mergedPrinted = __spreadValues(__spreadValues({}, prevPrinted), printedItems);
               heldOrders[existingOrderIndex] = __spreadProps(__spreadValues({}, heldOrders[existingOrderIndex]), {
-                items: items.value,
+                items: items.value.map((item) => __spreadProps(__spreadValues({}, item), { item_group: item.item_group || "" })),
                 grand_total: grandTotal.value,
                 timestamp: new Date().toISOString(),
                 printed_items: mergedPrinted,
@@ -14321,7 +14332,7 @@ Expected function or array of functions, received type ${typeof value}.`
             ) || {};
             const currentOrder = {
               id: nextOrderId,
-              items: items.value,
+              items: items.value.map((item) => __spreadProps(__spreadValues({}, item), { item_group: item.item_group || "" })),
               grand_total: grandTotal.value,
               table: selectedTable.value,
               orderBy: orderBy.value,
@@ -49236,4 +49247,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.OUGUNI5K.js.map
+//# sourceMappingURL=pos.bundle.MNL3JZIX.js.map

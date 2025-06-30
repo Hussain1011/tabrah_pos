@@ -801,8 +801,18 @@ const generateKotPrint = async () => {
     let itemsToPrint = items.value.filter(item => {
       const printedQty = printedItems[item.item_code]?.qty || 0;
       // Exclude beverages and juices (case-insensitive)
-      const group = (item.item_group || '').toLowerCase();
-      if (group === 'Beverage' || group === 'JUICE') return false;
+      let group = (item.item_group || '').toLowerCase();
+      let isJuiceOrBeverage = group === 'Beverage' || group === 'JUICE';
+      // Check product_bundle sub-items for custom_item_group
+      if (item.product_bundle && Array.isArray(item.product_bundle.items)) {
+        for (const sub of item.product_bundle.items) {
+          if ((sub.custom_item_group || '').toLowerCase() === 'Beverage' || (sub.custom_item_group || '').toLowerCase() === 'JUICE') {
+            isJuiceOrBeverage = true;
+            break;
+          }
+        }
+      }
+      if (isJuiceOrBeverage) return false;
       return item.qty > printedQty;
     });
     if (itemsToPrint.length === 0) {
@@ -1039,7 +1049,7 @@ const holdOrder = (printedItems = {}) => {
         const mergedPrinted = { ...prevPrinted, ...printedItems };
         heldOrders[existingOrderIndex] = {
           ...heldOrders[existingOrderIndex],
-          items: items.value,
+          items: items.value.map(item => ({ ...item, item_group: item.item_group || '' })),
           grand_total: grandTotal.value,
           timestamp: new Date().toISOString(),
           printed_items: mergedPrinted,
@@ -1074,7 +1084,7 @@ const holdOrder = (printedItems = {}) => {
 
       const currentOrder = {
         id: nextOrderId,
-        items: items.value,
+        items: items.value.map(item => ({ ...item, item_group: item.item_group || '' })),
         grand_total: grandTotal.value,
         table: selectedTable.value,
         orderBy: orderBy.value,

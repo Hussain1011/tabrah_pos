@@ -273,6 +273,20 @@ const getItemBundle = async (product) => {
 
     if (response.message) {
       console.log("bundle Api response....", response.message);
+      // Patch: set item_group for the main bundle item if missing
+      if (!response.message[0].item_group) {
+        let fallbackGroup = '';
+        if (selectedCategory.value && selectedCategory.value.item_group) {
+          fallbackGroup = selectedCategory.value.item_group;
+        } else if (
+          response.message[0].product_bundle &&
+          Array.isArray(response.message[0].product_bundle.items) &&
+          response.message[0].product_bundle.items.length > 0
+        ) {
+          fallbackGroup = response.message[0].product_bundle.items[0].custom_item_group || '';
+        }
+        response.message[0].item_group = fallbackGroup;
+      }
       eventBus.emit("add-to-cart", response.message[0]);
       variantsDialog.value = false;
       defaultValue()
@@ -307,7 +321,7 @@ const onOptionSelect = (index, selectedValue) => {
     const obj = {
       item_code: `${variantMatch.value.item_code}`,
       item_name: `${variantMatch.value.item_name}`,
-      item_group: variantMatch.value.item_group,
+      item_group: variantMatch.value.item_group || (selectedCategory.value && selectedCategory.value.item_group) || '',
       qty: 1,
       rate: variantMatch.value.rate,
     };
@@ -834,9 +848,10 @@ const scanItem = (category) => {
   );
   if (searchValue.value) {
     if (exactMatchItem) {
-      // Emit an event for the exact match
-      console.log("Exact match found:", exactMatchItem);
       exactMatchItem.qty = 1;
+      if (!exactMatchItem.item_group && selectedCategory.value && selectedCategory.value.item_group) {
+        exactMatchItem.item_group = selectedCategory.value.item_group;
+      }
       eventBus.emit("add-to-cart", exactMatchItem);
     } else {
       eventBus.emit("show_mesage", {
