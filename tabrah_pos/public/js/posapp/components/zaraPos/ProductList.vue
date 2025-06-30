@@ -76,7 +76,7 @@
       </v-row>
       <v-row v-show="filteredProducts.length == 0 && !itemloading">
         <v-col cols="12" style="display: flex; justify-content: center">
-          <img src="/assets/tabrah_pos/js/posapp/components/pos/noData.png" alt="" class="ml-5" />
+          <img :src="defaultImg" alt="" class="ml-5" />
         </v-col>
       </v-row>
       <v-row v-show="itemloading">
@@ -153,9 +153,7 @@ const categories = ref([]);
 const pos_profile = ref("");
 const selectedCategory = ref("");
 const searchValue = ref("");
-const defaultImg = ref(
-  "/assets/tabrah_pos/js/posapp/components/pos/tabrah.png"
-);
+const defaultImg = computed(() => `/assets/tabrah_pos/js/posapp/components/pos/${pos_profile.value.company}.png`);
 const orderType = ref("");
 const searchItemCode = ref("");
 

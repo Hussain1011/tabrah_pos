@@ -53,7 +53,7 @@
       </v-row>
     </v-card>
     <!-- Persons field above customer select -->
-    <v-row class="px-4">
+    <v-row class="px-4" v-if="pos_profile.allow_table_no">
       <v-col cols="12" class="mb-0">
         <v-text-field v-model="cover" label="Persons" type="number" min="1" max="99" variant="outlined" class="mr-2 mb-2"></v-text-field>
       </v-col>
@@ -158,7 +158,7 @@
           </v-row>
 
           <!-- Payment Button -->
-         <v-row class="mt-3 px-6 pb-1">
+          <v-row class="mt-3 px-6 pb-1">
             <v-col cols="12">
               <v-btn
                 block
@@ -173,7 +173,10 @@
             </v-col>
           </v-row>
           <v-row class="mt-3 px-6 pb-1">
-            <v-col cols="4">
+            <v-col :cols="
+              (!pos_profile.custom_allow_pre_invoice_print && !pos_profile.custom_allow_kot_print) ? 12 :
+              (pos_profile.custom_allow_pre_invoice_print !== pos_profile.custom_allow_kot_print) ? 6 : 4
+            ">
               <v-btn
                 block
                 class="white--text font-weight-bold payment-button"
@@ -185,7 +188,7 @@
                 <p class="mt-2 payment-p">Hold</p>
               </v-btn>
             </v-col>
-            <v-col cols="4">
+            <v-col v-if="pos_profile.custom_allow_pre_invoice_print" :cols="(pos_profile.custom_allow_kot_print) ? 4 : 6">
               <v-btn
                 block
                 class="white--text font-weight-bold payment-button"
@@ -197,7 +200,7 @@
                 <p class="mt-2 print-p">Pre Invoice</p>
               </v-btn>
             </v-col>
-            <v-col cols="4">
+            <v-col v-if="pos_profile.custom_allow_kot_print" :cols="(pos_profile.custom_allow_pre_invoice_print) ? 4 : 6">
               <v-btn
                 block
                 class="white--text font-weight-bold payment-button"
