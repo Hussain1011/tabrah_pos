@@ -190,7 +190,6 @@ export default {
       snackColor: "",
       snackText: "",
       company: "POS",
-      company_img: "/assets/tabrah_pos/js/posapp/components/pos/",
       pos_profile: "",
       freeze: false,
       freezeTitle: "",
@@ -198,6 +197,13 @@ export default {
       last_invoice: "",
       type: "info",
     };
+  },
+  computed: {
+    company_img() {
+      return this.pos_profile && this.pos_profile.company
+        ? `/assets/tabrah_pos/js/posapp/components/pos/${this.pos_profile.company}.png`
+        : "/assets/tabrah_pos/js/posapp/components/pos/";
+    },
   },
   methods: {
     changePage(key) {
@@ -266,9 +272,6 @@ export default {
       });
       evntBus.$on("set_company", (data) => {
         this.company = data.name;
-        this.company_img = data.company_logo
-          ? data.company_logo
-          : this.company_img;
       });
       evntBus.$on("register_pos_profile", (data) => {
         this.pos_profile = data.pos_profile;

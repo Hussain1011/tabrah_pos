@@ -2,7 +2,7 @@
   <v-row class="pt-0 px-2">
     <v-col cols="12" md="8">
       <v-card elevation="1" class="border-16 title-card d-flex">
-        <img src="/assets/tabrah_pos/js/posapp/components/pos/tabrah.png" alt="" class="ml-5"
+        <img :src="`/assets/tabrah_pos/js/posapp/components/pos/${pos_profile.company}.png`" alt="" class="ml-5"
           style="max-width: 235px;height: 75px;" />
         <v-spacer></v-spacer>
         <v-spacer></v-spacer>
@@ -15,7 +15,7 @@
             density="compact" variant="outlined" item-title="employee_name" item-value="employee" />
         </div>
         <div class="">
-          <v-select v-model="selectedTable" :items="tableOptions" label="Select table" class="order-type-select mr-3"
+          <v-select v-if="pos_profile.allow_table_no" v-model="selectedTable" :items="tableOptions" label="Select table" class="order-type-select mr-3"
             density="compact" variant="outlined" item-title="table_no" item-value="table_no" />
         </div>
         <div class="search-div ">

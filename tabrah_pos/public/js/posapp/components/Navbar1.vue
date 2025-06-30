@@ -8,7 +8,7 @@
     margin-top: 11px;
     font-size: 18px;
     font-weight: 600;
-    text-transform: uppercase;color: #21A0A0;" @click="go_desk">Neighborhood</p>
+    text-transform: uppercase;color: #21A0A0;" @click="go_desk">{{ pos_profile.company }}</p>
 
       <!-- <v-toolbar-title
         style="cursor: pointer"
@@ -74,13 +74,13 @@
 
       <v-list density="compact" nav class="px-0 curser-pointer" style="padding-top: 124px">
         <v-list-item @click="goToDashboard()">
-          <v-img class="img pl-1" src="/assets/tabrah_pos/js/posapp/components/pos/dashboard.png" alt="" cover
+          <v-img class="img pl-1" :src="`/assets/tabrah_pos/js/posapp/components/pos/dashboard.png`" alt="" cover
             style="width: 38px; height: 40px"></v-img>
           <p style="color: white" class="mb-0 pl-1">Dash</p>
           <p style="color: white" class="pt-0">board</p>
         </v-list-item>
         <v-list-item class="mt-4" @click="goToHoldOrder()">
-          <v-img class="img pl-1" src="/assets/tabrah_pos/js/posapp/components/pos/receipt.png" alt="" cover
+          <v-img class="img pl-1" :src="`/assets/tabrah_pos/js/posapp/components/pos/receipt.png`" alt="" cover
             style="width: 38px; height: 40px"></v-img>
           <p style="color: white" class="ml-1 mb-0">Hold</p>
           <p style="color: white" class="pt-0">Orders</p>
