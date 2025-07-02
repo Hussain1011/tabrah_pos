@@ -19,7 +19,12 @@
             </v-btn>
           </div>
         </v-col>
-        <v-col cols="12" md="5" class="text-right">
+        <v-col cols="12" md="5" class="text-right d-flex align-center justify-end">
+          <v-btn class="mr-2 b-radius-8 split-btn-style" :color="splitPayment ? '#F05D23' : '#21A0A0'" size="large" variant="outlined"
+            :style="{ backgroundColor: splitPayment ? '#fcdfd3' : '#d3ecec' }" @click="openSplitPaymentDialog()">
+            <v-icon left class="pr-2">mdi-cash-multiple</v-icon> Split Payment
+          </v-btn>
+          <v-divider vertical class="mx-2" style="height: 40px; background: #000; min-width: 2px;"></v-divider>
           <v-btn class="mr-2 b-radius-8" color="#21A0A0" size="large" variant="outlined"
             style="background-color: #d3ecec" @click="backToProductMenu()">
             <v-icon left class="pr-2">mdi-arrow-left</v-icon> Back
@@ -32,46 +37,86 @@
       </v-row>
       <v-divider></v-divider>
 
-      <!-- Payment Details Input Fields -->
-      <v-row class="mt-2 pb-0">
-        <v-col cols="12" md="3">
-          <v-text-field class="b-radius-8" variant="outlined" label="Paid Amount" suffix="QAR." v-model="amountTake"
-            :disabled="paymentType.mode_type !== 'Cash' || splitPayment" />
-        </v-col>
-        <v-col cols="12" md="2">
-          <v-text-field class="b-radius-8" variant="outlined"
-            :label="`Discount (max ${pos_profile.posa_max_discount_allowed} %)`" v-model="discount" type="number"
-            :max="pos_profile.posa_max_discount_allowed" @update="validateDiscount"
-            :disabled="!pos_profile.posa_max_discount_allowed" />
-        </v-col>
-        <v-col cols="12" md="2">
-          <v-text-field class="b-radius-8" variant="outlined" :label="`Tip`" v-model="tip" type="number" :min="0" />
+      <v-row class="mt-2 pb-0 align-center" dense>
+
+        <!-- Paid Amount -->
+        <v-col cols="12" md="3" class="pr-2">
+          <v-text-field
+            class="b-radius-8"
+            variant="outlined"
+            label="Paid Amount"
+            suffix="QAR."
+            v-model="amountTake"
+            :disabled="paymentType.mode_type !== 'Cash' || splitPayment"
+          />
         </v-col>
 
-        <v-col cols="12" md="3">
-          <v-btn class="mr-2 b-radius-8" :color="splitPayment ? '#F05D23' : '#21A0A0'" size="large" variant="outlined"
-            :style="{
-              backgroundColor: splitPayment ? '#fcdfd3' : '#d3ecec',
-            }" @click="openSplitPaymentDialog()">
-            <v-icon left class="pr-2">mdi-cash-multiple</v-icon> Split Payment
-          </v-btn>
-        </v-col>
-        <v-col cols="12" md="1" v-show="splitPayment">
-          <v-btn class="mr-8 b-radius-8 split-close" color="#21A0A0" size="large" variant="outlined"
-            style="background-color: #d3ecec" @click="cancelSplit()">
-            <v-icon left class="pr-2">mdi-close</v-icon>
-          </v-btn>
+        <!-- Discount -->
+        <v-col cols="12" md="2" class="px-1">
+          <v-text-field
+            class="b-radius-8"
+            variant="outlined"
+            :label="`Discount (max ${pos_profile.posa_max_discount_allowed} %)`"
+            v-model="discount"
+            type="number"
+            :max="pos_profile.posa_max_discount_allowed"
+            @input="onManualDiscountInput($event.target.value)"
+            :disabled="pos_profile.posa_max_discount_allowed == 0 || !!selectedOffer"
+          />
+          <div v-if="pos_profile.posa_max_discount_allowed == 0" class="text-error text-caption">
+            Discounts are not allowed for this POS profile.
+          </div>
         </v-col>
 
+        <!-- Select Offer / Selected Offer Chip -->
+        <v-col cols="12" md="3" class="pl-1" v-if="pos_profile.custom_enable_discount_offers == 1">
+          <div class="d-flex align-center" style="align-items: center; height: 100%;">
+            <v-btn
+              v-if="!selectedOffer"
+              class="b-radius-8 offer-btn-style"
+              color="#21A0A0"
+              @click="openOffersDialog"
+              style="
+                height: 56px; 
+                margin-top: -8px;
+                text-transform: none;
+                letter-spacing: normal;
+              "
+            >
+              <v-icon left class="pr-2">mdi-tag</v-icon>
+              Discount Offers
+            </v-btn>
 
-        <!-- <v-col cols="12" md="4">
-            <v-text-field
-              class="b-radius-8"
-              variant="outlined"
-              label="Add Discount"
-              suffix="QAR."
-            />
-          </v-col> -->
+            <v-chip
+              v-else
+              class="mr-2 offer-chip-style"
+              closable
+              @click:close="removeOffer"
+              style="
+                height: 56px; 
+                border-radius: 8px;
+                padding: 0 16px;
+                margin-top: -8px;
+              "
+            >
+              <v-icon left class="pr-2">mdi-tag</v-icon>
+              {{ selectedOffer.name }} ({{ selectedOffer.discount_percentage }}%)
+            </v-chip>
+          </div>
+        </v-col>
+
+        <!-- Tip -->
+        <v-col cols="12" md="2" class="pl-2">
+          <v-text-field
+            class="b-radius-8"
+            variant="outlined"
+            label="Tip"
+            v-model="tip"
+            type="number"
+            :min="0"
+          />
+        </v-col>
+
       </v-row>
 
       <!-- Paid Amount, To Be Paid, and Change Details -->
@@ -236,6 +281,56 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+     <v-dialog v-model="showOffersDialog" max-width="600px">
+    <v-card>
+      <v-card-title>Select an Offer</v-card-title>
+      <v-card-text>
+        <v-row justify="center">
+          <v-col
+            v-for="offer in offers"
+            :key="offer.name"
+            cols="4"
+            class="d-flex justify-center"
+          >
+            <v-btn
+              class="offer-btn"
+              @click="applyOffer(offer)"
+              color="white"
+              elevation="2"
+              variant="outlined"
+            >
+              <div class="offer-text">
+                <div
+                  v-for="(word, index) in offer.name.split(' ').filter(w => w)"
+                  :key="index"
+                  class="offer-line"
+                >
+                  {{ word }}
+                </div>
+                <div class="offer-percent">
+                  {{ offer.discount_percentage }}%
+                </div>
+              </div>
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-card-text>
+
+      <v-card-actions>
+        <v-spacer />
+        <v-btn variant="text" @click="showOffersDialog = false">Close</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-alert
+    v-if="discountSource.value === 'offer'"
+    type="info"
+    class="mt-2"
+    variant="tonal"
+  >
+    Offer applied: {{ discount }}%
+  </v-alert>
   </div>
 </template>
 
@@ -284,25 +379,21 @@ const employeesList = ref([]);
 const orderBy = ref("");
 const complementaryItem = ref(false);
 const complementaryItemDetails = ref('');
-
-
-
-
-
-
+const showOffersDialog = ref(false);
+const offers = ref([]);
+const discountSource = ref("manual"); // "manual" or "offer"
 
 const fbrResponse = ref("");
 
 const requiredOrderId = ref(false);
+
+const selectedOffer = ref(null);
 
 const setDefaultValue = () => {
   amountTake.value = null;
   discount.value = "";
   complementaryItemDetails.value = '';
   invoice_doc.value = {};
-  // subTotal.value = 0;
-  // orderSummary.value = [];
-  // orderItem.value = [];
   changeAmount.value = 0;
   orderId.value = "";
   splitPayment.value = false;
@@ -328,19 +419,6 @@ const backToProductMenu = () => {
   eventBus.emit("open-product-menu");
 };
 
-// const formattedAmountTake = computed({
-//       get() {
-//         return amountTake.value
-//           ? new Intl.NumberFormat("en-US", {
-//               minimumFractionDigits: 2,
-//               maximumFractionDigits: 2,
-//             }).format(parseFloat(amountTake.value))
-//           : "";
-//       },
-//       set(value) {
-//         amountTake.value = value.replace(/,/g, ""); // Remove commas for internal storage
-//       },
-//     });
 const openSplitPaymentDialog = () => {
   if (paymentModes.value.length > 1) {
     showDialog.value = true;
@@ -372,46 +450,15 @@ const cancelSplit = () => {
   remaining_amount = invoice_doc.value.rounded_total - totalPaidAmount;
   invoice_doc.value.remaining_amount = remaining_amount;
   changePaymentType(paymentType.value);
-
-  // updateDocPayment();
 };
 
-// Close Dialog
 const closeDialog = () => {
   if (!confirmSplit.value) {
     cancelSplit();
   }
   showDialog.value = false;
-  // updateDocPayment();
 };
 
-// Submit Split Payment
-// const submitSplitPayment = () => {
-//   let totalPaidAmount = 0;
-//   let validPaymentModes = 0; // Count modes with non-zero amounts
-
-//   paymentModes.value.forEach((payment) => {
-//     const paymentAmount = Number(payment.amount) || 0; // Convert to a number
-//     totalPaidAmount += paymentAmount;
-
-//     if (paymentAmount > 0) {
-//       validPaymentModes++; // Count non-zero payment modes
-//     }
-//   });
-
-//   // Check if the amount is split across at least two payment modes
-//   if (validPaymentModes < 2) {
-//     eventBus.emit("show_mesage", {
-//       text: `Amount must be split between at least two modes of payment.!`,
-//       color: "error",
-//     });
-//     return;
-//   }
-
-//   console.log("Split Payment Details:", paymentModes.value);
-//   console.log("Total Entered Amount:", totalPaidAmount);
-//   showDialog.value = false;
-// };
 const updateRemainingAmount = () => {
   const totalPaid = paymentModes.value.reduce((sum, mode) => {
     const amount = Number(mode.amount) || 0;
@@ -448,7 +495,7 @@ const submitSplitPayment = () => {
     }
   });
 
-  // Condition 1: Amount must be split between at least two modes
+  // Condition 1: Amount must be split between at least two payment modes
   if (validPaymentModes < 2) {
     eventBus.emit("show_mesage", {
       text: `Amount must be split between at least two modes of payment.!`,
@@ -485,8 +532,6 @@ const submitSplitPayment = () => {
     });
     return;
   }
-
-
 
   // Update invoice_doc remaining value to reflect the current state
   if (totalPaidAmount < invoice_doc.value.grand_total) {
@@ -992,7 +1037,8 @@ const submitSaleInvoice = async (
   print = false
 ) => {
   console.log("submit invoice...", invoice_doc.value);
-  if (discount.value > pos_profile.value.posa_max_discount_allowed) {
+  // Only show the discount error if NO offer is applied
+  if (!selectedOffer && Number(discount.value) > Number(pos_profile.value.posa_max_discount_allowed)) {
     eventBus.emit("show_mesage", {
       text: `Only ${pos_profile.value.posa_max_discount_allowed}% discount allowed`,
       color: "error",
@@ -1121,6 +1167,7 @@ const submitSaleInvoice = async (
 
             if (print) {
               load_print_page(response.message.name);
+              selectedOffer.value = null;
 
               // try {
               //   const responseCode = await sync_fbr(
@@ -1514,6 +1561,7 @@ watch(
   },
   { deep: true }
 );
+
 watch(
   selectedOrderType,
   (newVal, oldVal) => {
@@ -1722,6 +1770,83 @@ const formatNumber = (num) => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(num);
+};
+
+
+const openOffersDialog = async () => {
+  showOffersDialog.value = true;
+  // Fetch offers from API
+  try {
+    const res = await frappe.call({
+      method: "tabrah_pos.tabrah_pos.api.posapp.get_offers",
+      args: { profile: pos_profile.value.name },
+    });
+    offers.value = res.message || [];
+  } catch (e) {
+    offers.value = [];
+  }
+};
+
+const applyDiscount = () => {
+  if (!invoice_doc.value.original_values) {
+    invoice_doc.value.original_values = {
+      net_total: invoice_doc.value.net_total,
+      grand_total: invoice_doc.value.grand_total,
+      total_taxes_and_charges: invoice_doc.value.total_taxes_and_charges,
+    };
+  }
+  const { net_total, grand_total, total_taxes_and_charges } = invoice_doc.value.original_values;
+
+  // Cap manual discount only
+  const maxAllowedDiscount = Number(pos_profile.value.posa_max_discount_allowed) || 0;
+  let manualPercent = discount.value ? Number(discount.value) : 0;
+  if (manualPercent > maxAllowedDiscount) manualPercent = maxAllowedDiscount;
+
+  const offerPercent = selectedOffer.value ? Number(selectedOffer.value.discount_percentage) : 0;
+  const totalDiscountPercent = manualPercent + offerPercent;
+
+  const discountPercentage = totalDiscountPercent / 100;
+  const discountAmountNet = net_total * discountPercentage;
+  const discountAmountGrand = grand_total * discountPercentage;
+  const discountAmountTaxes = total_taxes_and_charges * discountPercentage;
+
+  invoice_doc.value.net_total = Number(net_total) - Number(discountAmountNet);
+  invoice_doc.value.grand_total = Number(grand_total) - Number(discountAmountGrand);
+  invoice_doc.value.total_taxes_and_charges = Number(total_taxes_and_charges) - Number(discountAmountTaxes);
+  invoice_doc.value.discount_amount = discountAmountGrand;
+  amountTake.value = invoice_doc.value.grand_total;
+
+  invoice_doc.value.addition_discount = offerPercent;
+  invoice_doc.value.manual_discount = manualPercent;
+};
+
+watch([discount, selectedOffer], () => {
+  applyDiscount();
+});
+
+const applyOffer = (offer) => {
+  selectedOffer.value = offer;
+  discountSource.value = "offer";
+  discount.value = offer.discount_percentage;
+  invoice_doc.value.addition_discount = offer.discount_percentage;
+  invoice_doc.value.custom_discount_offer = offer.name;
+  showOffersDialog.value = false;
+  applyDiscount(offer.discount_percentage);
+};
+
+const removeOffer = () => {
+  selectedOffer.value = null;
+  discountSource.value = "manual";
+  invoice_doc.value.addition_discount = null;
+  discount.value = ""; // Clear the manual discount field
+  invoice_doc.value.custom_discount_offer = null;
+  applyDiscount(discount.value);
+};
+
+const onManualDiscountInput = (value) => {
+  let capped = Math.min(Number(value), pos_profile.value.posa_max_discount_allowed || 0);
+  discount.value = capped;
+  applyDiscount();
 };
 
 onMounted(() => {
@@ -1964,6 +2089,104 @@ onUnmounted(() => {
   .keyboard-card {
     height: 100px;
   }
+}
+
+/* Offer Button Styles */
+.offer-btn {
+  background: #f5f5f5 !important;
+  border: 2px solid #21a0a0 !important;
+  color: #21a0a0 !important;
+  font-weight: bold;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 12px !important;
+  width: 120px !important;
+  height: 120px !important;
+  min-width: 120px !important;
+  min-height: 120px !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  text-align: center !important;
+  padding: 8px !important;
+  overflow: hidden !important;
+}
+.offer-btn:hover {
+  background: #21a0a0 !important;
+  color: #fff !important;
+}
+
+/* Offer Content Inside Button */
+.offer-btn-name {
+  width: 100%;
+  text-align: center;
+  font-weight: 400;
+  font-size: 13px;
+  color: #21a0a0;
+  white-space: normal;
+  word-break: break-word;
+  margin-bottom: 4px;
+}
+.offer-btn-percent {
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 28px;
+  color: #43a047;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Chip and Button Variants */
+.offer-btn-style,
+.offer-chip-style,
+.split-btn-style {
+  min-width: 160px;
+  height: 56px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  background: #d3ecec !important;
+  color: #21a0a0 !important;
+  border: 1.5px solid #21a0a0 !important;
+  box-shadow: none !important;
+  padding: 0 24px !important;
+}
+.offer-chip-style .v-chip__content {
+  padding: 0 !important;
+  height: 56px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+.offer-chip-style .v-chip__close {
+  color: #21a0a0 !important;
+  font-size: 20px !important;
+  height: 56px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.back-btn-style {
+  min-width: 120px;
+  height: 48px;
+  font-weight: 600;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.split-close {
+  position: relative;
+  right: 64px;
 }
 </style>
 <style>
