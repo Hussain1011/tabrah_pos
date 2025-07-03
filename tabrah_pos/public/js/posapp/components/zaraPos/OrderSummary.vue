@@ -203,10 +203,9 @@
             <v-col v-if="pos_profile.custom_allow_kot_print" :cols="(pos_profile.custom_allow_pre_invoice_print) ? 4 : 6">
               <v-btn
                 block
-                class="white--text font-weight-bold payment-button"
-                height="48"
+                :class="{ 'printer-btn-disabled': printerDisabled[printer] }"
                 color="#F05D23"
-                @click="generateKotPrint()"
+                @click="pos_profile.custom_allow_kot_multiple_prints == 1 ? openPrinterDialog() : generateKotPrint()"
                 :disabled="screen != 0"
               >
                 <p class="mt-2 print-p">KOT Print</p>
@@ -457,6 +456,29 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="showPrinterDialog" max-width="400px">
+      <v-card>
+        <v-card-title class="text-h6">Select Printer</v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="6" v-for="printer in availablePrinters" :key="printer">
+              <v-btn
+                block
+                :class="{ 'printer-btn-disabled': printerDisabled[printer] }"
+                color="#21A0A0"
+                @click="printerDisabled[printer] ? showAlreadyPrintedMessage() : handlePrinterSelect(printer)"
+              >
+                {{ printerLabels[printer] }}
+              </v-btn>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="showPrinterDialog = false">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
 
@@ -564,6 +586,11 @@ const otp = ref("");
 const pinloading = ref(false);
 const cover = ref(1); // Default to 1 person
 const pendingDeleteIndex = ref(null);
+const showPrinterDialog = ref(false);
+const selectedPrinter = ref('');
+const availablePrinters = ['grill', 'bar'];
+const printerLabels = { grill: 'Grill', bar: 'Bar' };
+const printerDisabled = ref({ grill: false, bar: false });
 
 const grandTotalCard = computed(() => {
   return grandTotal.value; // Default to grand total, can be customized based on card payment logic
@@ -785,83 +812,104 @@ const openDialog = (product, flag) => {
     eventBus.emit("open-product-dialog", obj);
   }
 };
-const generateKotPrint = async () => {
-    if (items.value.length > 0) {
-    // --- KOT PRINTED ITEMS LOGIC START ---
-    const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+const openPrinterDialog = () => {
+  // Check which printers are available (not all items printed)
+  const heldOrders = JSON.parse(localStorage.getItem('heldOrders')) || [];
+  const currentOrder = heldOrders.find(order => order.id === holdOrderId.value);
+  let printedItems = {};
+  if (currentOrder) printedItems = { ...(currentOrder.printed_items || {}) };
+  // Check for each printer if all items are printed
+  availablePrinters.forEach(printer => {
+    let allPrinted = items.value.every(item => {
+      const p = printedItems[item.item_code]?.[printer];
+      return p && p.qty >= item.qty;
+    });
+    printerDisabled.value[printer] = allPrinted;
+  });
+  showPrinterDialog.value = true;
+}
+
+function handlePrinterSelect(printer) {
+  selectedPrinter.value = printer;
+  showPrinterDialog.value = false;
+  generateKotPrint(printer);
+}
+
+function filterNonJuiceBeverageBundleItems(bundle) {
+  if (!bundle || !Array.isArray(bundle.items)) return [];
+  return bundle.items.filter(sub => {
+    const subGroup = (sub.custom_item_group || '').toLowerCase();
+    return subGroup !== 'juice' && subGroup !== 'beverage';
+  });
+}
+
+const generateKotPrint = async (printerArg = null) => {
+  if (items.value.length > 0) {
+    const heldOrders = JSON.parse(localStorage.getItem('heldOrders')) || [];
     const currentOrder = heldOrders.find(order => order.id === holdOrderId.value);
     let printedItems = {};
-    if (currentOrder) {
-      printedItems = { ...(currentOrder.printed_items || {}) };
+    if (currentOrder) printedItems = { ...(currentOrder.printed_items || {}) };
+    let printer = printerArg;
+    if (!printer && pos_profile.value.allow_kot_mulitple_print == 1) {
+      openPrinterDialog();
+      return;
     }
-    // Debug logging
-    console.log('KOT Print: items.value', items.value);
-    console.log('KOT Print: printedItems', printedItems);
-    // Only print items that haven't been printed before or have new quantities
+    if (!printer) printer = 'grill'; // fallback for single printer
+    // Only print items that haven't been printed before or have new quantities for this printer
     let itemsToPrint = items.value.filter(item => {
-      const printedQty = printedItems[item.item_code]?.qty || 0;
-      // Exclude beverages and juices (case-insensitive)
+      const p = printedItems[item.item_code]?.[printer];
+      const printedQty = p ? p.qty : 0;
+      // Only skip the whole item if the main item_group is juice/beverage
       let group = (item.item_group || '').toLowerCase();
-      let isJuiceOrBeverage = group === 'Beverage' || group === 'JUICE';
-      // Check product_bundle sub-items for custom_item_group
-      if (item.product_bundle && Array.isArray(item.product_bundle.items)) {
-        for (const sub of item.product_bundle.items) {
-          if ((sub.custom_item_group || '').toLowerCase() === 'Beverage' || (sub.custom_item_group || '').toLowerCase() === 'JUICE') {
-            isJuiceOrBeverage = true;
-            break;
-          }
-        }
-      }
-      if (isJuiceOrBeverage) return false;
+      if (group === 'juice' || group === 'beverage') return false;
       return item.qty > printedQty;
     });
     if (itemsToPrint.length === 0) {
-      eventBus.emit("show_mesage", {
-        text: "You printed these items already.",
-        color: "error",
+      eventBus.emit('show_mesage', {
+        text: `You printed these items already on ${printerLabels[printer]}.`,
+        color: 'error',
       });
       return;
     }
     const doc = await get_invoice_doc();
-    doc.grand_total = grandTotal.value
-    doc.gstAmountCash = gstAmount.value
-    doc.cover = cover.value; // Add cover to KOT print
+    doc.grand_total = grandTotal.value;
+    doc.gstAmountCash = gstAmount.value;
+    doc.cover = cover.value;
     const now = new Date();
     doc.date = now.toISOString().split('T')[0];
     doc.time = now.toLocaleTimeString('en-US', { hour12: false });
-    // Calculate KOT items with proper quantities
     doc.kot_items = itemsToPrint.map(item => {
       let finalQty;
-      const hasBeenPrinted = printedItems[item.item_code] !== undefined;
+      const p = printedItems[item.item_code]?.[printer];
+      const hasBeenPrinted = !!p;
       if (!hasBeenPrinted) {
-        // If item has never been printed, use full quantity
         finalQty = item.qty;
       } else {
-        // If item has been printed before, use the difference
-        const printedQty = printedItems[item.item_code].qty;
+        const printedQty = p.qty;
         finalQty = item.qty - printedQty;
       }
+      // If item is a bundle, filter out juice/beverage sub-items
+      let filteredBundle = item.product_bundle
+        ? {
+            ...item.product_bundle,
+            items: filterNonJuiceBeverageBundleItems(item.product_bundle)
+          }
+        : undefined;
       return {
-        item_name: item.item_name,
+        ...item,
         qty: finalQty,
-        rate: item.rate,
-        comment: item.comment || "",
-        product_bundle: item.product_bundle
+        product_bundle: filteredBundle,
       };
     });
-    // Create a new doc object with only the filtered items for printing
-    const printDoc = {
-      ...doc,
-      items: doc.kot_items // Use kot_items instead of all items
-    };
-    // Update printedItems for items being printed
+    const printDoc = { ...doc, items: doc.kot_items };
+    // Update printedItems for this printer
     itemsToPrint.forEach(item => {
-      printedItems[item.item_code] = {
+      if (!printedItems[item.item_code]) printedItems[item.item_code] = {};
+      printedItems[item.item_code][printer] = {
         qty: item.qty,
         timestamp: new Date().toISOString(),
       };
     });
-    // Pass only the updated printedItems (merged) to holdOrder
     holdOrder(printedItems);
     printKot(printDoc);
   }
@@ -1076,6 +1124,7 @@ const holdOrder = (printedItems = {}) => {
       }
 
       const nextOrderId = `Hold-Order-${nextOrderNumber}`;
+      holdOrderId.value = nextOrderId; // <-- Ensure new order gets a new ID
 
       const employee =
         pos_profile.value.employee_list.find(
@@ -1090,7 +1139,7 @@ const holdOrder = (printedItems = {}) => {
         orderBy: orderBy.value,
         orderByName: employee.employee_name || "",
         timestamp: new Date().toISOString(),
-        printed_items: { ...printedItems },
+        printed_items: {}, // <-- Always start with empty printed_items for new order
         cover: cover.value,
       };
 
@@ -1797,6 +1846,13 @@ onUnmounted(() => {
   eventBus.off("order-taker");
   eventBus.off("update-table-status");
 });
+
+function showAlreadyPrintedMessage() {
+  eventBus.emit('show_mesage', {
+    text: 'Already printed items, no new item to print found.',
+    color: 'error',
+  });
+}
 </script>
 
 <style scoped>
@@ -1922,5 +1978,11 @@ onUnmounted(() => {
   .text-caption {
     font-size: 10px;
   }
+}
+
+.printer-btn-disabled {
+  pointer-events: auto !important;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

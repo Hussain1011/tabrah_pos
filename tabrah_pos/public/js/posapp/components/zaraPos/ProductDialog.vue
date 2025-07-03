@@ -1,6 +1,6 @@
 <template>
   <v-dialog v-model="dialog" max-width="741px" height="720" persistent>
-    <v-card style="height: 720px; overflow-y: hidden; border-radius: 16px">
+    <v-card style="height: 720px; overflow-y: hidden; border-radius: 16px; display: flex; flex-direction: column;">
       <v-card-title class="d-flex justify-end">
         <v-btn variant="text" size="x-small" density="default" color="white" style="background: orange"
           @click="closeDialog()">
@@ -8,7 +8,7 @@
         </v-btn>
       </v-card-title>
 
-      <v-card-text class="px-8">
+      <v-card-text class="px-8" style="overflow-y: auto; flex: 1 1 auto;">
         <v-row>
           <!-- Left side: Image and product details -->
           <v-col cols="5">
@@ -89,6 +89,15 @@
                   :max="pos_profile.posa_max_discount_allowed" @update="validateDiscount"
                   :disabled="!pos_profile.posa_max_discount_allowed" />
               </v-col>
+              <v-col cols="12" class="text-right" v-if="pos_profile.custom_enable_edit_rate_by_group && selectedProduct.item_group === pos_profile.custom_select_item_group_to_edit_rate">
+                <v-text-field class="b-radius-8" variant="outlined"
+                  label="Rate"
+                  v-model="selectedProduct.rate"
+                  type="number"
+                  :min="0"
+                  :disabled="false"
+                />
+              </v-col>
               <v-col cols="12" class="text-right">
                 <v-text-field class="b-radius-8" variant="outlined"
                   :label="`Additional Comment`" v-model="itemComment" 
@@ -120,18 +129,24 @@
               </v-col> -->
             </v-row>
 
-            <v-btn block class="mt-9" size="x-large" color="#21A0A0" style="border-radius: 8px" @click="addToCart">
-              ADD
-            </v-btn>
-            <div class="font-weight-bold" style="margin-top: 49px !important">
-              Description
-            </div>
-            <div class="grey--text">
-              {{ selectedProduct.description }}
-            </div>
+            <v-row>
+              <v-col cols="12">
+                <div class="font-weight-bold" style="margin-top: 24px !important">
+                  Description
+                </div>
+                <div class="grey--text">
+                  {{ selectedProduct.description }}
+                </div>
+              </v-col>
+            </v-row>
           </v-col>
         </v-row>
       </v-card-text>
+      <div style="padding: 24px 32px 24px 32px; background: #fff; box-shadow: 0 -2px 8px rgba(0,0,0,0.03); z-index: 2;">
+        <v-btn block size="x-large" color="#21A0A0" style="border-radius: 8px" @click="addToCart">
+          ADD
+        </v-btn>
+      </div>
     </v-card>
   </v-dialog>
 </template>
