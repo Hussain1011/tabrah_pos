@@ -14050,6 +14050,10 @@ Expected function or array of functions, received type ${typeof value}.`
             });
             frappe.utils.play_sound("submit");
             closeCustomerDialog();
+            getCustomerNames(pos_profile2.value);
+            setTimeout(() => {
+              selectedCustomer.value = response.message.name;
+            }, 500);
           } else {
             frappe.utils.play_sound("error");
             bus_default.emit("show_mesage", {
@@ -14057,7 +14061,6 @@ Expected function or array of functions, received type ${typeof value}.`
               color: "success"
             });
           }
-          getCustomerNames(pos_profile2.value);
           customerLoading.value = false;
         } catch (error) {
           customerLoading.value = false;
@@ -49631,4 +49634,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.7ZYBADHH.js.map
+//# sourceMappingURL=pos.bundle.QT5ZSJ4A.js.map

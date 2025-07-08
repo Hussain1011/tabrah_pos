@@ -761,6 +761,12 @@ const submitCustomerDialog = async () => {
       });
       frappe.utils.play_sound('submit');
       closeCustomerDialog();
+      // Refresh customer list and auto-select new customer
+      getCustomerNames(pos_profile.value);
+      // Wait a moment for the list to refresh, then select
+      setTimeout(() => {
+        selectedCustomer.value = response.message.name;
+      }, 500);
     } else {
       frappe.utils.play_sound('error');
       eventBus.emit("show_mesage", {
@@ -768,7 +774,6 @@ const submitCustomerDialog = async () => {
         color: "success",
       });
     }
-    getCustomerNames(pos_profile.value)
     customerLoading.value = false
   } catch (error) {
     customerLoading.value = false
