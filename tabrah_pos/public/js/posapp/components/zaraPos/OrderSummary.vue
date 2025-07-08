@@ -61,8 +61,18 @@
     <!-- Customer select row -->
     <v-row class="px-4">
       <v-col cols="8" class="" style="  height: 64px;">
-        <v-select v-model="selectedCustomer" :items="customers" item-title="customer_name" item-value="name\t"
-          label="Select Customer" variant="outlined" class="mr-2"></v-select>
+        <v-autocomplete
+          ref="customerSelectRef"
+          v-model="selectedCustomer"
+          :items="customers"
+          :item-title="customerDisplay"
+          item-value="name"
+          label="Select Customer"
+          variant="outlined"
+          class="mr-2"
+          :custom-filter="customerFilter"
+          @update:search-input="onCustomerSearchInput"
+        ></v-autocomplete>
       </v-col>
       <v-col cols="4" class="" style="  height: 64px;">
         <v-btn block class="white--text font-weight-bold payment-button" height="52" color="#21A0A0"
@@ -1853,6 +1863,46 @@ function showAlreadyPrintedMessage() {
     color: 'error',
   });
 }
+// Add a display function for customer name/number
+const customerDisplay = (item) => {
+  if (!item) return '';
+  let name = item.customer_name || '';
+  let number = item.mobile_no || '';
+  if (name && number) return `${name} / ${number}`;
+  if (name) return name;
+  if (number) return number;
+  return '';
+};
+// Custom filter for searching by name or number
+const customerFilter = (item, queryText, itemText) => {
+  const search = (queryText || '').toLowerCase();
+  // Vuetify 3: itemText is an object with a 'title' property
+  let displayText = '';
+  if (typeof itemText === 'string') {
+    displayText = itemText;
+  } else if (itemText && typeof itemText === 'object' && 'title' in itemText) {
+    displayText = itemText.title;
+  }
+  if ((displayText || '').toLowerCase().includes(search)) {
+    return true;
+  }
+  // Also match against raw fields
+  const name = (item.customer_name || '').toLowerCase();
+  const number = (item.mobile_no || '').toLowerCase();
+  const id = (item.name || '').toLowerCase();
+  const result = name.includes(search) || number.includes(search) || id.includes(search);
+  return result;
+};
+// Add logic to auto-select by phone number
+const onCustomerSearchInput = (search) => {
+  if (!search) return;
+  const match = customers.value.find(
+    c => c.mobile_no && c.mobile_no.toLowerCase() === search.toLowerCase()
+  );
+  if (match) {
+    selectedCustomer.value = match.name;
+  }
+};
 </script>
 
 <style scoped>
