@@ -14383,7 +14383,7 @@ Expected function or array of functions, received type ${typeof value}.`
               orderBy: orderBy.value,
               orderByName: employee.employee_name || "",
               timestamp: new Date().toISOString(),
-              printed_items: {},
+              printed_items: printedItems,
               cover: cover.value
             };
             heldOrders.push(currentOrder);
@@ -16649,6 +16649,10 @@ Expected function or array of functions, received type ${typeof value}.`
         confirmSplit.value = false;
         complementaryItem.value = false;
         tip.value = "";
+        selectedOffer.value = null;
+        discountSource.value = "manual";
+        invoice_doc.value.addition_discount = null;
+        invoice_doc.value.custom_discount_offer = null;
         const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
           amount: 0
         }));
@@ -17688,6 +17692,10 @@ Expected function or array of functions, received type ${typeof value}.`
           offlineProfileData();
           changeAmount.value = 0;
           discount.value = "";
+          selectedOffer.value = null;
+          discountSource.value = "manual";
+          invoice_doc.value.addition_discount = null;
+          invoice_doc.value.custom_discount_offer = null;
           amountTake.value = "";
           pos_profile2.value.payments.forEach((item) => {
             item.amount = "";
@@ -49634,4 +49642,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.QT5ZSJ4A.js.map
+//# sourceMappingURL=pos.bundle.YYPKVQVT.js.map
