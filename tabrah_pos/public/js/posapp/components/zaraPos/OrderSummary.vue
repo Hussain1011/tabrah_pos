@@ -1154,7 +1154,7 @@ const holdOrder = (printedItems = {}) => {
         orderBy: orderBy.value,
         orderByName: employee.employee_name || "",
         timestamp: new Date().toISOString(),
-        printed_items: {}, // <-- Always start with empty printed_items for new order
+        printed_items: printedItems, // Use passed printedItems for new order
         cover: cover.value,
       };
 
