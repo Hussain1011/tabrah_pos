@@ -1117,6 +1117,7 @@ const holdOrder = (printedItems = {}) => {
           timestamp: new Date().toISOString(),
           printed_items: mergedPrinted,
           cover: cover.value,
+          customer: selectedCustomer.value,
         };
         console.log(
           `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
@@ -1156,6 +1157,7 @@ const holdOrder = (printedItems = {}) => {
         timestamp: new Date().toISOString(),
         printed_items: printedItems, // Use passed printedItems for new order
         cover: cover.value,
+        customer: selectedCustomer.value,
       };
 
       heldOrders.push(currentOrder);
@@ -1812,6 +1814,8 @@ onMounted(() => {
     invoiceItems.value = [];
     holdOrderId.value = null;
     allowedDelete.value = true
+    selectedCustomer.value = '';
+    eventBus.emit("selected_table", '');
   });
   eventBus.on("selected_order_type", (type) => {
     selectedOrderType.value = type;
@@ -1827,6 +1831,8 @@ onMounted(() => {
     allowedDelete.value = false
     items.value = order.items;
     cover.value = order.cover || 0; // Load persons from hold order
+    selectedCustomer.value = order.customer || '';
+    eventBus.emit("selected_table", order.table || '');
     makePayloadForInvoice();
   });
   eventBus.on("current-screen", (newVal) => {

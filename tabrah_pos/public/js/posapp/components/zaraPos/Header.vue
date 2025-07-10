@@ -212,6 +212,9 @@ onMounted(() => {
   //     offlineProfileData()
   //   }
   // });
+  eventBus.on("selected_table", (table) => {
+    selectedTable.value = table;
+  });
 });
 onBeforeUnmount(() => {
   eventBus.off("send_pos_profile");
