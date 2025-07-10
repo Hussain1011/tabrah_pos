@@ -12325,6 +12325,9 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.on("app-internet-status", (newStatus) => {
           offlineProfileData();
         });
+        bus_default.on("selected_table", (table) => {
+          selectedTable.value = table;
+        });
       });
       onBeforeUnmount(() => {
         bus_default.off("send_pos_profile");
@@ -14352,7 +14355,8 @@ Expected function or array of functions, received type ${typeof value}.`
                 grand_total: grandTotal.value,
                 timestamp: new Date().toISOString(),
                 printed_items: mergedPrinted,
-                cover: cover.value
+                cover: cover.value,
+                customer: selectedCustomer.value
               });
               console.log(
                 `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
@@ -14384,7 +14388,8 @@ Expected function or array of functions, received type ${typeof value}.`
               orderByName: employee.employee_name || "",
               timestamp: new Date().toISOString(),
               printed_items: printedItems,
-              cover: cover.value
+              cover: cover.value,
+              customer: selectedCustomer.value
             };
             heldOrders.push(currentOrder);
             console.log("Order held successfully:", currentOrder);
@@ -14862,6 +14867,8 @@ Expected function or array of functions, received type ${typeof value}.`
           invoiceItems.value = [];
           holdOrderId.value = null;
           allowedDelete.value = true;
+          selectedCustomer.value = "";
+          bus_default.emit("selected_table", "");
         });
         bus_default.on("selected_order_type", (type) => {
           selectedOrderType.value = type;
@@ -14877,6 +14884,8 @@ Expected function or array of functions, received type ${typeof value}.`
           allowedDelete.value = false;
           items.value = order.items;
           cover.value = order.cover || 0;
+          selectedCustomer.value = order.customer || "";
+          bus_default.emit("selected_table", order.table || "");
           makePayloadForInvoice();
         });
         bus_default.on("current-screen", (newVal) => {
@@ -17759,7 +17768,7 @@ Expected function or array of functions, received type ${typeof value}.`
   };
   var _hoisted_45 = {
     class: "d-flex align-center",
-    style: { "align-items": "center", "height": "100%" }
+    style: { "height": "100%" }
   };
   var _hoisted_54 = { class: "amount-div paid-div" };
   var _hoisted_64 = /* @__PURE__ */ _withScopeId4(() => /* @__PURE__ */ createBaseVNode("p", { class: "py-0 amount-title mb-2" }, "Paid Amount", -1));
@@ -17865,28 +17874,6 @@ Expected function or array of functions, received type ${typeof value}.`
                 class: "text-right d-flex align-center justify-end"
               }, {
                 default: withCtx(() => [
-                  createVNode(_component_v_btn, {
-                    class: "mr-2 b-radius-8 split-btn-style",
-                    color: $setup.splitPayment ? "#F05D23" : "#21A0A0",
-                    size: "large",
-                    variant: "outlined",
-                    style: normalizeStyle({ backgroundColor: $setup.splitPayment ? "#fcdfd3" : "#d3ecec" }),
-                    onClick: _cache[0] || (_cache[0] = ($event) => $setup.openSplitPaymentDialog())
-                  }, {
-                    default: withCtx(() => [
-                      createVNode(_component_v_icon, {
-                        left: "",
-                        class: "pr-2"
-                      }, {
-                        default: withCtx(() => [
-                          createTextVNode("mdi-cash-multiple")
-                        ]),
-                        _: 1
-                      }),
-                      createTextVNode(" Split Payment ")
-                    ]),
-                    _: 1
-                  }, 8, ["color", "style"]),
                   createVNode(_component_v_divider, {
                     vertical: "",
                     class: "mx-2",
@@ -17898,7 +17885,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     size: "large",
                     variant: "outlined",
                     style: { "background-color": "#d3ecec" },
-                    onClick: _cache[1] || (_cache[1] = ($event) => $setup.backToProductMenu())
+                    onClick: _cache[0] || (_cache[0] = ($event) => $setup.backToProductMenu())
                   }, {
                     default: withCtx(() => [
                       createVNode(_component_v_icon, {
@@ -17920,7 +17907,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     color: "#F05D23",
                     class: "b-radius-8",
                     style: { "background-color": "#fcdfd3" },
-                    onClick: _cache[2] || (_cache[2] = ($event) => $setup.cancelOrder()),
+                    onClick: _cache[1] || (_cache[1] = ($event) => $setup.cancelOrder()),
                     disabled: $setup.punching == "inprocess"
                   }, {
                     default: withCtx(() => [
@@ -17951,9 +17938,8 @@ Expected function or array of functions, received type ${typeof value}.`
             default: withCtx(() => [
               createCommentVNode(" Paid Amount "),
               createVNode(_component_v_col, {
-                cols: "12",
-                md: "3",
-                class: "pr-2"
+                class: "flex-grow-1",
+                style: { "min-width": "200px", "max-width": "100%" }
               }, {
                 default: withCtx(() => [
                   createVNode(_component_v_text_field, {
@@ -17962,7 +17948,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     label: "Paid Amount",
                     suffix: "QAR.",
                     modelValue: $setup.amountTake,
-                    "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.amountTake = $event),
+                    "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => $setup.amountTake = $event),
                     disabled: $setup.paymentType.mode_type !== "Cash" || $setup.splitPayment
                   }, null, 8, ["modelValue", "disabled"])
                 ]),
@@ -17970,9 +17956,8 @@ Expected function or array of functions, received type ${typeof value}.`
               }),
               createCommentVNode(" Discount "),
               createVNode(_component_v_col, {
-                cols: "12",
-                md: "2",
-                class: "px-1"
+                class: "flex-grow-1",
+                style: { "min-width": "200px", "max-width": "100%" }
               }, {
                 default: withCtx(() => [
                   createVNode(_component_v_text_field, {
@@ -17980,10 +17965,10 @@ Expected function or array of functions, received type ${typeof value}.`
                     variant: "outlined",
                     label: `Discount (max ${$setup.pos_profile.posa_max_discount_allowed} %)`,
                     modelValue: $setup.discount,
-                    "onUpdate:modelValue": _cache[4] || (_cache[4] = ($event) => $setup.discount = $event),
+                    "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.discount = $event),
                     type: "number",
                     max: $setup.pos_profile.posa_max_discount_allowed,
-                    onInput: _cache[5] || (_cache[5] = ($event) => $setup.onManualDiscountInput($event.target.value)),
+                    onInput: _cache[4] || (_cache[4] = ($event) => $setup.onManualDiscountInput($event.target.value)),
                     disabled: $setup.pos_profile.posa_max_discount_allowed == 0 || !!$setup.selectedOffer
                   }, null, 8, ["label", "modelValue", "max", "disabled"]),
                   $setup.pos_profile.posa_max_discount_allowed == 0 ? (openBlock(), createElementBlock("div", _hoisted_310, " Discounts are not allowed for this POS profile. ")) : createCommentVNode("v-if", true)
@@ -17993,9 +17978,8 @@ Expected function or array of functions, received type ${typeof value}.`
               createCommentVNode(" Select Offer / Selected Offer Chip "),
               $setup.pos_profile.custom_enable_discount_offers == 1 ? (openBlock(), createBlock(_component_v_col, {
                 key: 0,
-                cols: "12",
-                md: "3",
-                class: "pl-1"
+                class: "flex-grow-1",
+                style: { "min-width": "200px", "max-width": "100%" }
               }, {
                 default: withCtx(() => [
                   createBaseVNode("div", _hoisted_45, [
@@ -18004,13 +17988,10 @@ Expected function or array of functions, received type ${typeof value}.`
                       class: "b-radius-8 offer-btn-style",
                       color: "#21A0A0",
                       onClick: $setup.openOffersDialog,
-                      style: { "height": "56px", "margin-top": "-8px", "text-transform": "none", "letter-spacing": "normal" }
+                      style: { "height": "56px", "width": "100%", "text-transform": "none", "letter-spacing": "normal" }
                     }, {
                       default: withCtx(() => [
-                        createVNode(_component_v_icon, {
-                          left: "",
-                          class: "pr-2"
-                        }, {
+                        createVNode(_component_v_icon, { left: "" }, {
                           default: withCtx(() => [
                             createTextVNode("mdi-tag")
                           ]),
@@ -18021,16 +18002,13 @@ Expected function or array of functions, received type ${typeof value}.`
                       _: 1
                     })) : (openBlock(), createBlock(_component_v_chip, {
                       key: 1,
-                      class: "mr-2 offer-chip-style",
+                      class: "offer-chip-style",
                       closable: "",
                       "onClick:close": $setup.removeOffer,
-                      style: { "height": "56px", "border-radius": "8px", "padding": "0 16px", "margin-top": "-8px" }
+                      style: { "height": "56px", "width": "100%", "border-radius": "8px", "justify-content": "start" }
                     }, {
                       default: withCtx(() => [
-                        createVNode(_component_v_icon, {
-                          left: "",
-                          class: "pr-2"
-                        }, {
+                        createVNode(_component_v_icon, { left: "" }, {
                           default: withCtx(() => [
                             createTextVNode("mdi-tag")
                           ]),
@@ -18046,9 +18024,8 @@ Expected function or array of functions, received type ${typeof value}.`
               })) : createCommentVNode("v-if", true),
               createCommentVNode(" Tip "),
               createVNode(_component_v_col, {
-                cols: "12",
-                md: "2",
-                class: "pl-2"
+                class: "flex-grow-1",
+                style: { "min-width": "200px", "max-width": "100%" }
               }, {
                 default: withCtx(() => [
                   createVNode(_component_v_text_field, {
@@ -18056,10 +18033,42 @@ Expected function or array of functions, received type ${typeof value}.`
                     variant: "outlined",
                     label: "Tip",
                     modelValue: $setup.tip,
-                    "onUpdate:modelValue": _cache[6] || (_cache[6] = ($event) => $setup.tip = $event),
+                    "onUpdate:modelValue": _cache[5] || (_cache[5] = ($event) => $setup.tip = $event),
                     type: "number",
                     min: 0
                   }, null, 8, ["modelValue"])
+                ]),
+                _: 1
+              }),
+              createCommentVNode(" Split Payment Button "),
+              createVNode(_component_v_col, {
+                class: "flex-grow-1",
+                style: { "min-width": "200px", "max-width": "100%" }
+              }, {
+                default: withCtx(() => [
+                  createVNode(_component_v_btn, {
+                    class: "b-radius-8 split-btn-style",
+                    color: $setup.splitPayment ? "#F05D23" : "#21A0A0",
+                    size: "large",
+                    variant: "outlined",
+                    style: normalizeStyle({
+                      backgroundColor: $setup.splitPayment ? "#fcdfd3" : "#d3ecec",
+                      height: "56px",
+                      width: "100%"
+                    }),
+                    onClick: _cache[6] || (_cache[6] = ($event) => $setup.openSplitPaymentDialog())
+                  }, {
+                    default: withCtx(() => [
+                      createVNode(_component_v_icon, { left: "" }, {
+                        default: withCtx(() => [
+                          createTextVNode("mdi-cash-multiple")
+                        ]),
+                        _: 1
+                      }),
+                      createTextVNode(" Split Payment ")
+                    ]),
+                    _: 1
+                  }, 8, ["color", "style"])
                 ]),
                 _: 1
               })
@@ -18777,17 +18786,18 @@ Expected function or array of functions, received type ${typeof value}.`
   var _hoisted_86 = { key: 0 };
   var _hoisted_96 = { key: 1 };
   var _hoisted_106 = { key: 2 };
-  var _hoisted_116 = { class: "mt-3" };
-  var _hoisted_126 = /* @__PURE__ */ _withScopeId6(() => /* @__PURE__ */ createBaseVNode("p", null, "Order Detail:", -1));
-  var _hoisted_135 = {
+  var _hoisted_116 = { key: 3 };
+  var _hoisted_126 = { class: "mt-3" };
+  var _hoisted_135 = /* @__PURE__ */ _withScopeId6(() => /* @__PURE__ */ createBaseVNode("p", null, "Order Detail:", -1));
+  var _hoisted_145 = {
     class: "d-flex ml-2",
     style: { "height": "80px" }
   };
-  var _hoisted_145 = { class: "ml-2 text-grey" };
-  var _hoisted_154 = { key: 0 };
-  var _hoisted_163 = { class: "order-detail" };
-  var _hoisted_173 = /* @__PURE__ */ _withScopeId6(() => /* @__PURE__ */ createBaseVNode("strong", null, "Grand Total", -1));
-  var _hoisted_183 = { class: "grand-p" };
+  var _hoisted_154 = { class: "ml-2 text-grey" };
+  var _hoisted_163 = { key: 0 };
+  var _hoisted_173 = { class: "order-detail" };
+  var _hoisted_183 = /* @__PURE__ */ _withScopeId6(() => /* @__PURE__ */ createBaseVNode("strong", null, "Grand Total", -1));
+  var _hoisted_193 = { class: "grand-p" };
   function render7(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_v_col = resolveComponent("v-col");
     const _component_v_icon = resolveComponent("v-icon");
@@ -18878,21 +18888,22 @@ Expected function or array of functions, received type ${typeof value}.`
                             ]),
                             order.table ? (openBlock(), createElementBlock("span", _hoisted_86, "Table:" + toDisplayString(order.table), 1)) : createCommentVNode("v-if", true),
                             order.orderBy ? (openBlock(), createElementBlock("span", _hoisted_96, "Order Taker:" + toDisplayString(order.orderByName), 1)) : createCommentVNode("v-if", true),
-                            order.cover ? (openBlock(), createElementBlock("span", _hoisted_106, "Persons: " + toDisplayString(order.cover), 1)) : createCommentVNode("v-if", true)
+                            order.cover ? (openBlock(), createElementBlock("span", _hoisted_106, "Persons: " + toDisplayString(order.cover), 1)) : createCommentVNode("v-if", true),
+                            order.customer ? (openBlock(), createElementBlock("span", _hoisted_116, "Customer: " + toDisplayString(order.customer), 1)) : createCommentVNode("v-if", true)
                           ]),
-                          createBaseVNode("div", _hoisted_116, [
-                            _hoisted_126,
-                            createBaseVNode("div", _hoisted_135, [
+                          createBaseVNode("div", _hoisted_126, [
+                            _hoisted_135,
+                            createBaseVNode("div", _hoisted_145, [
                               createVNode(_component_v_icon, null, {
                                 default: withCtx(() => [
                                   createTextVNode("mdi-clipboard-list-outline")
                                 ]),
                                 _: 1
                               }),
-                              createBaseVNode("p", _hoisted_145, [
+                              createBaseVNode("p", _hoisted_154, [
                                 createCommentVNode(' Display items with "+x more" if more than 6 items '),
                                 createTextVNode(" " + toDisplayString(order.items.slice(0, 6).map((item) => item.item_name).join(", ")), 1),
-                                order.items.length > 6 ? (openBlock(), createElementBlock("span", _hoisted_154, ", +" + toDisplayString(order.items.length - 6) + " more", 1)) : createCommentVNode("v-if", true)
+                                order.items.length > 6 ? (openBlock(), createElementBlock("span", _hoisted_163, ", +" + toDisplayString(order.items.length - 6) + " more", 1)) : createCommentVNode("v-if", true)
                               ])
                             ])
                           ]),
@@ -18900,9 +18911,9 @@ Expected function or array of functions, received type ${typeof value}.`
                             class: "mt-3 dotted-divider",
                             thickness: 3
                           }),
-                          createBaseVNode("div", _hoisted_163, [
-                            _hoisted_173,
-                            createBaseVNode("p", _hoisted_183, "QAR. " + toDisplayString(order.grand_total), 1)
+                          createBaseVNode("div", _hoisted_173, [
+                            _hoisted_183,
+                            createBaseVNode("p", _hoisted_193, "QAR. " + toDisplayString(order.grand_total), 1)
                           ]),
                           createCommentVNode(' <div class="order-detail mt-3">\n                  <strong>By</strong>\n                  <p>{{ order.name }}</p>\n                </div>\n                <div class="order-detail mt-3 pb-3">\n                  <strong>At</strong>\n                  <p>{{ order.location }}</p>\n                </div> ')
                         ]),
@@ -19047,7 +19058,7 @@ Expected function or array of functions, received type ${typeof value}.`
     class: "px-15 py-5"
   };
   var _hoisted_184 = { class: "dis-grid" };
-  var _hoisted_193 = { class: "d-flex justify-space-between px-2" };
+  var _hoisted_194 = { class: "d-flex justify-space-between px-2" };
   var _hoisted_203 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ createBaseVNode("div", {
     class: "",
     style: { "color": "#666666" }
@@ -19336,7 +19347,7 @@ Expected function or array of functions, received type ${typeof value}.`
                                   createVNode(_component_v_card_text, { class: "pb-0" }, {
                                     default: withCtx(() => [
                                       createBaseVNode("div", _hoisted_184, [
-                                        createBaseVNode("div", _hoisted_193, [
+                                        createBaseVNode("div", _hoisted_194, [
                                           _hoisted_203,
                                           createVNode(_component_v_chip, {
                                             color: "#21A0A0",
@@ -49255,7 +49266,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
     class: "amount py-2",
     style: { "color": "#818181" }
   };
-  var _hoisted_194 = /* @__PURE__ */ _withScopeId12(() => /* @__PURE__ */ createBaseVNode("div", {
+  var _hoisted_195 = /* @__PURE__ */ _withScopeId12(() => /* @__PURE__ */ createBaseVNode("div", {
     style: { "width": "100%", "height": "1px", "background": "#21a0a0" },
     class: "mt-3"
   }, null, -1));
@@ -49431,7 +49442,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
                                 createBaseVNode("div", null, [
                                   _hoisted_176,
                                   createBaseVNode("h6", _hoisted_185, " Rs. " + toDisplayString(parseFloat($setup.netTotal).toFixed(2)), 1),
-                                  _hoisted_194
+                                  _hoisted_195
                                 ])
                               ]),
                               _: 1
@@ -49642,4 +49653,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.YYPKVQVT.js.map
+//# sourceMappingURL=pos.bundle.MGZV2IIW.js.map

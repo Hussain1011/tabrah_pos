@@ -20,10 +20,7 @@
           </div>
         </v-col>
         <v-col cols="12" md="5" class="text-right d-flex align-center justify-end">
-          <v-btn class="mr-2 b-radius-8 split-btn-style" :color="splitPayment ? '#F05D23' : '#21A0A0'" size="large" variant="outlined"
-            :style="{ backgroundColor: splitPayment ? '#fcdfd3' : '#d3ecec' }" @click="openSplitPaymentDialog()">
-            <v-icon left class="pr-2">mdi-cash-multiple</v-icon> Split Payment
-          </v-btn>
+          
           <v-divider vertical class="mx-2" style="height: 40px; background: #000; min-width: 2px;"></v-divider>
           <v-btn class="mr-2 b-radius-8" color="#21A0A0" size="large" variant="outlined"
             style="background-color: #d3ecec" @click="backToProductMenu()">
@@ -38,86 +35,107 @@
       <v-divider></v-divider>
 
       <v-row class="mt-2 pb-0 align-center" dense>
+      <!-- Paid Amount -->
+      <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
+        <v-text-field
+          class="b-radius-8"
+          variant="outlined"
+          label="Paid Amount"
+          suffix="QAR."
+          v-model="amountTake"
+          :disabled="paymentType.mode_type !== 'Cash' || splitPayment"
+        />
+      </v-col>
 
-        <!-- Paid Amount -->
-        <v-col cols="12" md="3" class="pr-2">
-          <v-text-field
-            class="b-radius-8"
-            variant="outlined"
-            label="Paid Amount"
-            suffix="QAR."
-            v-model="amountTake"
-            :disabled="paymentType.mode_type !== 'Cash' || splitPayment"
-          />
-        </v-col>
+      <!-- Discount -->
+      <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
+        <v-text-field
+          class="b-radius-8"
+          variant="outlined"
+          :label="`Discount (max ${pos_profile.posa_max_discount_allowed} %)`"
+          v-model="discount"
+          type="number"
+          :max="pos_profile.posa_max_discount_allowed"
+          @input="onManualDiscountInput($event.target.value)"
+          :disabled="pos_profile.posa_max_discount_allowed == 0 || !!selectedOffer"
+        />
+        <div v-if="pos_profile.posa_max_discount_allowed == 0" class="text-error text-caption">
+          Discounts are not allowed for this POS profile.
+        </div>
+      </v-col>
 
-        <!-- Discount -->
-        <v-col cols="12" md="2" class="px-1">
-          <v-text-field
-            class="b-radius-8"
-            variant="outlined"
-            :label="`Discount (max ${pos_profile.posa_max_discount_allowed} %)`"
-            v-model="discount"
-            type="number"
-            :max="pos_profile.posa_max_discount_allowed"
-            @input="onManualDiscountInput($event.target.value)"
-            :disabled="pos_profile.posa_max_discount_allowed == 0 || !!selectedOffer"
-          />
-          <div v-if="pos_profile.posa_max_discount_allowed == 0" class="text-error text-caption">
-            Discounts are not allowed for this POS profile.
-          </div>
-        </v-col>
+      <!-- Select Offer / Selected Offer Chip -->
+      <v-col 
+        v-if="pos_profile.custom_enable_discount_offers == 1"
+        class="flex-grow-1" 
+        style="min-width: 200px; max-width: 100%"
+      >
+        <div class="d-flex align-center" style="height: 100%">
+          <v-btn
+            v-if="!selectedOffer"
+            class="b-radius-8 offer-btn-style"
+            color="#21A0A0"
+            @click="openOffersDialog"
+            style="
+              height: 56px; 
+              width: 100%;
+              text-transform: none;
+              letter-spacing: normal;
+            "
+          >
+            <v-icon left>mdi-tag</v-icon>
+            Discount Offers
+          </v-btn>
 
-        <!-- Select Offer / Selected Offer Chip -->
-        <v-col cols="12" md="3" class="pl-1" v-if="pos_profile.custom_enable_discount_offers == 1">
-          <div class="d-flex align-center" style="align-items: center; height: 100%;">
-            <v-btn
-              v-if="!selectedOffer"
-              class="b-radius-8 offer-btn-style"
-              color="#21A0A0"
-              @click="openOffersDialog"
-              style="
-                height: 56px; 
-                margin-top: -8px;
-                text-transform: none;
-                letter-spacing: normal;
-              "
-            >
-              <v-icon left class="pr-2">mdi-tag</v-icon>
-              Discount Offers
-            </v-btn>
+          <v-chip
+            v-else
+            class="offer-chip-style"
+            closable
+            @click:close="removeOffer"
+            style="
+              height: 56px; 
+              width: 100%;
+              border-radius: 8px;
+              justify-content: start;
+            "
+          >
+            <v-icon left>mdi-tag</v-icon>
+            {{ selectedOffer.name }} ({{ selectedOffer.discount_percentage }}%)
+          </v-chip>
+        </div>
+      </v-col>
 
-            <v-chip
-              v-else
-              class="mr-2 offer-chip-style"
-              closable
-              @click:close="removeOffer"
-              style="
-                height: 56px; 
-                border-radius: 8px;
-                padding: 0 16px;
-                margin-top: -8px;
-              "
-            >
-              <v-icon left class="pr-2">mdi-tag</v-icon>
-              {{ selectedOffer.name }} ({{ selectedOffer.discount_percentage }}%)
-            </v-chip>
-          </div>
-        </v-col>
+      <!-- Tip -->
+      <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
+        <v-text-field
+          class="b-radius-8"
+          variant="outlined"
+          label="Tip"
+          v-model="tip"
+          type="number"
+          :min="0"
+        />
+      </v-col>
 
-        <!-- Tip -->
-        <v-col cols="12" md="2" class="pl-2">
-          <v-text-field
-            class="b-radius-8"
-            variant="outlined"
-            label="Tip"
-            v-model="tip"
-            type="number"
-            :min="0"
-          />
-        </v-col>
-
-      </v-row>
+      <!-- Split Payment Button -->
+      <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
+        <v-btn 
+          class="b-radius-8 split-btn-style" 
+          :color="splitPayment ? '#F05D23' : '#21A0A0'" 
+          size="large" 
+          variant="outlined"
+          :style="{ 
+            backgroundColor: splitPayment ? '#fcdfd3' : '#d3ecec',
+            height: '56px',
+            width: '100%'
+          }" 
+          @click="openSplitPaymentDialog()"
+        >
+          <v-icon left>mdi-cash-multiple</v-icon>
+          Split Payment
+        </v-btn>
+      </v-col>
+    </v-row>
 
       <!-- Paid Amount, To Be Paid, and Change Details -->
       <v-row class="pt-0 mt-0">

@@ -51,6 +51,7 @@
 
               <span v-if="order.cover">Persons: {{ order.cover }}</span>
 
+              <span v-if="order.customer">Customer: {{ order.customer }}</span>
             </div>
             <div class="mt-3">
               <p>Order Detail:</p>
