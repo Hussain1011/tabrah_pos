@@ -1816,7 +1816,7 @@ onMounted(() => {
     invoiceItems.value = [];
     holdOrderId.value = null;
     allowedDelete.value = true
-    selectedCustomer.value = '';
+    selectedCustomer.value = pos_profile.value.customer;
     eventBus.emit("selected_table", '');
   });
   eventBus.on("selected_order_type", (type) => {
