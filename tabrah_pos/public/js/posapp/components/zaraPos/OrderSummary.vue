@@ -27,7 +27,7 @@
       <!-- Items List -->
       <v-divider></v-divider>
       <v-row v-for="(item, index) in items" :key="item.sku" class="py-0 align-center mr-0"
-        @click="openDialog(item, true)">
+        @click="openDialog(item, true, index)">
         <v-col cols="5" class="pr-0 pb-0">
           <div>{{ item.item_name }}</div>
           <!-- <div class="text-caption grey--text">{{ item.sku }}</div> -->
@@ -348,7 +348,7 @@
               </div>
               <div class="px-0 pt-7" style="max-height: 350px; overflow-y: auto;">
                 <v-row v-for="(item, index) in returnDoc.items" :key="item.sku" class="py-0 align-center mr-0 "
-                  @click="openDialog(item, true)">
+                  @click="openDialog(item, true, index)">
                   <div style="background: #F3F3F3; width: 100%;" class="d-flex py-3">
                     <v-col cols="5" class="pr-2 pb-0 ml-4 pt-1">
                       <div>{{ item.item_name }}</div>
@@ -818,14 +818,8 @@ const changePaymentMode = (mode) => {
     }
   });
 };
-const openDialog = (product, flag) => {
-  if (!saleOrder.value) {
-    const obj = {
-      product,
-      flag,
-    };
-    eventBus.emit("open-product-dialog", obj);
-  }
+const openDialog = (item, flag, index) => {
+  eventBus.emit("open-product-dialog", { product: item, flag, index });
 };
 const openPrinterDialog = () => {
   // Check which printers are available (not all items printed)
@@ -1598,6 +1592,7 @@ const deleteItem = (index) => {
     eventBus.emit("set-default-value");
   }
   makePayloadForInvoice();
+  console.log('Cart items:', items.value);
 };
 const toggleDelete = (index) => {
   // Toggle the visibility of the delete button for the clicked item
@@ -1721,14 +1716,25 @@ onMounted(() => {
     closeReturnDialog()
   });
   eventBus.on("exist-item-cart", (data) => {
-    const existingItem = items.value.find(
-      (item) => item.item_code === data.item_code
-    );
-    if (existingItem) {
-      existingItem.qty = data.qty;
-      existingItem.netTotal = existingItem.rate * existingItem.qty;
+    data.complementryItem = Boolean(data.complementryItem);
+    if (typeof data.index === 'number' && items.value[data.index]) {
+      // Update the item at the original index
+      items.value[data.index] = { ...data };
     } else {
-      items.value.push({ ...data });
+      // fallback: old logic
+      const existingItem = items.value.find(
+        (item) =>
+          item.item_code === data.item_code &&
+          item.complementryItem === data.complementryItem
+      );
+      if (existingItem) {
+        Object.keys(data).forEach(key => {
+          existingItem[key] = data[key];
+        });
+        existingItem.netTotal = existingItem.rate * existingItem.qty;
+      } else {
+        items.value.push({ ...data });
+      }
     }
     makePayloadForInvoice();
   });
@@ -1737,29 +1743,25 @@ onMounted(() => {
     data.rate = data.custom_discounted_rate > 0 ? data.custom_discounted_rate : data.rate
     data.netTotal = 0;
     data.netTotal = data.rate * data.qty;
-    data.complementryItem = data.complementryItem || false
-
-    // Find if the item already exists in the array
-    if (!data.complementryItem) {
-
+    data.complementryItem = Boolean(data.complementryItem);
     const existingItem = items.value.find(
-      (item) => item.item_code === data.item_code
+      (item) =>
+        item.item_code === data.item_code &&
+        item.complementryItem === data.complementryItem
     );
 
-      if (existingItem) {
-        // If item exists, add the new quantity
+    if (existingItem) {
+      // Update all properties to keep in sync (including complementryItem)
+      Object.keys(data).forEach(key => {
+        existingItem[key] = data[key];
+      });
+      // If not complementary, add the new quantity
+      if (!data.complementryItem) {
         existingItem.qty += data.qty;
-        existingItem.netTotal = existingItem.rate * existingItem.qty;
-      } else {
-        // If item doesn't exist, add it to the array
-        // selectedProduct.value.netTotal =
-        //   selectedProduct.value.rate * selectedProduct.value.qty;
-        items.value.push({ ...data });
       }
-    }
-    else {
+      existingItem.netTotal = existingItem.rate * existingItem.qty;
+    } else {
       items.value.push({ ...data });
-
     }
 
     makePayloadForInvoice();

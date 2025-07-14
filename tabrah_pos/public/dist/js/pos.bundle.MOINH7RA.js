@@ -14103,14 +14103,8 @@ Expected function or array of functions, received type ${typeof value}.`
           }
         });
       };
-      const openDialog = (product, flag) => {
-        if (!saleOrder.value) {
-          const obj = {
-            product,
-            flag
-          };
-          bus_default.emit("open-product-dialog", obj);
-        }
+      const openDialog = (item, flag, index) => {
+        bus_default.emit("open-product-dialog", { product: item, flag, index });
       };
       const openPrinterDialog = () => {
         const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
@@ -14726,6 +14720,7 @@ Expected function or array of functions, received type ${typeof value}.`
           bus_default.emit("set-default-value");
         }
         makePayloadForInvoice();
+        console.log("Cart items:", items.value);
       };
       const toggleDelete = (index) => {
         items.value[index].showDelete = !items.value[index].showDelete;
@@ -14790,14 +14785,21 @@ Expected function or array of functions, received type ${typeof value}.`
           closeReturnDialog();
         });
         bus_default.on("exist-item-cart", (data) => {
-          const existingItem = items.value.find(
-            (item) => item.item_code === data.item_code
-          );
-          if (existingItem) {
-            existingItem.qty = data.qty;
-            existingItem.netTotal = existingItem.rate * existingItem.qty;
+          data.complementryItem = Boolean(data.complementryItem);
+          if (typeof data.index === "number" && items.value[data.index]) {
+            items.value[data.index] = __spreadValues({}, data);
           } else {
-            items.value.push(__spreadValues({}, data));
+            const existingItem = items.value.find(
+              (item) => item.item_code === data.item_code && item.complementryItem === data.complementryItem
+            );
+            if (existingItem) {
+              Object.keys(data).forEach((key) => {
+                existingItem[key] = data[key];
+              });
+              existingItem.netTotal = existingItem.rate * existingItem.qty;
+            } else {
+              items.value.push(__spreadValues({}, data));
+            }
           }
           makePayloadForInvoice();
         });
@@ -14805,17 +14807,18 @@ Expected function or array of functions, received type ${typeof value}.`
           data.rate = data.custom_discounted_rate > 0 ? data.custom_discounted_rate : data.rate;
           data.netTotal = 0;
           data.netTotal = data.rate * data.qty;
-          data.complementryItem = data.complementryItem || false;
-          if (!data.complementryItem) {
-            const existingItem = items.value.find(
-              (item) => item.item_code === data.item_code
-            );
-            if (existingItem) {
+          data.complementryItem = Boolean(data.complementryItem);
+          const existingItem = items.value.find(
+            (item) => item.item_code === data.item_code && item.complementryItem === data.complementryItem
+          );
+          if (existingItem) {
+            Object.keys(data).forEach((key) => {
+              existingItem[key] = data[key];
+            });
+            if (!data.complementryItem) {
               existingItem.qty += data.qty;
-              existingItem.netTotal = existingItem.rate * existingItem.qty;
-            } else {
-              items.value.push(__spreadValues({}, data));
             }
+            existingItem.netTotal = existingItem.rate * existingItem.qty;
           } else {
             items.value.push(__spreadValues({}, data));
           }
@@ -15136,7 +15139,7 @@ Expected function or array of functions, received type ${typeof value}.`
               return openBlock(), createBlock(_component_v_row, {
                 key: item.sku,
                 class: "py-0 align-center mr-0",
-                onClick: ($event) => $setup.openDialog(item, true)
+                onClick: ($event) => $setup.openDialog(item, true, index)
               }, {
                 default: withCtx(() => [
                   createVNode(_component_v_col, {
@@ -15875,7 +15878,7 @@ Expected function or array of functions, received type ${typeof value}.`
                                 return openBlock(), createBlock(_component_v_row, {
                                   key: item.sku,
                                   class: "py-0 align-center mr-0",
-                                  onClick: ($event) => $setup.openDialog(item, true)
+                                  onClick: ($event) => $setup.openDialog(item, true, index)
                                 }, {
                                   default: withCtx(() => [
                                     createBaseVNode("div", _hoisted_332, [
@@ -19517,6 +19520,7 @@ Expected function or array of functions, received type ${typeof value}.`
       const pos_profile2 = ref("");
       const complementaryItem = ref(false);
       const itemComment = ref("");
+      const editingIndex = ref(null);
       const increaseQuantity = () => {
         quantity.value++;
         selectedProduct.value.qty = quantity.value;
@@ -19535,9 +19539,16 @@ Expected function or array of functions, received type ${typeof value}.`
       };
       const addToCart = () => {
         if (discount.value <= pos_profile2.value.posa_max_discount_allowed) {
+          selectedProduct.value.complementryItem = Boolean(complementaryItem.value);
+          if (complementaryItem.value) {
+            selectedProduct.value.rate = 0;
+          } else {
+            selectedProduct.value.rate = selectedProduct.value.original_rate;
+          }
           if (!updateQty.value) {
             bus_default.emit("add-to-cart", selectedProduct.value);
           } else {
+            selectedProduct.value.index = editingIndex.value;
             bus_default.emit("exist-item-cart", selectedProduct.value);
           }
           complementaryItem.value = false;
@@ -19568,20 +19579,14 @@ Expected function or array of functions, received type ${typeof value}.`
       };
       const handleComplementaryToggle = () => {
         if (complementaryItem.value) {
+          if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
+            selectedProduct.value.original_rate = selectedProduct.value.rate;
+          }
           selectedProduct.value.rate = 0;
           selectedProduct.value.complementryItem = true;
-          console.log("pos_profile", pos_profile2.value);
-          const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
-            amount: selectedProduct.value.original_rate
-          }));
-          console.log("complementryMode", complementryMode);
         } else {
           selectedProduct.value.rate = selectedProduct.value.original_rate;
           selectedProduct.value.complementryItem = false;
-          const complementryMode = pos_profile2.value.payments.filter((profile) => profile.custom_is_complementary_mode_of_payment == 1).map((profile) => __spreadProps(__spreadValues({}, profile), {
-            amount: 0
-          }));
-          console.log("complementryMode", complementryMode);
         }
       };
       watch2(discount, (newVal) => {
@@ -19609,13 +19614,27 @@ Expected function or array of functions, received type ${typeof value}.`
       });
       onMounted(() => {
         bus_default.on("open-product-dialog", (data) => {
-          itemComment.value = "";
+          var _a2;
+          console.log("Dialog open:", {
+            complementryItem: data.product.complementryItem,
+            complementaryItemValue: Boolean(data.product.complementryItem)
+          });
+          editingIndex.value = (_a2 = data.index) != null ? _a2 : null;
           updateQty.value = data.flag;
           quantity.value = data.product.qty ? data.product.qty : 1;
           data.product.qty = quantity.value;
-          selectedProduct.value = data.product;
-          if (!selectedProduct.value.original_rate) {
-            selectedProduct.value.original_rate = selectedProduct.value.rate;
+          selectedProduct.value = JSON.parse(JSON.stringify(data.product));
+          itemComment.value = data.product.comment || "";
+          complementaryItem.value = Boolean(data.product.complementryItem);
+          if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
+            if (!complementaryItem.value) {
+              selectedProduct.value.original_rate = selectedProduct.value.rate;
+            }
+          }
+          if (complementaryItem.value) {
+            selectedProduct.value.rate = 0;
+          } else {
+            selectedProduct.value.rate = selectedProduct.value.original_rate;
           }
           if (selectedProduct.value) {
             dialog.value = true;
@@ -19626,7 +19645,7 @@ Expected function or array of functions, received type ${typeof value}.`
           pos_profile2.value = profile;
         });
       });
-      const __returned__ = { dialog, quantity, selectedProduct, updateQty, discount, pos_profile: pos_profile2, complementaryItem, itemComment, increaseQuantity, decreaseQuantity, formatNumber, addToCart, closeDialog, validateDiscount, handleComplementaryToggle, ref, onMounted, watch: watch2, get eventBus() {
+      const __returned__ = { dialog, quantity, selectedProduct, updateQty, discount, pos_profile: pos_profile2, complementaryItem, itemComment, editingIndex, increaseQuantity, decreaseQuantity, formatNumber, addToCart, closeDialog, validateDiscount, handleComplementaryToggle, ref, onMounted, watch: watch2, get eventBus() {
         return bus_default;
       } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
@@ -19892,7 +19911,6 @@ Expected function or array of functions, received type ${typeof value}.`
                                   "onUpdate:modelValue": _cache[4] || (_cache[4] = ($event) => $setup.complementaryItem = $event),
                                   color: "red",
                                   label: "Complementary Item",
-                                  value: "red",
                                   onChange: $setup.handleComplementaryToggle,
                                   "hide-details": ""
                                 }, null, 8, ["modelValue"])
@@ -49653,4 +49671,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.MGZV2IIW.js.map
+//# sourceMappingURL=pos.bundle.MOINH7RA.js.map
