@@ -105,7 +105,7 @@
                    />
               </v-col>
               <v-col cols="12" md="12" class="my-0">
-                <v-checkbox v-model="complementaryItem" color="red" label="Complementary Item" value="red"     @change="handleComplementaryToggle"
+                <v-checkbox v-model="complementaryItem" color="red" label="Complementary Item" @change="handleComplementaryToggle"
                   hide-details></v-checkbox>
               </v-col>
               <!-- <v-col cols="4" class="text-center">
@@ -163,6 +163,7 @@ import eventBus from "../../bus";
     const pos_profile = ref("");
     const complementaryItem = ref(false);
     const itemComment = ref('')
+    const editingIndex = ref(null);
 
     const increaseQuantity = () => {
       quantity.value++;
@@ -184,9 +185,17 @@ import eventBus from "../../bus";
 
     const addToCart = () => {
       if (discount.value <= pos_profile.value.posa_max_discount_allowed) {
+        // Always sync complementary state before emitting
+        selectedProduct.value.complementryItem = Boolean(complementaryItem.value);
+        if (complementaryItem.value) {
+          selectedProduct.value.rate = 0;
+        } else {
+          selectedProduct.value.rate = selectedProduct.value.original_rate;
+        }
         if (!updateQty.value) {
           eventBus.emit("add-to-cart", selectedProduct.value);
         } else {
+          selectedProduct.value.index = editingIndex.value;
           eventBus.emit("exist-item-cart", selectedProduct.value);
         }
         complementaryItem.value=false
@@ -232,32 +241,15 @@ import eventBus from "../../bus";
     // Function triggered when checkbox is clicked
 const handleComplementaryToggle = () => {
   if (complementaryItem.value) {
+    // Save original rate if not already saved
+    if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
+      selectedProduct.value.original_rate = selectedProduct.value.rate;
+    }
     selectedProduct.value.rate = 0;
     selectedProduct.value.complementryItem = true;
-
-    console.log("pos_profile", pos_profile.value);
-    // Filter complementary mode
-    const complementryMode = pos_profile.value.payments
-      .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
-      .map(profile => ({
-        ...profile,
-        amount: selectedProduct.value.original_rate, // Add original amount
-      }));
-
-    console.log("complementryMode", complementryMode);
   } else {
     selectedProduct.value.rate = selectedProduct.value.original_rate;
     selectedProduct.value.complementryItem = false;
-
-    // Reset the filtered complementary mode with zero amount
-    const complementryMode = pos_profile.value.payments
-      .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
-      .map(profile => ({
-        ...profile,
-        amount: 0, // Set amount to zero
-      }));
-
-    console.log("complementryMode", complementryMode);
   }
 };
 
@@ -322,13 +314,29 @@ const handleComplementaryToggle = () => {
 
     onMounted(() => {
       eventBus.on("open-product-dialog", (data) => {
-        itemComment.value=''
+        console.log('Dialog open:', {
+          complementryItem: data.product.complementryItem,
+          complementaryItemValue: Boolean(data.product.complementryItem)
+        });
+        editingIndex.value = data.index ?? null;
         updateQty.value = data.flag;
         quantity.value = data.product.qty ? data.product.qty : 1;
         data.product.qty = quantity.value;
-        selectedProduct.value = data.product;
-        if (!selectedProduct.value.original_rate) {
-          selectedProduct.value.original_rate = selectedProduct.value.rate;
+        selectedProduct.value = JSON.parse(JSON.stringify(data.product));
+        itemComment.value = data.product.comment || '';
+        complementaryItem.value = Boolean(data.product.complementryItem);
+
+        // Always set original_rate if not set, and if not complementary
+        if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
+          if (!complementaryItem.value) {
+            selectedProduct.value.original_rate = selectedProduct.value.rate;
+          }
+        }
+
+        if (complementaryItem.value) {
+          selectedProduct.value.rate = 0;
+        } else {
+          selectedProduct.value.rate = selectedProduct.value.original_rate;
         }
         if (selectedProduct.value) {
           dialog.value = true;

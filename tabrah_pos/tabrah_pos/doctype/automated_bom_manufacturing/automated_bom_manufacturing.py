@@ -70,7 +70,7 @@ class AutomatedBOMManufacturing(Document):
 		se.stock_entry_type = "Manufacture"
 		se.purpose = "Manufacture"
 		se.from_bom = 1
-		se.use_multi_level_bom = 1
+		se.use_multi_level_bom = 0
 		se.bom_no = self.bom
 		se.fg_completed_qty = self.qty
 		se.get_items()
