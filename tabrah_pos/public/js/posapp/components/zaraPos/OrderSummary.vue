@@ -1717,8 +1717,8 @@ onMounted(() => {
   });
   eventBus.on("exist-item-cart", (data) => {
     data.complementryItem = Boolean(data.complementryItem);
+    data.netTotal = data.rate * data.qty; // Ensure netTotal is always updated
     if (typeof data.index === 'number' && items.value[data.index]) {
-      // Update the item at the original index
       items.value[data.index] = { ...data };
     } else {
       // fallback: old logic
