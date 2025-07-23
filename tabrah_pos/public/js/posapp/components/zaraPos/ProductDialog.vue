@@ -189,19 +189,21 @@ import eventBus from "../../bus";
         selectedProduct.value.complementryItem = Boolean(complementaryItem.value);
         if (complementaryItem.value) {
           selectedProduct.value.rate = 0;
-        } else {
-          selectedProduct.value.rate = selectedProduct.value.original_rate;
         }
+        // Do NOT reset rate to original_rate if not complementary; preserve manual edits
         if (!updateQty.value) {
           eventBus.emit("add-to-cart", selectedProduct.value);
         } else {
           selectedProduct.value.index = editingIndex.value;
           eventBus.emit("exist-item-cart", selectedProduct.value);
         }
-        complementaryItem.value=false
+        complementaryItem.value = false;
         dialog.value = false;
         discount.value = "";
-        selectedProduct.value.rate=selectedProduct.value.original_rate
+        // Only reset rate if complementary is checked, otherwise preserve manual edits
+        if (complementaryItem.value) {
+          selectedProduct.value.rate = selectedProduct.value.original_rate;
+        }
       }
     };
     const closeDialog = () => {
@@ -248,7 +250,7 @@ const handleComplementaryToggle = () => {
     selectedProduct.value.rate = 0;
     selectedProduct.value.complementryItem = true;
   } else {
-    selectedProduct.value.rate = selectedProduct.value.original_rate;
+    // Do NOT reset rate to original_rate here; preserve manual edits
     selectedProduct.value.complementryItem = false;
   }
 };
@@ -335,9 +337,7 @@ const handleComplementaryToggle = () => {
 
         if (complementaryItem.value) {
           selectedProduct.value.rate = 0;
-        } else {
-          selectedProduct.value.rate = selectedProduct.value.original_rate;
-        }
+        } // else: do not reset rate, preserve manual edits
         if (selectedProduct.value) {
           dialog.value = true;
         }

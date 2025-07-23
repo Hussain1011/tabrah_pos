@@ -168,7 +168,7 @@ def get_cashiers(doctype, txt, searchfield, start, page_len, filters):
 
 @frappe.whitelist()
 def get_pos_invoices(pos_opening_shift):
-    submit_printed_invoices(pos_opening_shift)
+    # submit_printed_invoices(pos_opening_shift)
     data = frappe.db.sql(
         """
 	select
@@ -210,7 +210,7 @@ def get_payments_entries(pos_opening_shift):
 @frappe.whitelist()
 def make_closing_shift_from_opening(opening_shift):
     opening_shift = json.loads(opening_shift)
-    submit_printed_invoices(opening_shift.get("name"))
+    # submit_printed_invoices(opening_shift.get("name"))
     closing_shift = frappe.new_doc("POS Closing Shift")
     closing_shift.pos_opening_shift = opening_shift.get("name")
     closing_shift.period_start_date = opening_shift.get("period_start_date")

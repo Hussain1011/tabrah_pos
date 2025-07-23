@@ -19543,8 +19543,6 @@ Expected function or array of functions, received type ${typeof value}.`
           selectedProduct.value.complementryItem = Boolean(complementaryItem.value);
           if (complementaryItem.value) {
             selectedProduct.value.rate = 0;
-          } else {
-            selectedProduct.value.rate = selectedProduct.value.original_rate;
           }
           if (!updateQty.value) {
             bus_default.emit("add-to-cart", selectedProduct.value);
@@ -19555,7 +19553,9 @@ Expected function or array of functions, received type ${typeof value}.`
           complementaryItem.value = false;
           dialog.value = false;
           discount.value = "";
-          selectedProduct.value.rate = selectedProduct.value.original_rate;
+          if (complementaryItem.value) {
+            selectedProduct.value.rate = selectedProduct.value.original_rate;
+          }
         }
       };
       const closeDialog = () => {
@@ -19586,7 +19586,6 @@ Expected function or array of functions, received type ${typeof value}.`
           selectedProduct.value.rate = 0;
           selectedProduct.value.complementryItem = true;
         } else {
-          selectedProduct.value.rate = selectedProduct.value.original_rate;
           selectedProduct.value.complementryItem = false;
         }
       };
@@ -19634,8 +19633,6 @@ Expected function or array of functions, received type ${typeof value}.`
           }
           if (complementaryItem.value) {
             selectedProduct.value.rate = 0;
-          } else {
-            selectedProduct.value.rate = selectedProduct.value.original_rate;
           }
           if (selectedProduct.value) {
             dialog.value = true;
@@ -49672,4 +49669,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.GAAOYJZT.js.map
+//# sourceMappingURL=pos.bundle.XCMKNIKL.js.map
