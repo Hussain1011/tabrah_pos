@@ -84,10 +84,17 @@
             </v-row>
             <v-row class="my-4 align-center">
               <v-col cols="12" class="text-right">
-                <v-text-field class="b-radius-8" variant="outlined"
-                  :label="`Discount (max ${pos_profile.posa_max_discount_allowed} %)`" v-model="discount" type="number"
-                  :max="pos_profile.posa_max_discount_allowed" @update="validateDiscount"
-                  :disabled="!pos_profile.posa_max_discount_allowed" />
+                <v-text-field
+                  class="b-radius-8"
+                  variant="outlined"
+                  :label="`Discount (max ${pos_profile.posa_max_discount_allowed} %)`"
+                  v-model="discount"
+                  type="number"
+                  :min="0"
+                  :max="pos_profile.posa_max_discount_allowed"
+                  @input="validateDiscount"
+                  :disabled="!pos_profile.posa_max_discount_allowed"
+                />
               </v-col>
               <v-col cols="12" class="text-right" v-if="pos_profile.custom_enable_edit_rate_by_group && selectedProduct.item_group === pos_profile.custom_select_item_group_to_edit_rate">
                 <v-text-field class="b-radius-8" variant="outlined"
@@ -212,72 +219,56 @@ import eventBus from "../../bus";
         eventBus.emit("exist-item-cart", selectedProduct.value);
       }
     };
-    // const validateDiscount = (value) => {
-    //   const maxAllowed = pos_profile.value.posa_max_discount_allowed;
-    //   if (value > maxAllowed) {
-    //     discount.value = maxAllowed; // Limit the value to the maximum allowed
-    //   } else {
-    //     discount.value = value; // Allow valid input
-    //   }
-    // };
     const validateDiscount = () => {
       if (discount.value === "" || discount.value === null) {
-        // If discount is cleared, reset the rate to the original rate
         selectedProduct.value.rate = selectedProduct.value.original_rate;
-      } else if (discount.value > pos_profile.posa_max_discount_allowed) {
-        // Emit an error message if the discount exceeds the allowed percentage
-        eventBus.emit(
-          "error-message",
-          `Discount cannot exceed ${pos_profile.posa_max_discount_allowed}%`
-        );
-        discount.value = ""; // Clear the invalid discount
-      } else {
-        // If discount is valid, calculate and set the new rate
-        const discountAmount =
-          (selectedProduct.value.original_rate * discount.value) / 100;
-        selectedProduct.value.rate =
-          selectedProduct.value.original_rate - discountAmount;
+        return;
       }
+      if (discount.value < 0) {
+        eventBus.emit("show_mesage", {
+          text: `Negative discount is not allowed.`,
+          color: "error",
+        });
+        discount.value = 0;
+        selectedProduct.value.rate = selectedProduct.value.original_rate;
+        return;
+      }
+      if (discount.value > pos_profile.value.posa_max_discount_allowed) {
+        eventBus.emit("show_mesage", {
+          text: `Discount cannot exceed ${pos_profile.value.posa_max_discount_allowed}%`,
+          color: "error",
+        });
+        discount.value = pos_profile.value.posa_max_discount_allowed;
+      }
+      // Calculate and set the new rate
+      const discountAmount =
+        (selectedProduct.value.original_rate * discount.value) / 100;
+      selectedProduct.value.rate =
+        selectedProduct.value.original_rate - discountAmount;
     };
 
     // Function triggered when checkbox is clicked
 const handleComplementaryToggle = () => {
   if (complementaryItem.value) {
-    // Save original rate if not already saved
+    // Save original rate if not already saved and not zero
     if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
-      selectedProduct.value.original_rate = selectedProduct.value.rate;
+      if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
+        selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
+      } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
+        selectedProduct.value.original_rate = selectedProduct.value.rate;
+      }
     }
     selectedProduct.value.rate = 0;
     selectedProduct.value.complementryItem = true;
   } else {
-    // Do NOT reset rate to original_rate here; preserve manual edits
+    // Only restore rate if original_rate is not zero
+    if (selectedProduct.value.original_rate && selectedProduct.value.original_rate > 0) {
+      selectedProduct.value.rate = selectedProduct.value.original_rate;
+    }
     selectedProduct.value.complementryItem = false;
   }
 };
 
-    watch(discount, (newVal) => {
-      console.log("discount value", newVal);
-      if (!selectedProduct.value.original_rate) {
-        selectedProduct.value.original_rate = selectedProduct.value.rate;
-      }
-      if (discount.value === "" || discount.value === null) {
-        // If discount is cleared, reset the rate to the original rate
-        selectedProduct.value.rate = selectedProduct.value.original_rate;
-      } else if (discount.value > pos_profile.value.posa_max_discount_allowed) {
-        // Emit an error message if the discount exceeds the allowed percentage
-        eventBus.emit("show_mesage", {
-          text: `You are not allowed to apply a discount greater than ${pos_profile.value.posa_max_discount_allowed}%.`,
-          color: "error",
-        });
-        discount.value = "";
-      } else {
-        // If discount is valid, calculate and set the new rate
-        const discountAmount =
-          (selectedProduct.value.original_rate * discount.value) / 100;
-        selectedProduct.value.rate =
-          selectedProduct.value.original_rate - discountAmount;
-      }
-    });
     watch(itemComment, (newVal) => {
       if(newVal){
         selectedProduct.value.comment=newVal
@@ -316,10 +307,6 @@ const handleComplementaryToggle = () => {
 
     onMounted(() => {
       eventBus.on("open-product-dialog", (data) => {
-        console.log('Dialog open:', {
-          complementryItem: data.product.complementryItem,
-          complementaryItemValue: Boolean(data.product.complementryItem)
-        });
         editingIndex.value = data.index ?? null;
         updateQty.value = data.flag;
         quantity.value = data.product.qty ? data.product.qty : 1;
@@ -328,16 +315,33 @@ const handleComplementaryToggle = () => {
         itemComment.value = data.product.comment || '';
         complementaryItem.value = Boolean(data.product.complementryItem);
 
-        // Always set original_rate if not set, and if not complementary
-        if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
-          if (!complementaryItem.value) {
-            selectedProduct.value.original_rate = selectedProduct.value.rate;
+        // If not complementary, and original_rate is missing or zero, but rate is also zero, try to recover
+        if (!complementaryItem.value) {
+          if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
+            // Try to recover from custom_discounted_rate if available and > 0
+            if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
+              selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
+              if (selectedProduct.value.rate === 0) {
+                selectedProduct.value.rate = selectedProduct.value.custom_discounted_rate;
+              }
+            } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
+              selectedProduct.value.original_rate = selectedProduct.value.rate;
+            }
           }
         }
 
+        // If complementary, always set rate to 0, but do not overwrite original_rate if already set and not zero
         if (complementaryItem.value) {
+          if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
+            // Try to recover original_rate from custom_discounted_rate or previous rate
+            if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
+              selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
+            } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
+              selectedProduct.value.original_rate = selectedProduct.value.rate;
+            }
+          }
           selectedProduct.value.rate = 0;
-        } // else: do not reset rate, preserve manual edits
+        }
         if (selectedProduct.value) {
           dialog.value = true;
         }

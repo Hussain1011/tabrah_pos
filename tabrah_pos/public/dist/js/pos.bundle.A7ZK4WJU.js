@@ -17650,7 +17650,13 @@ Expected function or array of functions, received type ${typeof value}.`
         applyDiscount(discount.value);
       };
       const onManualDiscountInput = (value) => {
-        let capped = Math.min(Number(value), pos_profile2.value.posa_max_discount_allowed || 0);
+        let capped = Math.max(0, Math.min(Number(value), pos_profile2.value.posa_max_discount_allowed || 0));
+        if (Number(value) < 0) {
+          bus_default.emit("show_mesage", {
+            text: `Negative discount is not allowed.`,
+            color: "error"
+          });
+        }
         discount.value = capped;
         applyDiscount();
       };
@@ -17971,6 +17977,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     modelValue: $setup.discount,
                     "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.discount = $event),
                     type: "number",
+                    min: 0,
                     max: $setup.pos_profile.posa_max_discount_allowed,
                     onInput: _cache[4] || (_cache[4] = ($event) => $setup.onManualDiscountInput($event.target.value)),
                     disabled: $setup.pos_profile.posa_max_discount_allowed == 0 || !!$setup.selectedOffer
@@ -19567,46 +19574,45 @@ Expected function or array of functions, received type ${typeof value}.`
       const validateDiscount = () => {
         if (discount.value === "" || discount.value === null) {
           selectedProduct.value.rate = selectedProduct.value.original_rate;
-        } else if (discount.value > pos_profile2.posa_max_discount_allowed) {
-          bus_default.emit(
-            "error-message",
-            `Discount cannot exceed ${pos_profile2.posa_max_discount_allowed}%`
-          );
-          discount.value = "";
-        } else {
-          const discountAmount = selectedProduct.value.original_rate * discount.value / 100;
-          selectedProduct.value.rate = selectedProduct.value.original_rate - discountAmount;
+          return;
         }
+        if (discount.value < 0) {
+          bus_default.emit("show_mesage", {
+            text: `Negative discount is not allowed.`,
+            color: "error"
+          });
+          discount.value = 0;
+          selectedProduct.value.rate = selectedProduct.value.original_rate;
+          return;
+        }
+        if (discount.value > pos_profile2.value.posa_max_discount_allowed) {
+          bus_default.emit("show_mesage", {
+            text: `Discount cannot exceed ${pos_profile2.value.posa_max_discount_allowed}%`,
+            color: "error"
+          });
+          discount.value = pos_profile2.value.posa_max_discount_allowed;
+        }
+        const discountAmount = selectedProduct.value.original_rate * discount.value / 100;
+        selectedProduct.value.rate = selectedProduct.value.original_rate - discountAmount;
       };
       const handleComplementaryToggle = () => {
         if (complementaryItem.value) {
           if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
-            selectedProduct.value.original_rate = selectedProduct.value.rate;
+            if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
+              selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
+            } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
+              selectedProduct.value.original_rate = selectedProduct.value.rate;
+            }
           }
           selectedProduct.value.rate = 0;
           selectedProduct.value.complementryItem = true;
         } else {
+          if (selectedProduct.value.original_rate && selectedProduct.value.original_rate > 0) {
+            selectedProduct.value.rate = selectedProduct.value.original_rate;
+          }
           selectedProduct.value.complementryItem = false;
         }
       };
-      watch2(discount, (newVal) => {
-        console.log("discount value", newVal);
-        if (!selectedProduct.value.original_rate) {
-          selectedProduct.value.original_rate = selectedProduct.value.rate;
-        }
-        if (discount.value === "" || discount.value === null) {
-          selectedProduct.value.rate = selectedProduct.value.original_rate;
-        } else if (discount.value > pos_profile2.value.posa_max_discount_allowed) {
-          bus_default.emit("show_mesage", {
-            text: `You are not allowed to apply a discount greater than ${pos_profile2.value.posa_max_discount_allowed}%.`,
-            color: "error"
-          });
-          discount.value = "";
-        } else {
-          const discountAmount = selectedProduct.value.original_rate * discount.value / 100;
-          selectedProduct.value.rate = selectedProduct.value.original_rate - discountAmount;
-        }
-      });
       watch2(itemComment, (newVal) => {
         if (newVal) {
           selectedProduct.value.comment = newVal;
@@ -19615,10 +19621,6 @@ Expected function or array of functions, received type ${typeof value}.`
       onMounted(() => {
         bus_default.on("open-product-dialog", (data) => {
           var _a2;
-          console.log("Dialog open:", {
-            complementryItem: data.product.complementryItem,
-            complementaryItemValue: Boolean(data.product.complementryItem)
-          });
           editingIndex.value = (_a2 = data.index) != null ? _a2 : null;
           updateQty.value = data.flag;
           quantity.value = data.product.qty ? data.product.qty : 1;
@@ -19626,12 +19628,26 @@ Expected function or array of functions, received type ${typeof value}.`
           selectedProduct.value = JSON.parse(JSON.stringify(data.product));
           itemComment.value = data.product.comment || "";
           complementaryItem.value = Boolean(data.product.complementryItem);
-          if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
-            if (!complementaryItem.value) {
-              selectedProduct.value.original_rate = selectedProduct.value.rate;
+          if (!complementaryItem.value) {
+            if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
+              if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
+                selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
+                if (selectedProduct.value.rate === 0) {
+                  selectedProduct.value.rate = selectedProduct.value.custom_discounted_rate;
+                }
+              } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
+                selectedProduct.value.original_rate = selectedProduct.value.rate;
+              }
             }
           }
           if (complementaryItem.value) {
+            if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
+              if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
+                selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
+              } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
+                selectedProduct.value.original_rate = selectedProduct.value.rate;
+              }
+            }
             selectedProduct.value.rate = 0;
           }
           if (selectedProduct.value) {
@@ -19857,8 +19873,9 @@ Expected function or array of functions, received type ${typeof value}.`
                                   modelValue: $setup.discount,
                                   "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => $setup.discount = $event),
                                   type: "number",
+                                  min: 0,
                                   max: $setup.pos_profile.posa_max_discount_allowed,
-                                  onUpdate: $setup.validateDiscount,
+                                  onInput: $setup.validateDiscount,
                                   disabled: !$setup.pos_profile.posa_max_discount_allowed
                                 }, null, 8, ["label", "modelValue", "max", "disabled"])
                               ]),
@@ -49669,4 +49686,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.XCMKNIKL.js.map
+//# sourceMappingURL=pos.bundle.A7ZK4WJU.js.map
