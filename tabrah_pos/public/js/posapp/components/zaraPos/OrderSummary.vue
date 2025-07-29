@@ -822,6 +822,12 @@ const openDialog = (item, flag, index) => {
   eventBus.emit("open-product-dialog", { product: item, flag, index });
 };
 const openPrinterDialog = () => {
+  // Don't show dialog if network printing is enabled
+  if (pos_profile.value.custom_enable_kot_network_printing) {
+    generateKotPrint('network');
+    return;
+  }
+
   // Check which printers are available (not all items printed)
   const heldOrders = JSON.parse(localStorage.getItem('heldOrders')) || [];
   const currentOrder = heldOrders.find(order => order.id === holdOrderId.value);
@@ -853,33 +859,10 @@ function filterNonJuiceBeverageBundleItems(bundle) {
 }
 
 const generateKotPrint = async (printerArg = null) => {
-  if (items.value.length > 0) {
-    const heldOrders = JSON.parse(localStorage.getItem('heldOrders')) || [];
-    const currentOrder = heldOrders.find(order => order.id === holdOrderId.value);
-    let printedItems = {};
-    if (currentOrder) printedItems = { ...(currentOrder.printed_items || {}) };
-    let printer = printerArg;
-    if (!printer && pos_profile.value.allow_kot_mulitple_print == 1) {
-      openPrinterDialog();
-      return;
-    }
-    if (!printer) printer = 'grill'; // fallback for single printer
-    // Only print items that haven't been printed before or have new quantities for this printer
-    let itemsToPrint = items.value.filter(item => {
-      const p = printedItems[item.item_code]?.[printer];
-      const printedQty = p ? p.qty : 0;
-      // Only skip the whole item if the main item_group is juice/beverage
-      let group = (item.item_group || '').toLowerCase();
-      if (group === 'juice' || group === 'beverage') return false;
-      return item.qty > printedQty;
-    });
-    if (itemsToPrint.length === 0) {
-      eventBus.emit('show_mesage', {
-        text: `You printed these items already on ${printerLabels[printer]}.`,
-        color: 'error',
-      });
-      return;
-    }
+  if (items.value.length === 0) return;
+
+  // Check if network printing is enabled first
+  if (pos_profile.value.custom_enable_kot_network_printing) {
     const doc = await get_invoice_doc();
     doc.grand_total = grandTotal.value;
     doc.gstAmountCash = gstAmount.value;
@@ -887,41 +870,90 @@ const generateKotPrint = async (printerArg = null) => {
     const now = new Date();
     doc.date = now.toISOString().split('T')[0];
     doc.time = now.toLocaleTimeString('en-US', { hour12: false });
-    doc.kot_items = itemsToPrint.map(item => {
-      let finalQty;
-      const p = printedItems[item.item_code]?.[printer];
-      const hasBeenPrinted = !!p;
-      if (!hasBeenPrinted) {
-        finalQty = item.qty;
-      } else {
-        const printedQty = p.qty;
-        finalQty = item.qty - printedQty;
-      }
-      // If item is a bundle, filter out juice/beverage sub-items
-      let filteredBundle = item.product_bundle
-        ? {
-            ...item.product_bundle,
-            items: filterNonJuiceBeverageBundleItems(item.product_bundle)
-          }
-        : undefined;
-      return {
-        ...item,
-        qty: finalQty,
-        product_bundle: filteredBundle,
-      };
-    });
-    const printDoc = { ...doc, items: doc.kot_items };
-    // Update printedItems for this printer
-    itemsToPrint.forEach(item => {
-      if (!printedItems[item.item_code]) printedItems[item.item_code] = {};
-      printedItems[item.item_code][printer] = {
-        qty: item.qty,
-        timestamp: new Date().toISOString(),
-      };
-    });
-    holdOrder(printedItems);
-    printKot(printDoc);
+    doc.items = items.value;
+    doc.pos_profile = pos_profile.value;
+    
+    // Send to network printer
+    printKot(doc);
+    return;
   }
+
+  const heldOrders = JSON.parse(localStorage.getItem('heldOrders')) || [];
+  const currentOrder = heldOrders.find(order => order.id === holdOrderId.value);
+  let printedItems = {};
+  if (currentOrder) printedItems = { ...(currentOrder.printed_items || {}) };
+
+  let printer = printerArg;
+  if (!printer && pos_profile.value.allow_kot_mulitple_print == 1) {
+    openPrinterDialog();
+    return;
+  }
+  if (!printer) printer = 'grill'; // fallback for single printer
+
+  // Only print items that haven't been printed before or have new quantities for this printer
+  let itemsToPrint = items.value.filter(item => {
+    const p = printedItems[item.item_code]?.[printer];
+    const printedQty = p ? p.qty : 0;
+    let group = (item.item_group || '').toLowerCase();
+    if (group === 'juice' || group === 'beverage') return false;
+    return item.qty > printedQty;
+  });
+
+  if (itemsToPrint.length === 0) {
+    eventBus.emit('show_mesage', {
+      text: `You printed these items already on ${printerLabels[printer]}.`,
+      color: 'error',
+    });
+    return;
+  }
+
+  const doc = await get_invoice_doc();
+  doc.grand_total = grandTotal.value;
+  doc.gstAmountCash = gstAmount.value;
+  doc.cover = cover.value;
+  const now = new Date();
+  doc.date = now.toISOString().split('T')[0];
+  doc.time = now.toLocaleTimeString('en-US', { hour12: false });
+  doc.kot_items = itemsToPrint.map(item => {
+    let finalQty;
+    const p = printedItems[item.item_code]?.[printer];
+    const hasBeenPrinted = !!p;
+    if (!hasBeenPrinted) {
+      finalQty = item.qty;
+    } else {
+      const printedQty = p.qty;
+      finalQty = item.qty - printedQty;
+    }
+    let filteredBundle = item.product_bundle
+      ? {
+          ...item.product_bundle,
+          items: filterNonJuiceBeverageBundleItems(item.product_bundle)
+        }
+      : undefined;
+    return {
+      ...item,
+      qty: finalQty,
+      product_bundle: filteredBundle,
+    };
+  });
+
+  const printDoc = { 
+    ...doc, 
+    items: doc.kot_items,
+    pos_profile: pos_profile.value
+  };
+
+  // Update printedItems for this printer
+  itemsToPrint.forEach(item => {
+    if (!printedItems[item.item_code]) printedItems[item.item_code] = {};
+    printedItems[item.item_code][printer] = {
+      qty: item.qty,
+      timestamp: new Date().toISOString(),
+    };
+  });
+
+  holdOrder(printedItems);
+  printKot(printDoc);
 };
 const createPreInvoice = async () => {
   if (items.value.length === 0) return;

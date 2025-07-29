@@ -55,6 +55,1651 @@ frappe.dom.set_style("/* sfc-style:/home/usman/frappe_directory_v15/frappe-bench
     mod
   ));
 
+  // (disabled):path
+  var require_path = __commonJS({
+    "(disabled):path"() {
+    }
+  });
+
+  // ../tabrah_pos/node_modules/qz-tray/qz-tray.js
+  var require_qz_tray = __commonJS({
+    "../tabrah_pos/node_modules/qz-tray/qz-tray.js"(exports, module) {
+      "use strict";
+      var qz2 = function() {
+        if (!Array.isArray) {
+          Array.isArray = function(arg) {
+            return Object.prototype.toString.call(arg) === "[object Array]";
+          };
+        }
+        if (!Number.isInteger) {
+          Number.isInteger = function(value) {
+            return typeof value === "number" && isFinite(value) && Math.floor(value) === value;
+          };
+        }
+        var _qz = {
+          VERSION: "2.2.5",
+          DEBUG: false,
+          log: {
+            trace: function() {
+              if (_qz.DEBUG) {
+                console.log.apply(console, arguments);
+              }
+            },
+            info: function() {
+              console.info.apply(console, arguments);
+            },
+            warn: function() {
+              console.warn.apply(console, arguments);
+            },
+            allay: function() {
+              if (_qz.DEBUG) {
+                console.warn.apply(console, arguments);
+              }
+            },
+            error: function() {
+              console.error.apply(console, arguments);
+            }
+          },
+          streams: {
+            serial: "SERIAL",
+            usb: "USB",
+            hid: "HID",
+            printer: "PRINTER",
+            file: "FILE",
+            socket: "SOCKET"
+          },
+          websocket: {
+            connection: null,
+            shutdown: false,
+            connectConfig: {
+              host: ["localhost", "localhost.qz.io"],
+              hostIndex: 0,
+              usingSecure: true,
+              protocol: {
+                secure: "wss://",
+                insecure: "ws://"
+              },
+              port: {
+                secure: [8181, 8282, 8383, 8484],
+                insecure: [8182, 8283, 8384, 8485],
+                portIndex: 0
+              },
+              keepAlive: 60,
+              retries: 0,
+              delay: 0
+            },
+            setup: {
+              findConnection: function(config, resolve2, reject) {
+                if (_qz.websocket.shutdown) {
+                  reject(new Error("Connection attempt cancelled by user"));
+                  return;
+                }
+                if (!config.port.secure.length) {
+                  if (!config.port.insecure.length) {
+                    reject(new Error("No ports have been specified to connect over"));
+                    return;
+                  } else if (config.usingSecure) {
+                    _qz.log.error("No secure ports specified - forcing insecure connection");
+                    config.usingSecure = false;
+                  }
+                } else if (!config.port.insecure.length && !config.usingSecure) {
+                  _qz.log.trace("No insecure ports specified - forcing secure connection");
+                  config.usingSecure = true;
+                }
+                var deeper = function() {
+                  if (_qz.websocket.shutdown) {
+                    reject(new Error("Connection attempt cancelled by user"));
+                    return;
+                  }
+                  config.port.portIndex++;
+                  if (config.usingSecure && config.port.portIndex >= config.port.secure.length || !config.usingSecure && config.port.portIndex >= config.port.insecure.length) {
+                    if (config.hostIndex >= config.host.length - 1) {
+                      reject(new Error("Unable to establish connection with QZ"));
+                      return;
+                    } else {
+                      config.hostIndex++;
+                      config.port.portIndex = 0;
+                    }
+                  }
+                  _qz.websocket.setup.findConnection(config, resolve2, reject);
+                };
+                var address;
+                if (config.usingSecure) {
+                  address = config.protocol.secure + config.host[config.hostIndex] + ":" + config.port.secure[config.port.portIndex];
+                } else {
+                  address = config.protocol.insecure + config.host[config.hostIndex] + ":" + config.port.insecure[config.port.portIndex];
+                }
+                try {
+                  _qz.log.trace("Attempting connection", address);
+                  _qz.websocket.connection = new _qz.tools.ws(address);
+                } catch (err) {
+                  _qz.log.error(err);
+                  deeper();
+                  return;
+                }
+                if (_qz.websocket.connection != null) {
+                  _qz.websocket.connection.established = false;
+                  _qz.websocket.connection.onopen = function(evt) {
+                    if (!_qz.websocket.connection.established) {
+                      _qz.log.trace(evt);
+                      _qz.log.info("Established connection with QZ Tray on " + address);
+                      _qz.websocket.setup.openConnection({ resolve: resolve2, reject });
+                      if (config.keepAlive > 0) {
+                        var interval = setInterval(function() {
+                          if (!_qz.tools.isActive() || _qz.websocket.connection.interval !== interval) {
+                            clearInterval(interval);
+                            return;
+                          }
+                          _qz.websocket.connection.send("ping");
+                        }, config.keepAlive * 1e3);
+                        _qz.websocket.connection.interval = interval;
+                      }
+                    }
+                  };
+                  _qz.websocket.connection.onclose = function() {
+                    if (_qz.websocket.connection && typeof navigator !== "undefined" && navigator.userAgent.indexOf("Safari") != -1 && navigator.userAgent.indexOf("Chrome") == -1) {
+                      _qz.websocket.connection.onerror();
+                    }
+                  };
+                  _qz.websocket.connection.onerror = function(evt) {
+                    _qz.log.trace(evt);
+                    _qz.websocket.connection = null;
+                    deeper();
+                  };
+                } else {
+                  reject(new Error("Unable to create a websocket connection"));
+                }
+              },
+              openConnection: function(openPromise) {
+                _qz.websocket.connection.established = true;
+                _qz.websocket.connection.onclose = function(evt) {
+                  _qz.log.trace(evt);
+                  _qz.websocket.connection = null;
+                  _qz.websocket.callClose(evt);
+                  _qz.log.info("Closed connection with QZ Tray");
+                  for (var uid2 in _qz.websocket.pendingCalls) {
+                    if (_qz.websocket.pendingCalls.hasOwnProperty(uid2)) {
+                      _qz.websocket.pendingCalls[uid2].reject(new Error("Connection closed before response received"));
+                    }
+                  }
+                  if (this.promise != void 0) {
+                    this.promise.resolve();
+                  }
+                };
+                _qz.websocket.connection.onerror = function(evt) {
+                  _qz.websocket.callError(evt);
+                };
+                _qz.websocket.connection.sendData = function(obj) {
+                  _qz.log.trace("Preparing object for websocket", obj);
+                  if (obj.timestamp == void 0) {
+                    obj.timestamp = Date.now();
+                    if (typeof obj.timestamp !== "number") {
+                      obj.timestamp = new Date().getTime();
+                    }
+                  }
+                  if (obj.promise != void 0) {
+                    obj.uid = _qz.websocket.setup.newUID();
+                    _qz.websocket.pendingCalls[obj.uid] = obj.promise;
+                  }
+                  obj.position = {
+                    x: typeof screen !== "undefined" ? (screen.availWidth || screen.width) / 2 + (screen.left || screen.availLeft || 0) : 0,
+                    y: typeof screen !== "undefined" ? (screen.availHeight || screen.height) / 2 + (screen.top || screen.availTop || 0) : 0
+                  };
+                  try {
+                    if (obj.call != void 0 && obj.signature == void 0 && _qz.security.needsSigned(obj.call)) {
+                      var signObj = {
+                        call: obj.call,
+                        params: obj.params,
+                        timestamp: obj.timestamp
+                      };
+                      var hashing = _qz.tools.hash(_qz.tools.stringify(signObj));
+                      if (!hashing.then) {
+                        hashing = _qz.tools.promise(function(resolve2) {
+                          resolve2(hashing);
+                        });
+                      }
+                      hashing.then(function(hashed) {
+                        return _qz.security.callSign(hashed);
+                      }).then(function(signature) {
+                        _qz.log.trace("Signature for call", signature);
+                        obj.signature = signature || "";
+                        obj.signAlgorithm = _qz.security.signAlgorithm;
+                        _qz.signContent = void 0;
+                        _qz.websocket.connection.send(_qz.tools.stringify(obj));
+                      }).catch(function(err) {
+                        _qz.log.error("Signing failed", err);
+                        if (obj.promise != void 0) {
+                          obj.promise.reject(new Error("Failed to sign request"));
+                          delete _qz.websocket.pendingCalls[obj.uid];
+                        }
+                      });
+                    } else {
+                      _qz.log.trace("Signature for call", obj.signature);
+                      _qz.websocket.connection.send(_qz.tools.stringify(obj));
+                    }
+                  } catch (err) {
+                    _qz.log.error(err);
+                    if (obj.promise != void 0) {
+                      obj.promise.reject(err);
+                      delete _qz.websocket.pendingCalls[obj.uid];
+                    }
+                  }
+                };
+                _qz.websocket.connection.onmessage = function(evt) {
+                  var returned = JSON.parse(evt.data);
+                  if (returned.uid == null) {
+                    if (returned.type == null) {
+                      _qz.websocket.connection.close(4003, "Connected to incompatible QZ Tray version");
+                    } else {
+                      switch (returned.type) {
+                        case _qz.streams.serial:
+                          if (!returned.event) {
+                            returned.event = JSON.stringify({ portName: returned.key, output: returned.data });
+                          }
+                          _qz.serial.callSerial(JSON.parse(returned.event));
+                          break;
+                        case _qz.streams.socket:
+                          _qz.socket.callSocket(JSON.parse(returned.event));
+                          break;
+                        case _qz.streams.usb:
+                          if (!returned.event) {
+                            returned.event = JSON.stringify({ vendorId: returned.key[0], productId: returned.key[1], output: returned.data });
+                          }
+                          _qz.usb.callUsb(JSON.parse(returned.event));
+                          break;
+                        case _qz.streams.hid:
+                          _qz.hid.callHid(JSON.parse(returned.event));
+                          break;
+                        case _qz.streams.printer:
+                          _qz.printers.callPrinter(JSON.parse(returned.event));
+                          break;
+                        case _qz.streams.file:
+                          _qz.file.callFile(JSON.parse(returned.event));
+                          break;
+                        default:
+                          _qz.log.allay("Cannot determine stream type for callback", returned);
+                          break;
+                      }
+                    }
+                    return;
+                  }
+                  _qz.log.trace("Received response from websocket", returned);
+                  var promise = _qz.websocket.pendingCalls[returned.uid];
+                  if (promise == void 0) {
+                    _qz.log.allay("No promise found for returned response");
+                  } else {
+                    if (returned.error != void 0) {
+                      promise.reject(new Error(returned.error));
+                    } else {
+                      promise.resolve(returned.result);
+                    }
+                  }
+                  delete _qz.websocket.pendingCalls[returned.uid];
+                };
+                function sendCert(cert) {
+                  if (cert === void 0) {
+                    cert = null;
+                  }
+                  qz3.api.getVersion().then(function(version3) {
+                    _qz.websocket.connection.version = version3;
+                    _qz.websocket.connection.semver = version3.toLowerCase().replace(/-rc\./g, "-rc").split(/[\\+\\.-]/g);
+                    for (var i = 0; i < _qz.websocket.connection.semver.length; i++) {
+                      try {
+                        if (i == 3 && _qz.websocket.connection.semver[i].toLowerCase().indexOf("rc") == 0) {
+                          _qz.websocket.connection.semver[i] = -_qz.websocket.connection.semver[i].replace(/\D/g, "");
+                          continue;
+                        }
+                        _qz.websocket.connection.semver[i] = parseInt(_qz.websocket.connection.semver[i]);
+                      } catch (ignore) {
+                      }
+                      if (_qz.websocket.connection.semver.length < 4) {
+                        _qz.websocket.connection.semver[3] = 0;
+                      }
+                    }
+                    _qz.compatible.algorithm(true);
+                  }).then(function() {
+                    _qz.websocket.connection.sendData({ certificate: cert, promise: openPromise });
+                  });
+                }
+                _qz.security.callCert().then(sendCert).catch(function(error) {
+                  _qz.log.warn("Failed to get certificate:", error);
+                  if (_qz.security.rejectOnCertFailure) {
+                    openPromise.reject(error);
+                  } else {
+                    sendCert(null);
+                  }
+                });
+              },
+              newUID: function() {
+                var len = 6;
+                return (new Array(len + 1).join("0") + (Math.random() * Math.pow(36, len) << 0).toString(36)).slice(-len);
+              }
+            },
+            dataPromise: function(callName, params, signature, signingTimestamp) {
+              return _qz.tools.promise(function(resolve2, reject) {
+                var msg = {
+                  call: callName,
+                  promise: { resolve: resolve2, reject },
+                  params,
+                  signature,
+                  timestamp: signingTimestamp
+                };
+                _qz.websocket.connection.sendData(msg);
+              });
+            },
+            pendingCalls: {},
+            errorCallbacks: [],
+            callError: function(evt) {
+              if (Array.isArray(_qz.websocket.errorCallbacks)) {
+                for (var i = 0; i < _qz.websocket.errorCallbacks.length; i++) {
+                  _qz.websocket.errorCallbacks[i](evt);
+                }
+              } else {
+                _qz.websocket.errorCallbacks(evt);
+              }
+            },
+            closedCallbacks: [],
+            callClose: function(evt) {
+              if (Array.isArray(_qz.websocket.closedCallbacks)) {
+                for (var i = 0; i < _qz.websocket.closedCallbacks.length; i++) {
+                  _qz.websocket.closedCallbacks[i](evt);
+                }
+              } else {
+                _qz.websocket.closedCallbacks(evt);
+              }
+            }
+          },
+          printing: {
+            defaultConfig: {
+              bounds: null,
+              colorType: "color",
+              copies: 1,
+              density: 0,
+              duplex: false,
+              fallbackDensity: null,
+              interpolation: "bicubic",
+              jobName: null,
+              legacy: false,
+              margins: 0,
+              orientation: null,
+              paperThickness: null,
+              printerTray: null,
+              rasterize: false,
+              rotation: 0,
+              scaleContent: true,
+              size: null,
+              units: "in",
+              forceRaw: false,
+              encoding: null,
+              spool: null
+            }
+          },
+          serial: {
+            serialCallbacks: [],
+            callSerial: function(streamEvent) {
+              if (Array.isArray(_qz.serial.serialCallbacks)) {
+                for (var i = 0; i < _qz.serial.serialCallbacks.length; i++) {
+                  _qz.serial.serialCallbacks[i](streamEvent);
+                }
+              } else {
+                _qz.serial.serialCallbacks(streamEvent);
+              }
+            }
+          },
+          socket: {
+            socketCallbacks: [],
+            callSocket: function(socketEvent) {
+              if (Array.isArray(_qz.socket.socketCallbacks)) {
+                for (var i = 0; i < _qz.socket.socketCallbacks.length; i++) {
+                  _qz.socket.socketCallbacks[i](socketEvent);
+                }
+              } else {
+                _qz.socket.socketCallbacks(socketEvent);
+              }
+            }
+          },
+          usb: {
+            usbCallbacks: [],
+            callUsb: function(streamEvent) {
+              if (Array.isArray(_qz.usb.usbCallbacks)) {
+                for (var i = 0; i < _qz.usb.usbCallbacks.length; i++) {
+                  _qz.usb.usbCallbacks[i](streamEvent);
+                }
+              } else {
+                _qz.usb.usbCallbacks(streamEvent);
+              }
+            }
+          },
+          hid: {
+            hidCallbacks: [],
+            callHid: function(streamEvent) {
+              if (Array.isArray(_qz.hid.hidCallbacks)) {
+                for (var i = 0; i < _qz.hid.hidCallbacks.length; i++) {
+                  _qz.hid.hidCallbacks[i](streamEvent);
+                }
+              } else {
+                _qz.hid.hidCallbacks(streamEvent);
+              }
+            }
+          },
+          printers: {
+            printerCallbacks: [],
+            callPrinter: function(streamEvent) {
+              if (Array.isArray(_qz.printers.printerCallbacks)) {
+                for (var i = 0; i < _qz.printers.printerCallbacks.length; i++) {
+                  _qz.printers.printerCallbacks[i](streamEvent);
+                }
+              } else {
+                _qz.printers.printerCallbacks(streamEvent);
+              }
+            }
+          },
+          file: {
+            fileCallbacks: [],
+            callFile: function(streamEvent) {
+              if (Array.isArray(_qz.file.fileCallbacks)) {
+                for (var i = 0; i < _qz.file.fileCallbacks.length; i++) {
+                  _qz.file.fileCallbacks[i](streamEvent);
+                }
+              } else {
+                _qz.file.fileCallbacks(streamEvent);
+              }
+            }
+          },
+          security: {
+            certHandler: function(resolve2, reject) {
+              reject();
+            },
+            callCert: function() {
+              if (typeof _qz.security.certHandler.then === "function") {
+                return _qz.security.certHandler;
+              } else if (_qz.security.certHandler.constructor.name === "AsyncFunction") {
+                return _qz.security.certHandler();
+              } else {
+                return _qz.tools.promise(_qz.security.certHandler);
+              }
+            },
+            signatureFactory: function() {
+              return function(resolve2) {
+                resolve2();
+              };
+            },
+            callSign: function(toSign) {
+              if (_qz.security.signatureFactory.constructor.name === "AsyncFunction") {
+                return _qz.security.signatureFactory(toSign);
+              } else {
+                return _qz.tools.promise(_qz.security.signatureFactory(toSign));
+              }
+            },
+            signAlgorithm: "SHA1",
+            rejectOnCertFailure: false,
+            needsSigned: function(callName) {
+              const undialoged = [
+                "printers.getStatus",
+                "printers.stopListening",
+                "usb.isClaimed",
+                "usb.closeStream",
+                "usb.releaseDevice",
+                "hid.stopListening",
+                "hid.isClaimed",
+                "hid.closeStream",
+                "hid.releaseDevice",
+                "file.stopListening",
+                "getVersion"
+              ];
+              return callName != null && undialoged.indexOf(callName) === -1;
+            }
+          },
+          tools: {
+            promise: function(resolver) {
+              if (typeof RSVP !== "undefined") {
+                return new RSVP.Promise(resolver);
+              } else if (typeof Promise !== "undefined") {
+                return new Promise(resolver);
+              } else {
+                _qz.log.error("Promise/A+ support is required.  See qz.api.setPromiseType(...)");
+              }
+            },
+            reject: function(error) {
+              return _qz.tools.promise(function(resolve2, reject) {
+                reject(error);
+              });
+            },
+            stringify: function(object) {
+              var pjson = Array.prototype.toJSON;
+              delete Array.prototype.toJSON;
+              function skipKeys(key, value) {
+                if (key === "promise") {
+                  return void 0;
+                }
+                return value;
+              }
+              var result = JSON.stringify(object, skipKeys);
+              if (pjson) {
+                Array.prototype.toJSON = pjson;
+              }
+              return result;
+            },
+            hash: function(data) {
+              if (typeof Sha256 !== "undefined") {
+                return Sha256.hash(data);
+              } else {
+                return _qz.SHA.hash(data);
+              }
+            },
+            ws: typeof WebSocket !== "undefined" ? WebSocket : null,
+            absolute: function(loc) {
+              if (typeof window !== "undefined" && typeof document.createElement === "function") {
+                var a = document.createElement("a");
+                a.href = loc;
+                return a.href;
+              } else if (typeof exports === "object") {
+                require_path().resolve(loc);
+              }
+              return loc;
+            },
+            relative: function(data) {
+              for (var i = 0; i < data.length; i++) {
+                if (data[i].constructor === Object) {
+                  var absolute = false;
+                  if (data[i].data && data[i].data.search && data[i].data.search(/data:image\/\w+;base64,/) === 0) {
+                    data[i].flavor = "base64";
+                    data[i].data = data[i].data.replace(/^data:image\/\w+;base64,/, "");
+                  } else if (data[i].flavor) {
+                    if (["FILE", "XML"].indexOf(data[i].flavor.toUpperCase()) > -1) {
+                      absolute = true;
+                    }
+                  } else if (data[i].format && ["HTML", "IMAGE", "PDF", "FILE", "XML"].indexOf(data[i].format.toUpperCase()) > -1) {
+                    absolute = true;
+                  } else if (data[i].type && (["PIXEL", "IMAGE", "PDF"].indexOf(data[i].type.toUpperCase()) > -1 && !data[i].format || ["HTML", "PDF"].indexOf(data[i].type.toUpperCase()) > -1 && (!data[i].format || data[i].format.toUpperCase() === "FILE"))) {
+                    absolute = true;
+                  }
+                  if (absolute) {
+                    data[i].data = _qz.tools.absolute(data[i].data);
+                  }
+                  if (data[i].options && typeof data[i].options.overlay === "string") {
+                    data[i].options.overlay = _qz.tools.absolute(data[i].options.overlay);
+                  }
+                }
+              }
+            },
+            extend: function(target) {
+              if (typeof target !== "object") {
+                target = {};
+              }
+              for (var i = 1; i < arguments.length; i++) {
+                var source = arguments[i];
+                if (!source) {
+                  continue;
+                }
+                for (var key in source) {
+                  if (source.hasOwnProperty(key)) {
+                    if (target === source[key]) {
+                      continue;
+                    }
+                    if (source[key] && source[key].constructor && source[key].constructor === Object) {
+                      var clone;
+                      if (Array.isArray(source[key])) {
+                        clone = target[key] || [];
+                      } else {
+                        clone = target[key] || {};
+                      }
+                      target[key] = _qz.tools.extend(clone, source[key]);
+                    } else if (source[key] !== void 0) {
+                      target[key] = source[key];
+                    }
+                  }
+                }
+              }
+              return target;
+            },
+            versionCompare: function(major, minor, patch, build) {
+              if (_qz.tools.assertActive()) {
+                var semver = _qz.websocket.connection.semver;
+                if (semver[0] != major) {
+                  return semver[0] - major;
+                }
+                if (minor != void 0 && semver[1] != minor) {
+                  return semver[1] - minor;
+                }
+                if (patch != void 0 && semver[2] != patch) {
+                  return semver[2] - patch;
+                }
+                if (build != void 0 && semver.length > 3 && semver[3] != build) {
+                  return Number.isInteger(semver[3]) && Number.isInteger(build) ? semver[3] - build : semver[3].toString().localeCompare(build.toString());
+                }
+                return 0;
+              }
+            },
+            isVersion: function(major, minor, patch, build) {
+              return _qz.tools.versionCompare(major, minor, patch, build) == 0;
+            },
+            isActive: function() {
+              return !_qz.websocket.shutdown && _qz.websocket.connection != null && (_qz.websocket.connection.readyState === _qz.tools.ws.OPEN || _qz.websocket.connection.readyState === _qz.tools.ws.CONNECTING);
+            },
+            assertActive: function() {
+              if (_qz.tools.isActive()) {
+                return true;
+              }
+              throw new Error("A connection to QZ has not been established yet");
+            },
+            uint8ArrayToHex: function(uint8) {
+              return Array.from(uint8).map(function(i) {
+                return i.toString(16).padStart(2, "0");
+              }).join("");
+            },
+            uint8ArrayToBase64: function(uint8) {
+              var map2 = [
+                "A",
+                "B",
+                "C",
+                "D",
+                "E",
+                "F",
+                "G",
+                "H",
+                "I",
+                "J",
+                "K",
+                "L",
+                "M",
+                "N",
+                "O",
+                "P",
+                "Q",
+                "R",
+                "S",
+                "T",
+                "U",
+                "V",
+                "W",
+                "X",
+                "Y",
+                "Z",
+                "a",
+                "b",
+                "c",
+                "d",
+                "e",
+                "f",
+                "g",
+                "h",
+                "i",
+                "j",
+                "k",
+                "l",
+                "m",
+                "n",
+                "o",
+                "p",
+                "q",
+                "r",
+                "s",
+                "t",
+                "u",
+                "v",
+                "w",
+                "x",
+                "y",
+                "z",
+                "0",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "+",
+                "/"
+              ];
+              var result = "", i, l = uint8.length;
+              for (i = 2; i < l; i += 3) {
+                result += map2[uint8[i - 2] >> 2];
+                result += map2[(uint8[i - 2] & 3) << 4 | uint8[i - 1] >> 4];
+                result += map2[(uint8[i - 1] & 15) << 2 | uint8[i] >> 6];
+                result += map2[uint8[i] & 63];
+              }
+              if (i === l + 1) {
+                result += map2[uint8[i - 2] >> 2];
+                result += map2[(uint8[i - 2] & 3) << 4];
+                result += "==";
+              }
+              if (i === l) {
+                result += map2[uint8[i - 2] >> 2];
+                result += map2[(uint8[i - 2] & 3) << 4 | uint8[i - 1] >> 4];
+                result += map2[(uint8[i - 1] & 15) << 2];
+                result += "=";
+              }
+              return result;
+            }
+          },
+          compatible: {
+            data: function(printData) {
+              for (var i = 0; i < printData.length; i++) {
+                if (printData[i].constructor === Object && printData[i].data instanceof Uint8Array) {
+                  if (printData[i].flavor) {
+                    var flavor = printData[i].flavor.toString().toUpperCase();
+                    switch (flavor) {
+                      case "BASE64":
+                        printData[i].data = _qz.tools.uint8ArrayToBase64(printData[i].data);
+                        break;
+                      case "HEX":
+                        printData[i].data = _qz.tools.uint8ArrayToHex(printData[i].data);
+                        break;
+                      default:
+                        throw new Error("Uint8Array conversion to '" + flavor + "' is not supported.");
+                    }
+                  }
+                }
+              }
+              if (_qz.tools.versionCompare(2, 2, 4) < 0) {
+                for (var i = 0; i < printData.length; i++) {
+                  if (printData[i].constructor === Object) {
+                    if (printData[i].options && typeof printData[i].options.dotDensity === "string") {
+                      printData[i].options.dotDensity = printData[i].options.dotDensity.toLowerCase().replace("-legacy", "");
+                    }
+                  }
+                }
+              }
+              if (_qz.tools.isVersion(2, 0)) {
+                _qz.log.trace("Converting print data to v2.0 for " + _qz.websocket.connection.version);
+                for (var i = 0; i < printData.length; i++) {
+                  if (printData[i].constructor === Object) {
+                    if (printData[i].type && printData[i].type.toUpperCase() === "RAW" && printData[i].format && printData[i].format.toUpperCase() === "IMAGE") {
+                      if (printData[i].flavor && printData[i].flavor.toUpperCase() === "BASE64") {
+                        printData[i].data = "data:image/compat;base64," + printData[i].data;
+                      }
+                      printData[i].flavor = "IMAGE";
+                    }
+                    if (printData[i].type && printData[i].type.toUpperCase() === "RAW" || printData[i].format && printData[i].format.toUpperCase() === "COMMAND") {
+                      printData[i].format = "RAW";
+                    }
+                    printData[i].type = printData[i].format;
+                    printData[i].format = printData[i].flavor;
+                    delete printData[i].flavor;
+                  }
+                }
+              }
+            },
+            config: function(config, dirty) {
+              if (_qz.tools.isVersion(2, 0)) {
+                if (!dirty.rasterize) {
+                  config.rasterize = true;
+                }
+              }
+              if (_qz.tools.versionCompare(2, 2) < 0) {
+                if (config.forceRaw !== "undefined") {
+                  config.altPrinting = config.forceRaw;
+                  delete config.forceRaw;
+                }
+              }
+              if (_qz.tools.versionCompare(2, 1, 2, 11) < 0) {
+                if (config.spool) {
+                  if (config.spool.size) {
+                    config.perSpool = config.spool.size;
+                    delete config.spool.size;
+                  }
+                  if (config.spool.end) {
+                    config.endOfDoc = config.spool.end;
+                    delete config.spool.end;
+                  }
+                  delete config.spool;
+                }
+              }
+              return config;
+            },
+            networking: function(hostname, port, signature, signingTimestamp, mappingCallback) {
+              if (_qz.tools.isVersion(2, 0)) {
+                return _qz.tools.promise(function(resolve2, reject) {
+                  _qz.websocket.dataPromise("websocket.getNetworkInfo", {
+                    hostname,
+                    port
+                  }, signature, signingTimestamp).then(function(data) {
+                    if (typeof mappingCallback !== "undefined") {
+                      resolve2(mappingCallback(data));
+                    } else {
+                      resolve2(data);
+                    }
+                  }, reject);
+                });
+              }
+              return _qz.tools.promise(function(resolve2, reject) {
+                _qz.websocket.dataPromise("networking.device", {
+                  hostname,
+                  port
+                }, signature, signingTimestamp).then(function(data) {
+                  resolve2({ ipAddress: data.ip, macAddress: data.mac });
+                }, reject);
+              });
+            },
+            algorithm: function(quiet) {
+              if (_qz.tools.isActive() && _qz.websocket.connection.semver) {
+                if (_qz.tools.isVersion(2, 0)) {
+                  if (!quiet) {
+                    _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
+                  }
+                  return false;
+                }
+              }
+              return true;
+            }
+          },
+          SHA: {
+            hash: function(msg) {
+              msg = _qz.SHA._utf8Encode(msg) + String.fromCharCode(128);
+              var K = [
+                1116352408,
+                1899447441,
+                3049323471,
+                3921009573,
+                961987163,
+                1508970993,
+                2453635748,
+                2870763221,
+                3624381080,
+                310598401,
+                607225278,
+                1426881987,
+                1925078388,
+                2162078206,
+                2614888103,
+                3248222580,
+                3835390401,
+                4022224774,
+                264347078,
+                604807628,
+                770255983,
+                1249150122,
+                1555081692,
+                1996064986,
+                2554220882,
+                2821834349,
+                2952996808,
+                3210313671,
+                3336571891,
+                3584528711,
+                113926993,
+                338241895,
+                666307205,
+                773529912,
+                1294757372,
+                1396182291,
+                1695183700,
+                1986661051,
+                2177026350,
+                2456956037,
+                2730485921,
+                2820302411,
+                3259730800,
+                3345764771,
+                3516065817,
+                3600352804,
+                4094571909,
+                275423344,
+                430227734,
+                506948616,
+                659060556,
+                883997877,
+                958139571,
+                1322822218,
+                1537002063,
+                1747873779,
+                1955562222,
+                2024104815,
+                2227730452,
+                2361852424,
+                2428436474,
+                2756734187,
+                3204031479,
+                3329325298
+              ];
+              var H = [1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225];
+              var l = msg.length / 4 + 2;
+              var N = Math.ceil(l / 16);
+              var M = new Array(N);
+              for (var i = 0; i < N; i++) {
+                M[i] = new Array(16);
+                for (var j = 0; j < 16; j++) {
+                  M[i][j] = msg.charCodeAt(i * 64 + j * 4) << 24 | msg.charCodeAt(i * 64 + j * 4 + 1) << 16 | msg.charCodeAt(i * 64 + j * 4 + 2) << 8 | msg.charCodeAt(i * 64 + j * 4 + 3);
+                }
+              }
+              M[N - 1][14] = (msg.length - 1) * 8 / Math.pow(2, 32);
+              M[N - 1][14] = Math.floor(M[N - 1][14]);
+              M[N - 1][15] = (msg.length - 1) * 8 & 4294967295;
+              var W = new Array(64);
+              var a, b, c, d, e, f, g, h2;
+              for (var i = 0; i < N; i++) {
+                for (var t = 0; t < 16; t++) {
+                  W[t] = M[i][t];
+                }
+                for (var t = 16; t < 64; t++) {
+                  W[t] = _qz.SHA._dev1(W[t - 2]) + W[t - 7] + _qz.SHA._dev0(W[t - 15]) + W[t - 16] & 4294967295;
+                }
+                a = H[0];
+                b = H[1];
+                c = H[2];
+                d = H[3];
+                e = H[4];
+                f = H[5];
+                g = H[6];
+                h2 = H[7];
+                for (var t = 0; t < 64; t++) {
+                  var T1 = h2 + _qz.SHA._sig1(e) + _qz.SHA._ch(e, f, g) + K[t] + W[t];
+                  var T2 = _qz.SHA._sig0(a) + _qz.SHA._maj(a, b, c);
+                  h2 = g;
+                  g = f;
+                  f = e;
+                  e = d + T1 & 4294967295;
+                  d = c;
+                  c = b;
+                  b = a;
+                  a = T1 + T2 & 4294967295;
+                }
+                H[0] = H[0] + a & 4294967295;
+                H[1] = H[1] + b & 4294967295;
+                H[2] = H[2] + c & 4294967295;
+                H[3] = H[3] + d & 4294967295;
+                H[4] = H[4] + e & 4294967295;
+                H[5] = H[5] + f & 4294967295;
+                H[6] = H[6] + g & 4294967295;
+                H[7] = H[7] + h2 & 4294967295;
+              }
+              return _qz.SHA._hexStr(H[0]) + _qz.SHA._hexStr(H[1]) + _qz.SHA._hexStr(H[2]) + _qz.SHA._hexStr(H[3]) + _qz.SHA._hexStr(H[4]) + _qz.SHA._hexStr(H[5]) + _qz.SHA._hexStr(H[6]) + _qz.SHA._hexStr(H[7]);
+            },
+            _rotr: function(n, x) {
+              return x >>> n | x << 32 - n;
+            },
+            _sig0: function(x) {
+              return _qz.SHA._rotr(2, x) ^ _qz.SHA._rotr(13, x) ^ _qz.SHA._rotr(22, x);
+            },
+            _sig1: function(x) {
+              return _qz.SHA._rotr(6, x) ^ _qz.SHA._rotr(11, x) ^ _qz.SHA._rotr(25, x);
+            },
+            _dev0: function(x) {
+              return _qz.SHA._rotr(7, x) ^ _qz.SHA._rotr(18, x) ^ x >>> 3;
+            },
+            _dev1: function(x) {
+              return _qz.SHA._rotr(17, x) ^ _qz.SHA._rotr(19, x) ^ x >>> 10;
+            },
+            _ch: function(x, y, z) {
+              return x & y ^ ~x & z;
+            },
+            _maj: function(x, y, z) {
+              return x & y ^ x & z ^ y & z;
+            },
+            _hexStr: function(n) {
+              var s = "", v;
+              for (var i = 7; i >= 0; i--) {
+                v = n >>> i * 4 & 15;
+                s += v.toString(16);
+              }
+              return s;
+            },
+            _unescape: function(str) {
+              return str.replace(/%(u[\da-f]{4}|[\da-f]{2})/gi, function(seq) {
+                if (seq.length - 1) {
+                  return String.fromCharCode(parseInt(seq.substring(seq.length - 3 ? 2 : 1), 16));
+                } else {
+                  var code = seq.charCodeAt(0);
+                  return code < 256 ? "%" + (0 + code.toString(16)).slice(-2).toUpperCase() : "%u" + ("000" + code.toString(16)).slice(-4).toUpperCase();
+                }
+              });
+            },
+            _utf8Encode: function(str) {
+              return _qz.SHA._unescape(encodeURIComponent(str));
+            }
+          }
+        };
+        function Config(printer, opts) {
+          this.config = _qz.tools.extend({}, _qz.printing.defaultConfig);
+          this._dirtyOpts = {};
+          this.setPrinter = function(newPrinter) {
+            if (typeof newPrinter === "string") {
+              newPrinter = { name: newPrinter };
+            }
+            this.printer = newPrinter;
+          };
+          this.getPrinter = function() {
+            return this.printer;
+          };
+          this.reconfigure = function(newOpts) {
+            for (var key in newOpts) {
+              if (newOpts[key] !== void 0) {
+                this._dirtyOpts[key] = true;
+              }
+            }
+            _qz.tools.extend(this.config, newOpts);
+          };
+          this.getOptions = function() {
+            return _qz.compatible.config(this.config, this._dirtyOpts);
+          };
+          this.setPrinter(printer);
+          this.reconfigure(opts);
+        }
+        Config.prototype.print = function(data, signature, signingTimestamp) {
+          qz3.print(this, data, signature, signingTimestamp);
+        };
+        var qz3 = {
+          websocket: {
+            isActive: function() {
+              return _qz.tools.isActive();
+            },
+            connect: function(options) {
+              return _qz.tools.promise(function(resolve2, reject) {
+                if (_qz.websocket.connection) {
+                  const state = _qz.websocket.connection.readyState;
+                  if (state === _qz.tools.ws.OPEN) {
+                    reject(new Error("An open connection with QZ Tray already exists"));
+                    return;
+                  } else if (state === _qz.tools.ws.CONNECTING) {
+                    reject(new Error("The current connection attempt has not returned yet"));
+                    return;
+                  } else if (state === _qz.tools.ws.CLOSING) {
+                    reject(new Error("Waiting for previous disconnect request to complete"));
+                    return;
+                  }
+                }
+                if (!_qz.tools.ws) {
+                  reject(new Error("WebSocket not supported by this browser"));
+                  return;
+                } else if (!_qz.tools.ws.CLOSED || _qz.tools.ws.CLOSED == 2) {
+                  reject(new Error("Unsupported WebSocket version detected: HyBi-00/Hixie-76"));
+                  return;
+                }
+                if (options == void 0) {
+                  options = {};
+                }
+                if (typeof location === "undefined" || location.protocol !== "https:") {
+                  if (typeof options.usingSecure === "undefined") {
+                    _qz.log.trace("Disabling secure ports due to insecure page");
+                    options.usingSecure = false;
+                  }
+                }
+                if (typeof options.host !== "undefined" && !Array.isArray(options.host)) {
+                  options.host = [options.host];
+                }
+                _qz.websocket.shutdown = false;
+                var attempt = function(count) {
+                  var tried = false;
+                  var nextAttempt = function() {
+                    if (!tried) {
+                      tried = true;
+                      if (options && count < options.retries) {
+                        attempt(count + 1);
+                      } else {
+                        _qz.websocket.connection = null;
+                        reject.apply(null, arguments);
+                      }
+                    }
+                  };
+                  var delayed = function() {
+                    var config = _qz.tools.extend({}, _qz.websocket.connectConfig, options);
+                    _qz.websocket.setup.findConnection(config, resolve2, nextAttempt);
+                  };
+                  if (count == 0) {
+                    delayed();
+                  } else {
+                    setTimeout(delayed, options.delay * 1e3);
+                  }
+                };
+                attempt(0);
+              });
+            },
+            disconnect: function() {
+              return _qz.tools.promise(function(resolve2, reject) {
+                if (_qz.websocket.connection != null) {
+                  if (_qz.tools.isActive()) {
+                    _qz.websocket.shutdown = true;
+                    _qz.websocket.connection.promise = { resolve: resolve2, reject };
+                    _qz.websocket.connection.close();
+                  } else {
+                    reject(new Error("Current connection is still closing"));
+                  }
+                } else {
+                  reject(new Error("No open connection with QZ Tray"));
+                }
+              });
+            },
+            setErrorCallbacks: function(calls) {
+              _qz.websocket.errorCallbacks = calls;
+            },
+            setClosedCallbacks: function(calls) {
+              _qz.websocket.closedCallbacks = calls;
+            },
+            getNetworkInfo: _qz.compatible.networking,
+            getConnectionInfo: function() {
+              if (_qz.tools.assertActive()) {
+                var url = _qz.websocket.connection.url.split(/[:\/]+/g);
+                return { socket: url[0], host: url[1], port: +url[2] };
+              }
+            }
+          },
+          printers: {
+            getDefault: function(signature, signingTimestamp) {
+              return _qz.websocket.dataPromise("printers.getDefault", null, signature, signingTimestamp);
+            },
+            find: function(query, signature, signingTimestamp) {
+              return _qz.websocket.dataPromise("printers.find", { query }, signature, signingTimestamp);
+            },
+            details: function() {
+              return _qz.websocket.dataPromise("printers.detail");
+            },
+            startListening: function(printers, options) {
+              if (!Array.isArray(printers)) {
+                printers = [printers];
+              }
+              var params = {
+                printerNames: printers
+              };
+              if (options && options.jobData == true)
+                params.jobData = true;
+              if (options && options.maxJobData)
+                params.maxJobData = options.maxJobData;
+              if (options && options.flavor)
+                params.flavor = options.flavor;
+              return _qz.websocket.dataPromise("printers.startListening", params);
+            },
+            clearQueue: function(options) {
+              if (typeof options !== "object") {
+                options = {
+                  printerName: options
+                };
+              }
+              return _qz.websocket.dataPromise("printers.clearQueue", options);
+            },
+            stopListening: function() {
+              return _qz.websocket.dataPromise("printers.stopListening");
+            },
+            getStatus: function() {
+              return _qz.websocket.dataPromise("printers.getStatus");
+            },
+            setPrinterCallbacks: function(calls) {
+              _qz.printers.printerCallbacks = calls;
+            }
+          },
+          configs: {
+            setDefaults: function(options) {
+              _qz.tools.extend(_qz.printing.defaultConfig, options);
+            },
+            create: function(printer, options) {
+              return new Config(printer, options);
+            }
+          },
+          print: function(configs, data) {
+            var resumeOnError = false, signatures = [], signaturesTimestamps = [];
+            if (arguments.length >= 3) {
+              if (typeof arguments[2] === "boolean") {
+                resumeOnError = arguments[2];
+                if (arguments.length >= 5) {
+                  signatures = arguments[3];
+                  signaturesTimestamps = arguments[4];
+                }
+              } else if (arguments.length >= 4) {
+                signatures = arguments[2];
+                signaturesTimestamps = arguments[3];
+              }
+              if (signatures && !Array.isArray(signatures)) {
+                signatures = [signatures];
+              }
+              if (signaturesTimestamps && !Array.isArray(signaturesTimestamps)) {
+                signaturesTimestamps = [signaturesTimestamps];
+              }
+            }
+            if (!Array.isArray(configs)) {
+              configs = [configs];
+            }
+            if (!Array.isArray(data[0])) {
+              data = [data];
+            }
+            for (var d = 0; d < data.length; d++) {
+              _qz.tools.relative(data[d]);
+              _qz.compatible.data(data[d]);
+            }
+            var sendToPrint = function(mapping) {
+              var params = {
+                printer: mapping.config.getPrinter(),
+                options: mapping.config.getOptions(),
+                data: mapping.data
+              };
+              return _qz.websocket.dataPromise("print", params, mapping.signature, mapping.timestamp);
+            };
+            var chain = [];
+            for (var i = 0; i < configs.length || i < data.length; i++) {
+              (function(i_) {
+                var map2 = {
+                  config: configs[Math.min(i_, configs.length - 1)],
+                  data: data[Math.min(i_, data.length - 1)],
+                  signature: signatures[i_],
+                  timestamp: signaturesTimestamps[i_]
+                };
+                chain.push(function() {
+                  return sendToPrint(map2);
+                });
+              })(i);
+            }
+            var fallThrough = null;
+            if (resumeOnError) {
+              var fallen = [];
+              fallThrough = function(err) {
+                fallen.push(err);
+              };
+              chain.push(function() {
+                return _qz.tools.promise(function(resolve2, reject) {
+                  fallen.length ? reject(fallen) : resolve2();
+                });
+              });
+            }
+            var last = null;
+            chain.reduce(function(sequence, link) {
+              last = sequence.catch(fallThrough).then(link);
+              return last;
+            }, _qz.tools.promise(function(r) {
+              r();
+            }));
+            return last;
+          },
+          serial: {
+            findPorts: function() {
+              return _qz.websocket.dataPromise("serial.findPorts");
+            },
+            setSerialCallbacks: function(calls) {
+              _qz.serial.serialCallbacks = calls;
+            },
+            openPort: function(port, options) {
+              var params = {
+                port,
+                options
+              };
+              return _qz.websocket.dataPromise("serial.openPort", params);
+            },
+            sendData: function(port, data, options) {
+              if (_qz.tools.versionCompare(2, 1, 0, 12) >= 0) {
+                if (typeof data !== "object") {
+                  data = {
+                    data,
+                    type: "PLAIN"
+                  };
+                }
+                if (data.type && data.type.toUpperCase() == "FILE") {
+                  data.data = _qz.tools.absolute(data.data);
+                }
+              }
+              var params = {
+                port,
+                data,
+                options
+              };
+              return _qz.websocket.dataPromise("serial.sendData", params);
+            },
+            closePort: function(port) {
+              return _qz.websocket.dataPromise("serial.closePort", { port });
+            }
+          },
+          socket: {
+            open: function(host, port, options) {
+              var params = {
+                host,
+                port,
+                options
+              };
+              return _qz.websocket.dataPromise("socket.open", params);
+            },
+            close: function(host, port) {
+              var params = {
+                host,
+                port
+              };
+              return _qz.websocket.dataPromise("socket.close", params);
+            },
+            sendData: function(host, port, data) {
+              if (typeof data !== "object") {
+                data = {
+                  data,
+                  type: "PLAIN"
+                };
+              }
+              var params = {
+                host,
+                port,
+                data
+              };
+              return _qz.websocket.dataPromise("socket.sendData", params);
+            },
+            setSocketCallbacks: function(calls) {
+              _qz.socket.socketCallbacks = calls;
+            }
+          },
+          usb: {
+            listDevices: function(includeHubs) {
+              return _qz.websocket.dataPromise("usb.listDevices", { includeHubs });
+            },
+            listInterfaces: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = { vendorId: arguments[0], productId: arguments[1] };
+              }
+              return _qz.websocket.dataPromise("usb.listInterfaces", deviceInfo);
+            },
+            listEndpoints: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = {
+                  vendorId: arguments[0],
+                  productId: arguments[1],
+                  interface: arguments[2]
+                };
+              }
+              return _qz.websocket.dataPromise("usb.listEndpoints", deviceInfo);
+            },
+            setUsbCallbacks: function(calls) {
+              _qz.usb.usbCallbacks = calls;
+            },
+            claimDevice: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = {
+                  vendorId: arguments[0],
+                  productId: arguments[1],
+                  interface: arguments[2]
+                };
+              }
+              return _qz.websocket.dataPromise("usb.claimDevice", deviceInfo);
+            },
+            isClaimed: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = { vendorId: arguments[0], productId: arguments[1] };
+              }
+              return _qz.websocket.dataPromise("usb.isClaimed", deviceInfo);
+            },
+            sendData: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = {
+                  vendorId: arguments[0],
+                  productId: arguments[1],
+                  endpoint: arguments[2],
+                  data: arguments[3]
+                };
+              }
+              if (_qz.tools.versionCompare(2, 1, 0, 12) >= 0) {
+                if (typeof deviceInfo.data !== "object") {
+                  deviceInfo.data = {
+                    data: deviceInfo.data,
+                    type: "PLAIN"
+                  };
+                }
+                if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
+                  deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
+                }
+              }
+              return _qz.websocket.dataPromise("usb.sendData", deviceInfo);
+            },
+            readData: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = {
+                  vendorId: arguments[0],
+                  productId: arguments[1],
+                  endpoint: arguments[2],
+                  responseSize: arguments[3]
+                };
+              }
+              return _qz.websocket.dataPromise("usb.readData", deviceInfo);
+            },
+            openStream: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = {
+                  vendorId: arguments[0],
+                  productId: arguments[1],
+                  endpoint: arguments[2],
+                  responseSize: arguments[3],
+                  interval: arguments[4]
+                };
+              }
+              return _qz.websocket.dataPromise("usb.openStream", deviceInfo);
+            },
+            closeStream: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = {
+                  vendorId: arguments[0],
+                  productId: arguments[1],
+                  endpoint: arguments[2]
+                };
+              }
+              return _qz.websocket.dataPromise("usb.closeStream", deviceInfo);
+            },
+            releaseDevice: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = { vendorId: arguments[0], productId: arguments[1] };
+              }
+              return _qz.websocket.dataPromise("usb.releaseDevice", deviceInfo);
+            }
+          },
+          hid: {
+            listDevices: function() {
+              return _qz.websocket.dataPromise("hid.listDevices");
+            },
+            startListening: function() {
+              return _qz.websocket.dataPromise("hid.startListening");
+            },
+            stopListening: function() {
+              return _qz.websocket.dataPromise("hid.stopListening");
+            },
+            setHidCallbacks: function(calls) {
+              _qz.hid.hidCallbacks = calls;
+            },
+            claimDevice: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = { vendorId: arguments[0], productId: arguments[1] };
+              }
+              return _qz.websocket.dataPromise("hid.claimDevice", deviceInfo);
+            },
+            isClaimed: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = { vendorId: arguments[0], productId: arguments[1] };
+              }
+              return _qz.websocket.dataPromise("hid.isClaimed", deviceInfo);
+            },
+            sendData: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = {
+                  vendorId: arguments[0],
+                  productId: arguments[1],
+                  data: arguments[2],
+                  endpoint: arguments[3]
+                };
+              }
+              if (_qz.tools.versionCompare(2, 1, 0, 12) >= 0) {
+                if (typeof deviceInfo.data !== "object") {
+                  deviceInfo.data = {
+                    data: deviceInfo.data,
+                    type: "PLAIN"
+                  };
+                }
+                if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
+                  deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
+                }
+              } else {
+                if (typeof deviceInfo.data === "object") {
+                  if (deviceInfo.data.type.toUpperCase() !== "PLAIN" || typeof deviceInfo.data.data !== "string") {
+                    return _qz.tools.reject(new Error("Data format is not supported with connected QZ Tray version " + _qz.websocket.connection.version));
+                  }
+                  deviceInfo.data = deviceInfo.data.data;
+                }
+              }
+              return _qz.websocket.dataPromise("hid.sendData", deviceInfo);
+            },
+            readData: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = {
+                  vendorId: arguments[0],
+                  productId: arguments[1],
+                  responseSize: arguments[2]
+                };
+              }
+              return _qz.websocket.dataPromise("hid.readData", deviceInfo);
+            },
+            sendFeatureReport: function(deviceInfo) {
+              return _qz.websocket.dataPromise("hid.sendFeatureReport", deviceInfo);
+            },
+            getFeatureReport: function(deviceInfo) {
+              return _qz.websocket.dataPromise("hid.getFeatureReport", deviceInfo);
+            },
+            openStream: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = {
+                  vendorId: arguments[0],
+                  productId: arguments[1],
+                  responseSize: arguments[2],
+                  interval: arguments[3]
+                };
+              }
+              return _qz.websocket.dataPromise("hid.openStream", deviceInfo);
+            },
+            closeStream: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = { vendorId: arguments[0], productId: arguments[1] };
+              }
+              return _qz.websocket.dataPromise("hid.closeStream", deviceInfo);
+            },
+            releaseDevice: function(deviceInfo) {
+              if (typeof deviceInfo !== "object") {
+                deviceInfo = { vendorId: arguments[0], productId: arguments[1] };
+              }
+              return _qz.websocket.dataPromise("hid.releaseDevice", deviceInfo);
+            }
+          },
+          file: {
+            list: function(path, params) {
+              var param = _qz.tools.extend({ path }, params);
+              return _qz.websocket.dataPromise("file.list", param);
+            },
+            read: function(path, params) {
+              var param = _qz.tools.extend({ path }, params);
+              return _qz.websocket.dataPromise("file.read", param);
+            },
+            write: function(path, params) {
+              var param = _qz.tools.extend({ path }, params);
+              return _qz.websocket.dataPromise("file.write", param);
+            },
+            remove: function(path, params) {
+              var param = _qz.tools.extend({ path }, params);
+              return _qz.websocket.dataPromise("file.remove", param);
+            },
+            startListening: function(path, params) {
+              if (params && typeof params.include !== "undefined" && !Array.isArray(params.include)) {
+                params.include = [params.include];
+              }
+              if (params && typeof params.exclude !== "undefined" && !Array.isArray(params.exclude)) {
+                params.exclude = [params.exclude];
+              }
+              var param = _qz.tools.extend({ path }, params);
+              return _qz.websocket.dataPromise("file.startListening", param);
+            },
+            stopListening: function(path, params) {
+              var param = _qz.tools.extend({ path }, params);
+              return _qz.websocket.dataPromise("file.stopListening", param);
+            },
+            setFileCallbacks: function(calls) {
+              _qz.file.fileCallbacks = calls;
+            }
+          },
+          networking: {
+            device: function(hostname, port) {
+              if (_qz.tools.isVersion(2, 0)) {
+                return _qz.compatible.networking(hostname, port, null, null, function(data) {
+                  return { ip: data.ipAddress, mac: data.macAddress };
+                });
+              }
+              return _qz.websocket.dataPromise("networking.device", {
+                hostname,
+                port
+              });
+            },
+            hostname: function(hostname, port) {
+              if (_qz.tools.versionCompare(2, 2, 2) < 0) {
+                return _qz.tools.promise(function(resolve2, reject) {
+                  _qz.websocket.dataPromise("networking.device", { hostname, port }).then(function(device) {
+                    console.log(device);
+                    resolve2(device.hostname);
+                  });
+                });
+              } else {
+                return _qz.websocket.dataPromise("networking.hostname");
+              }
+            },
+            devices: function(hostname, port) {
+              if (_qz.tools.isVersion(2, 0)) {
+                return _qz.compatible.networking(hostname, port, null, null, function(data) {
+                  return [{ ip: data.ipAddress, mac: data.macAddress }];
+                });
+              }
+              return _qz.websocket.dataPromise("networking.devices", {
+                hostname,
+                port
+              });
+            }
+          },
+          security: {
+            setCertificatePromise: function(promiseHandler, options) {
+              _qz.security.certHandler = promiseHandler;
+              _qz.security.rejectOnCertFailure = !!(options && options.rejectOnFailure);
+            },
+            setSignaturePromise: function(promiseFactory) {
+              _qz.security.signatureFactory = promiseFactory;
+            },
+            setSignatureAlgorithm: function(algorithm) {
+              if (!_qz.compatible.algorithm()) {
+                return;
+              }
+              if (["SHA1", "SHA256", "SHA512"].indexOf(algorithm.toUpperCase()) < 0) {
+                _qz.log.error("Signing algorithm '" + algorithm + "' is not supported.");
+              } else {
+                _qz.security.signAlgorithm = algorithm;
+              }
+            },
+            getSignatureAlgorithm: function() {
+              return _qz.security.signAlgorithm;
+            }
+          },
+          api: {
+            showDebug: function(show) {
+              return _qz.DEBUG = show;
+            },
+            getVersion: function() {
+              return _qz.websocket.dataPromise("getVersion");
+            },
+            isVersion: _qz.tools.isVersion,
+            isVersionGreater: function(major, minor, patch, build) {
+              return _qz.tools.versionCompare(major, minor, patch, build) > 0;
+            },
+            isVersionLess: function(major, minor, patch, build) {
+              return _qz.tools.versionCompare(major, minor, patch, build) < 0;
+            },
+            setPromiseType: function(promiser) {
+              _qz.tools.promise = promiser;
+            },
+            setSha256Type: function(hasher) {
+              _qz.tools.hash = hasher;
+            },
+            setWebSocketType: function(ws) {
+              _qz.tools.ws = ws;
+            }
+          },
+          version: _qz.VERSION
+        };
+        return qz3;
+      }();
+      (function() {
+        if (typeof define === "function" && define.amd) {
+          define(qz2);
+        } else if (typeof exports === "object") {
+          module.exports = qz2;
+        } else {
+          window.qz = qz2;
+        }
+      })();
+    }
+  });
+
   // ../tabrah_pos/node_modules/qrcode/lib/can-promise.js
   var require_can_promise = __commonJS({
     "../tabrah_pos/node_modules/qrcode/lib/can-promise.js"(exports, module) {
@@ -13778,8 +15423,176 @@ Expected function or array of functions, received type ${typeof value}.`
     }
   }
 
+  // ../tabrah_pos/tabrah_pos/public/js/posapp/qzTrayService.js
+  var import_qz_tray = __toESM(require_qz_tray());
+  var isConnected = false;
+  async function initQZTray() {
+    if (isConnected)
+      return true;
+    try {
+      await import_qz_tray.default.websocket.connect();
+      isConnected = true;
+      console.log("Connected to QZ Tray");
+      return true;
+    } catch (err) {
+      console.error("Failed to connect to QZ Tray:", err);
+      return false;
+    }
+  }
+  function formatKotForEscPos(kotData) {
+    const ESC = "\x1B";
+    const LF = "\n";
+    const CENTER = ESC + "a";
+    const LEFT = ESC + "a\0";
+    const BOLD_ON = ESC + "E";
+    const BOLD_OFF = ESC + "E\0";
+    const DOUBLE_WIDTH = ESC + "!0";
+    const NORMAL = ESC + "!\0";
+    const INIT = ESC + "@";
+    const CUT = ESC + "m";
+    const FEED = ESC + "d";
+    let commands = [];
+    commands.push(INIT);
+    commands.push(ESC + "C$");
+    commands.push(CENTER);
+    commands.push(DOUBLE_WIDTH);
+    commands.push("KITCHEN ORDER TICKET" + LF + LF);
+    commands.push(NORMAL);
+    commands.push(LEFT);
+    commands.push(BOLD_ON);
+    commands.push("Server: " + (kotData.server || "N/A") + LF);
+    commands.push("No of Pax: " + (kotData.cover || "N/A") + LF);
+    commands.push("Order No: 12345" + LF);
+    commands.push("Date: " + kotData.date + LF);
+    commands.push("Table: " + (kotData.table_no || "N/A") + LF);
+    commands.push("Time: " + kotData.time + LF);
+    commands.push(BOLD_OFF);
+    commands.push(CENTER);
+    commands.push(BOLD_ON);
+    commands.push("--------------------------------" + LF);
+    commands.push("Dine In" + LF);
+    commands.push("--------------------------------" + LF);
+    commands.push(BOLD_OFF);
+    commands.push(LEFT);
+    commands.push("New Order          Modified" + LF);
+    commands.push("--------------------------------" + LF);
+    commands.push(BOLD_ON);
+    commands.push("ITEM                           QTY" + LF);
+    commands.push("--------------------------------" + LF);
+    commands.push(BOLD_OFF);
+    kotData.items.forEach((item) => {
+      var _a2, _b;
+      let itemName = item.item_name || "N/A";
+      let qty = item.qty || 0;
+      itemName = itemName.padEnd(30).substring(0, 30);
+      let qtyStr = String(qty).padStart(3);
+      commands.push(itemName + qtyStr + LF);
+      if (((_b = (_a2 = item.product_bundle) == null ? void 0 : _a2.items) == null ? void 0 : _b.length) > 0) {
+        item.product_bundle.items.forEach((bundleItem) => {
+          let bundleName = "  - " + (bundleItem.custom_item_name || "N/A");
+          bundleName = bundleName.padEnd(30).substring(0, 30);
+          commands.push(bundleName + "  1" + LF);
+        });
+      }
+      if (item.comment) {
+        commands.push("Note: " + item.comment + LF);
+      }
+      commands.push("--------------------------------" + LF);
+    });
+    commands.push(CENTER);
+    commands.push(BOLD_ON);
+    commands.push("*** END OF KOT ***" + LF + LF);
+    commands.push(BOLD_OFF);
+    commands.push(FEED);
+    commands.push(CUT);
+    return commands;
+  }
+  async function printKotWithQZTray(printerConfig, kotContent) {
+    try {
+      if (!isConnected) {
+        const connected = await initQZTray();
+        if (!connected)
+          throw new Error("QZ Tray not connected");
+      }
+      const config = import_qz_tray.default.configs.create(__spreadProps(__spreadValues({}, printerConfig), {
+        encoding: "UTF-8",
+        rasterize: false,
+        altPrinting: false,
+        copies: 1,
+        margins: { top: 0, right: 0, bottom: 0, left: 0 }
+      }));
+      const content = formatKotForEscPos(kotContent);
+      await import_qz_tray.default.print(config, content);
+      return true;
+    } catch (err) {
+      console.error("Error printing with QZ Tray:", err);
+      return false;
+    }
+  }
+  function groupItemsByPrinter(items, pos_profile2) {
+    const printerGroups = {};
+    items.forEach((item) => {
+      var _a2;
+      const itemGroup = item.item_group;
+      const printerSetting = (_a2 = pos_profile2.custom_kot_network_settings) == null ? void 0 : _a2.find(
+        (s) => s.item_group === itemGroup
+      );
+      if (printerSetting) {
+        const printerKey = printerSetting.printer_name || `${printerSetting.printer_ip}:${printerSetting.printer_port}`;
+        if (!printerGroups[printerKey]) {
+          printerGroups[printerKey] = {
+            config: {
+              name: printerSetting.printer_name,
+              host: printerSetting.printer_ip,
+              port: printerSetting.printer_port
+            },
+            items: []
+          };
+        }
+        printerGroups[printerKey].items.push(item);
+      }
+    });
+    return printerGroups;
+  }
+
   // ../tabrah_pos/tabrah_pos/public/js/posapp/kotPrint.js
   async function printKot(offlineData) {
+    var _a2;
+    try {
+      if ((_a2 = offlineData.pos_profile) == null ? void 0 : _a2.custom_enable_kot_network_printing) {
+        return await handleNetworkPrinting(offlineData);
+      } else {
+        return await handleBrowserPrinting(offlineData);
+      }
+    } catch (error) {
+      console.error("Error printing KOT:", error);
+      throw error;
+    }
+  }
+  async function handleNetworkPrinting(offlineData) {
+    try {
+      const connected = await initQZTray();
+      if (!connected) {
+        console.error("QZ Tray not connected. Falling back to browser printing.");
+        return await handleBrowserPrinting(offlineData);
+      }
+      const printerGroups = groupItemsByPrinter(offlineData.items, offlineData.pos_profile);
+      for (const [printerKey, group] of Object.entries(printerGroups)) {
+        const kotData = __spreadProps(__spreadValues({}, offlineData), {
+          items: group.items
+        });
+        const success = await printKotWithQZTray(group.config, kotData);
+        if (!success) {
+          console.error(`Failed to print to ${printerKey}`);
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error("Error in network printing:", error);
+      return await handleBrowserPrinting(offlineData);
+    }
+  }
+  async function handleBrowserPrinting(offlineData) {
     try {
       let now = new Date();
       const items = (offlineData == null ? void 0 : offlineData.items) || [];
@@ -13810,59 +15623,59 @@ Expected function or array of functions, received type ${typeof value}.`
       }).join("");
       const newWindow = window.open("", "_blank");
       newWindow.document.write(`
-  <html>
-  <head>
-    <style>
-        .print-format table, .print-format tr, 
-        .print-format td, .print-format div, .print-format p {
-            line-height: 150%;
-            vertical-align: middle;
-            margin: 2px 0;
-        }
-        
-        @media screen {
-            .print-format {
-                width: 3.6in;
-                padding: 0.25in;
-            }
-        }
-    </style>
-</head>
- <body>
-    <div class="print-format">
+            <html>
+            <head>
+                <style>
+                    .print-format table, .print-format tr, 
+                    .print-format td, .print-format div, .print-format p {
+                        line-height: 150%;
+                        vertical-align: middle;
+                        margin: 2px 0;
+                    }
+                    
+                    @media screen {
+                        .print-format {
+                            width: 3.6in;
+                            padding: 0.25in;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="print-format">
         <div style="margin-bottom: 5px;">
         </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
-            <p class="text-center" style="margin-bottom: 2px;">Server: N/A</p>
-            <p class="text-center" style="margin-bottom: 2px;">No of Pax: ${offlineData.cover || "N/A"}</p>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
-            <p class="text-center" style="margin-bottom: 2px;">Order No: 12345</p>
-            <p style="margin-bottom: 0;">Date: ${date2}</p>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
-            <p style="margin-bottom: 0;">Table: ${tableNo}</p>
-            <p style="margin-bottom: 0;">Time: ${time}</p>
-        </div>
-        <p class="text-center" style="margin-bottom: 0.25rem; border-bottom: 2px solid black; font-size:15px;"><b>Dine In</b></p>
-        <div style="display:flex;justify-content:space-between; border-bottom: 2px solid black; font-size:15px;">
-            <p style="margin-bottom: 0;"><b>New Order</b></p>
-            <p style="margin-bottom: 0;"><b>Modified</b></p>
-        </div>
-        <table style="margin-top: 1px;" class="innertext">
-            <thead>
-                <tr style="border-bottom: 2px solid black;">
-                    <th style="width: 70%;"><b>ITEM</b></th>
-                    <th style="width: 30%;" class="text-center"><b>Qty</b></th>
-                </tr>
-            </thead>
-            <tbody>
-                ${itemRows}
-            </tbody>
-        </table>
-    </div>
-</body>
-  </html>
+                    <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
+                        <p class="text-center" style="margin-bottom: 2px;">Server: N/A</p>
+                        <p class="text-center" style="margin-bottom: 2px;">No of Pax: ${offlineData.cover || "N/A"}</p>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
+                        <p class="text-center" style="margin-bottom: 2px;">Order No: 12345</p>
+                        <p style="margin-bottom: 0;">Date: ${date2}</p>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
+                        <p style="margin-bottom: 0;">Table: ${tableNo}</p>
+                        <p style="margin-bottom: 0;">Time: ${time}</p>
+                    </div>
+                    <p class="text-center" style="margin-bottom: 0.25rem; border-bottom: 2px solid black; font-size:15px;"><b>Dine In</b></p>
+                    <div style="display:flex;justify-content:space-between; border-bottom: 2px solid black; font-size:15px;">
+                        <p style="margin-bottom: 0;"><b>New Order</b></p>
+                        <p style="margin-bottom: 0;"><b>Modified</b></p>
+                    </div>
+                    <table style="margin-top: 1px;" class="innertext">
+                        <thead>
+                            <tr style="border-bottom: 2px solid black;">
+                                <th style="width: 70%;"><b>ITEM</b></th>
+                                <th style="width: 30%;" class="text-center"><b>Qty</b></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemRows}
+                        </tbody>
+                    </table>
+                </div>
+            </body>
+            </html>
         `);
       newWindow.document.close();
       newWindow.onafterprint = () => {
@@ -13874,8 +15687,10 @@ Expected function or array of functions, received type ${typeof value}.`
           newWindow.close();
         }, 500);
       });
+      return true;
     } catch (error) {
-      console.error("Error printing invoice:", error);
+      console.error("Error in browser printing:", error);
+      throw error;
     }
   }
 
@@ -13920,7 +15735,7 @@ Expected function or array of functions, received type ${typeof value}.`
       const selectedOrderType = ref("");
       const offlineMode = ref(false);
       const punching = ref("completed");
-      const screen = ref(0);
+      const screen2 = ref(0);
       const speedMbps = ref(null);
       const getSpeedRes = ref(false);
       const holdOrderId = ref(null);
@@ -14107,6 +15922,10 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.emit("open-product-dialog", { product: item, flag, index });
       };
       const openPrinterDialog = () => {
+        if (pos_profile2.value.custom_enable_kot_network_printing) {
+          generateKotPrint("network");
+          return;
+        }
         const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
         const currentOrder = heldOrders.find((order) => order.id === holdOrderId.value);
         let printedItems = {};
@@ -14136,73 +15955,89 @@ Expected function or array of functions, received type ${typeof value}.`
         });
       }
       const generateKotPrint = async (printerArg = null) => {
-        if (items.value.length > 0) {
-          const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
-          const currentOrder = heldOrders.find((order) => order.id === holdOrderId.value);
-          let printedItems = {};
-          if (currentOrder)
-            printedItems = __spreadValues({}, currentOrder.printed_items || {});
-          let printer = printerArg;
-          if (!printer && pos_profile2.value.allow_kot_mulitple_print == 1) {
-            openPrinterDialog();
-            return;
-          }
-          if (!printer)
-            printer = "grill";
-          let itemsToPrint = items.value.filter((item) => {
-            var _a2;
-            const p2 = (_a2 = printedItems[item.item_code]) == null ? void 0 : _a2[printer];
-            const printedQty = p2 ? p2.qty : 0;
-            let group = (item.item_group || "").toLowerCase();
-            if (group === "juice" || group === "beverage")
-              return false;
-            return item.qty > printedQty;
-          });
-          if (itemsToPrint.length === 0) {
-            bus_default.emit("show_mesage", {
-              text: `You printed these items already on ${printerLabels[printer]}.`,
-              color: "error"
-            });
-            return;
-          }
-          const doc3 = await get_invoice_doc();
-          doc3.grand_total = grandTotal.value;
-          doc3.gstAmountCash = gstAmount.value;
-          doc3.cover = cover.value;
-          const now = new Date();
-          doc3.date = now.toISOString().split("T")[0];
-          doc3.time = now.toLocaleTimeString("en-US", { hour12: false });
-          doc3.kot_items = itemsToPrint.map((item) => {
-            var _a2;
-            let finalQty;
-            const p2 = (_a2 = printedItems[item.item_code]) == null ? void 0 : _a2[printer];
-            const hasBeenPrinted = !!p2;
-            if (!hasBeenPrinted) {
-              finalQty = item.qty;
-            } else {
-              const printedQty = p2.qty;
-              finalQty = item.qty - printedQty;
-            }
-            let filteredBundle = item.product_bundle ? __spreadProps(__spreadValues({}, item.product_bundle), {
-              items: filterNonJuiceBeverageBundleItems(item.product_bundle)
-            }) : void 0;
-            return __spreadProps(__spreadValues({}, item), {
-              qty: finalQty,
-              product_bundle: filteredBundle
-            });
-          });
-          const printDoc = __spreadProps(__spreadValues({}, doc3), { items: doc3.kot_items });
-          itemsToPrint.forEach((item) => {
-            if (!printedItems[item.item_code])
-              printedItems[item.item_code] = {};
-            printedItems[item.item_code][printer] = {
-              qty: item.qty,
-              timestamp: new Date().toISOString()
-            };
-          });
-          holdOrder(printedItems);
-          printKot(printDoc);
+        if (items.value.length === 0)
+          return;
+        if (pos_profile2.value.custom_enable_kot_network_printing) {
+          const doc4 = await get_invoice_doc();
+          doc4.grand_total = grandTotal.value;
+          doc4.gstAmountCash = gstAmount.value;
+          doc4.cover = cover.value;
+          const now2 = new Date();
+          doc4.date = now2.toISOString().split("T")[0];
+          doc4.time = now2.toLocaleTimeString("en-US", { hour12: false });
+          doc4.items = items.value;
+          doc4.pos_profile = pos_profile2.value;
+          printKot(doc4);
+          return;
         }
+        const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+        const currentOrder = heldOrders.find((order) => order.id === holdOrderId.value);
+        let printedItems = {};
+        if (currentOrder)
+          printedItems = __spreadValues({}, currentOrder.printed_items || {});
+        let printer = printerArg;
+        if (!printer && pos_profile2.value.allow_kot_mulitple_print == 1) {
+          openPrinterDialog();
+          return;
+        }
+        if (!printer)
+          printer = "grill";
+        let itemsToPrint = items.value.filter((item) => {
+          var _a2;
+          const p2 = (_a2 = printedItems[item.item_code]) == null ? void 0 : _a2[printer];
+          const printedQty = p2 ? p2.qty : 0;
+          let group = (item.item_group || "").toLowerCase();
+          if (group === "juice" || group === "beverage")
+            return false;
+          return item.qty > printedQty;
+        });
+        if (itemsToPrint.length === 0) {
+          bus_default.emit("show_mesage", {
+            text: `You printed these items already on ${printerLabels[printer]}.`,
+            color: "error"
+          });
+          return;
+        }
+        const doc3 = await get_invoice_doc();
+        doc3.grand_total = grandTotal.value;
+        doc3.gstAmountCash = gstAmount.value;
+        doc3.cover = cover.value;
+        const now = new Date();
+        doc3.date = now.toISOString().split("T")[0];
+        doc3.time = now.toLocaleTimeString("en-US", { hour12: false });
+        doc3.kot_items = itemsToPrint.map((item) => {
+          var _a2;
+          let finalQty;
+          const p2 = (_a2 = printedItems[item.item_code]) == null ? void 0 : _a2[printer];
+          const hasBeenPrinted = !!p2;
+          if (!hasBeenPrinted) {
+            finalQty = item.qty;
+          } else {
+            const printedQty = p2.qty;
+            finalQty = item.qty - printedQty;
+          }
+          let filteredBundle = item.product_bundle ? __spreadProps(__spreadValues({}, item.product_bundle), {
+            items: filterNonJuiceBeverageBundleItems(item.product_bundle)
+          }) : void 0;
+          return __spreadProps(__spreadValues({}, item), {
+            qty: finalQty,
+            product_bundle: filteredBundle
+          });
+        });
+        const printDoc = __spreadProps(__spreadValues({}, doc3), {
+          items: doc3.kot_items,
+          pos_profile: pos_profile2.value
+        });
+        itemsToPrint.forEach((item) => {
+          if (!printedItems[item.item_code])
+            printedItems[item.item_code] = {};
+          printedItems[item.item_code][printer] = {
+            qty: item.qty,
+            timestamp: new Date().toISOString()
+          };
+        });
+        holdOrder(printedItems);
+        printKot(printDoc);
       };
       const createPreInvoice = async () => {
         if (items.value.length === 0)
@@ -14570,7 +16405,7 @@ Expected function or array of functions, received type ${typeof value}.`
         }
       };
       const update_invoice = (doc3, key, print) => {
-        if (navigator.onLine && !offlineMode.value && !loadingBtn.value && screen.value == 0) {
+        if (navigator.onLine && !offlineMode.value && !loadingBtn.value && screen2.value == 0) {
           frappe.call({
             method: "tabrah_pos.tabrah_pos.api.posapp.update_invoice",
             args: {
@@ -14893,7 +16728,7 @@ Expected function or array of functions, received type ${typeof value}.`
           makePayloadForInvoice();
         });
         bus_default.on("current-screen", (newVal) => {
-          screen.value = newVal;
+          screen2.value = newVal;
         });
         bus_default.on("enter-key-called", () => {
           onEnterKey();
@@ -14968,7 +16803,7 @@ Expected function or array of functions, received type ${typeof value}.`
           selectedCustomer.value = match.name;
         }
       };
-      const __returned__ = { items, paymentModes, selectedCustomer, customers, showDialog, isFormValid, customerLoading, formData, rules, pos_profile: pos_profile2, pos_opening_shift, invoice_doc, invoiceItems, selectedPaymentMode, loadingBtn, saleOrder, loadingHold, saleOrderDetail, selectedOrderType, offlineMode, punching, screen, speedMbps, getSpeedRes, holdOrderId, dialog, exchangeItem, submitLoading, search, returnDoc, returnType, selectedTable, advanceAmount, orderBy, allowedDelete, pindialog, otp, pinloading, cover, pendingDeleteIndex, showPrinterDialog, selectedPrinter, availablePrinters, printerLabels, printerDisabled, grandTotalCard, orderType, selected, headers, returnItems, returnDialog, returnitems, totalQuantity, totalItems, netTotal, gstAmount, grandTotal, formatNumber, addNewCustomer, checkAuthAccess, submitCustomerDialog, closeCustomerDialog, getCustomerNames, changePaymentMode, openDialog, openPrinterDialog, handlePrinterSelect, filterNonJuiceBeverageBundleItems, generateKotPrint, createPreInvoice, goForReturnProceed, openReturnDialog, closeReturnDialog, searchReturnInvoice, loadReturn, submitReturn, load_print_page, getFormattedPrintFormat, holdOrder, updateTableStatus, goForPayment, paymentProcess, processInvoiceFromOrder, getInvoiceFromOrderDoc, updateInvoiceFromOrder, get_invoice_doc, get_payments, getCurrentDate, onEnterKey, update_invoice, checkInternetSpeed, makePayloadForInvoice, requestDeleteItem, deleteItem, toggleDelete, offlineProfileData, createSaleOrder, showAlreadyPrintedMessage, customerDisplay, customerFilter, onCustomerSearchInput, ref, onMounted, computed: computed2, watch: watch2, onUnmounted, onBeforeUnmount, get eventBus() {
+      const __returned__ = { items, paymentModes, selectedCustomer, customers, showDialog, isFormValid, customerLoading, formData, rules, pos_profile: pos_profile2, pos_opening_shift, invoice_doc, invoiceItems, selectedPaymentMode, loadingBtn, saleOrder, loadingHold, saleOrderDetail, selectedOrderType, offlineMode, punching, screen: screen2, speedMbps, getSpeedRes, holdOrderId, dialog, exchangeItem, submitLoading, search, returnDoc, returnType, selectedTable, advanceAmount, orderBy, allowedDelete, pindialog, otp, pinloading, cover, pendingDeleteIndex, showPrinterDialog, selectedPrinter, availablePrinters, printerLabels, printerDisabled, grandTotalCard, orderType, selected, headers, returnItems, returnDialog, returnitems, totalQuantity, totalItems, netTotal, gstAmount, grandTotal, formatNumber, addNewCustomer, checkAuthAccess, submitCustomerDialog, closeCustomerDialog, getCustomerNames, changePaymentMode, openDialog, openPrinterDialog, handlePrinterSelect, filterNonJuiceBeverageBundleItems, generateKotPrint, createPreInvoice, goForReturnProceed, openReturnDialog, closeReturnDialog, searchReturnInvoice, loadReturn, submitReturn, load_print_page, getFormattedPrintFormat, holdOrder, updateTableStatus, goForPayment, paymentProcess, processInvoiceFromOrder, getInvoiceFromOrderDoc, updateInvoiceFromOrder, get_invoice_doc, get_payments, getCurrentDate, onEnterKey, update_invoice, checkInternetSpeed, makePayloadForInvoice, requestDeleteItem, deleteItem, toggleDelete, offlineProfileData, createSaleOrder, showAlreadyPrintedMessage, customerDisplay, customerFilter, onCustomerSearchInput, ref, onMounted, computed: computed2, watch: watch2, onUnmounted, onBeforeUnmount, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
@@ -20703,7 +22538,7 @@ Expected function or array of functions, received type ${typeof value}.`
     __name: "Home",
     setup(__props, { expose: __expose }) {
       __expose();
-      const screen = ref(null);
+      const screen2 = ref(null);
       const dialog = ref(false);
       const pos_profile2 = ref("");
       const pos_opening_shift = ref("");
@@ -20846,7 +22681,7 @@ Expected function or array of functions, received type ${typeof value}.`
         }
       };
       watch2(
-        screen,
+        screen2,
         (newVal, oldVal) => {
           if (newVal) {
             bus_default.emit("current-screen", newVal);
@@ -20855,7 +22690,7 @@ Expected function or array of functions, received type ${typeof value}.`
         { deep: true }
       );
       onMounted(() => {
-        screen.value = 0;
+        screen2.value = 0;
         check_opening_entry();
         get_pos_setting();
         window.addEventListener("offline", () => {
@@ -20869,7 +22704,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.on("close_opening_dialog", () => {
           dialog.value = false;
         });
-        bus_default.emit("current-screen", screen.value);
+        bus_default.emit("current-screen", screen2.value);
         bus_default.on("register_pos_data", (data) => {
           pos_profile2.value = data.pos_profile;
           bus_default.emit("register_pos_profile", data);
@@ -20896,20 +22731,20 @@ Expected function or array of functions, received type ${typeof value}.`
           submit_closing_pos(data);
         });
         bus_default.on("go-for-payment", () => {
-          screen.value = 1;
+          screen2.value = 1;
         });
         bus_default.on("go-to-order-history", () => {
-          screen.value = 2;
+          screen2.value = 2;
         });
         bus_default.on("go-to-hold-order", () => {
-          screen.value = 3;
+          screen2.value = 3;
         });
         bus_default.on("go-to-pos-order", () => {
-          screen.value = 4;
+          screen2.value = 4;
         });
         bus_default.on("open-product-menu", () => {
-          screen.value = 0;
-          bus_default.emit("current-screen", screen.value);
+          screen2.value = 0;
+          bus_default.emit("current-screen", screen2.value);
         });
       });
       onBeforeUnmount(() => {
@@ -20921,7 +22756,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.off("open_closing_dialog");
         bus_default.off("submit_closing_pos");
       });
-      const __returned__ = { screen, dialog, pos_profile: pos_profile2, pos_opening_shift, payment, offers, coupons, check_opening_entry, create_opening_voucher, get_offers, get_closing_data, submit_closing_pos, get_pos_setting, ref, onMounted, onBeforeUnmount, watch: watch2, Header: Header_default2, ProductList: ProductList_default2, OrderSummary: OrderSummary_default2, Payment: Payment_default2, OrderHistory: OrderHistory_default2, HoldOrder: HoldOrders_default2, PosOrders: PosOrders_default2, ProductDialog: ProductDialog_default2, get eventBus() {
+      const __returned__ = { screen: screen2, dialog, pos_profile: pos_profile2, pos_opening_shift, payment, offers, coupons, check_opening_entry, create_opening_voucher, get_offers, get_closing_data, submit_closing_pos, get_pos_setting, ref, onMounted, onBeforeUnmount, watch: watch2, Header: Header_default2, ProductList: ProductList_default2, OrderSummary: OrderSummary_default2, Payment: Payment_default2, OrderHistory: OrderHistory_default2, HoldOrder: HoldOrders_default2, PosOrders: PosOrders_default2, ProductDialog: ProductDialog_default2, get eventBus() {
         return bus_default;
       }, PosOpeningDialog: PosOpeningDialog_default2, PosClosingDialog: PosClosingDialog_default2, get indexedDBService() {
         return indexedDB_default;
@@ -49181,7 +51016,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
     setup(__props, { expose: __expose }) {
       __expose();
       const items = ref([]);
-      const screen = ref(0);
+      const screen2 = ref(0);
       const netTotal = ref("");
       const gstAmount = ref("");
       const invoiceDoc = ref("");
@@ -49208,7 +51043,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
           const invoiceData = localStorage.getItem("invoice-data");
           invoiceDoc.value = JSON.parse(invoiceData);
           console.log("local invoiceData", invoiceDoc.value);
-          screen.value = Number(currentScreen);
+          screen2.value = Number(currentScreen);
           const gst = localStorage.getItem("gst-amount");
           const netPrice = localStorage.getItem("net-total");
           netTotal.value = JSON.parse(netPrice);
@@ -49220,7 +51055,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
       });
       onUnmounted(() => {
       });
-      const __returned__ = { items, screen, netTotal, gstAmount, invoiceDoc, grandTotal, ref, onMounted, onBeforeUnmount, onUnmounted, watch: watch2, computed: computed2 };
+      const __returned__ = { items, screen: screen2, netTotal, gstAmount, invoiceDoc, grandTotal, ref, onMounted, onBeforeUnmount, onUnmounted, watch: watch2, computed: computed2 };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
@@ -49662,6 +51497,14 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 })();
 /*! #__NO_SIDE_EFFECTS__ */
 /**
+ * @version 2.2.5
+ * @overview QZ Tray Connector
+ * @license LGPL-2.1-only
+ * <p/>
+ * Connects a web client to the QZ Tray software.
+ * Enables printing and device communication from javascript.
+ */
+/**
 * @vue/reactivity v3.5.8
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
@@ -49686,4 +51529,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.A7ZK4WJU.js.map
+//# sourceMappingURL=pos.bundle.2MSNIW6J.js.map
