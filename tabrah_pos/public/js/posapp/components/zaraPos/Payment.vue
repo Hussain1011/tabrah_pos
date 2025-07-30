@@ -55,6 +55,7 @@
           :label="`Discount (max ${pos_profile.posa_max_discount_allowed} %)`"
           v-model="discount"
           type="number"
+          :min="0"
           :max="pos_profile.posa_max_discount_allowed"
           @input="onManualDiscountInput($event.target.value)"
           :disabled="pos_profile.posa_max_discount_allowed == 0 || !!selectedOffer"
@@ -1866,7 +1867,13 @@ const removeOffer = () => {
 };
 
 const onManualDiscountInput = (value) => {
-  let capped = Math.min(Number(value), pos_profile.value.posa_max_discount_allowed || 0);
+  let capped = Math.max(0, Math.min(Number(value), pos_profile.value.posa_max_discount_allowed || 0));
+  if (Number(value) < 0) {
+    eventBus.emit("show_mesage", {
+      text: `Negative discount is not allowed.`,
+      color: "error",
+    });
+  }
   discount.value = capped;
   applyDiscount();
 };
