@@ -15439,6 +15439,50 @@ Expected function or array of functions, received type ${typeof value}.`
       return false;
     }
   }
+  async function printKotWithQZTray(printerConfig, kotContent) {
+    try {
+      if (!isConnected) {
+        const connected = await initQZTray();
+        if (!connected)
+          throw new Error("QZ Tray not connected");
+      }
+      const config = import_qz_tray.default.configs.create(__spreadProps(__spreadValues({}, printerConfig), {
+        encoding: "UTF-8",
+        rasterize: false,
+        altPrinting: false,
+        copies: 1,
+        margins: { top: 0, right: 0, bottom: 0, left: 0 }
+      }));
+      const content = formatKotForEscPos(kotContent);
+      await import_qz_tray.default.print(config, content);
+      return true;
+    } catch (err) {
+      console.error("Error printing with QZ Tray:", err);
+      return false;
+    }
+  }
+  async function printPaymentWithQZTray(printerConfig, invoiceDoc, numberOfCopies = 1) {
+    try {
+      if (!isConnected) {
+        const connected = await initQZTray();
+        if (!connected)
+          throw new Error("QZ Tray not connected");
+      }
+      const config = import_qz_tray.default.configs.create(__spreadProps(__spreadValues({}, printerConfig), {
+        encoding: "UTF-8",
+        rasterize: false,
+        altPrinting: false,
+        copies: numberOfCopies,
+        margins: { top: 0, right: 0, bottom: 0, left: 0 }
+      }));
+      const content = formatPaymentReceiptForEscPos(invoiceDoc);
+      await import_qz_tray.default.print(config, content);
+      return true;
+    } catch (err) {
+      console.error("Error printing payment receipt with QZ Tray:", err);
+      return false;
+    }
+  }
   function formatKotForEscPos(kotData) {
     const ESC = "\x1B";
     const LF = "\n";
@@ -15507,25 +15551,239 @@ Expected function or array of functions, received type ${typeof value}.`
     commands.push(CUT);
     return commands;
   }
-  async function printKotWithQZTray(printerConfig, kotContent) {
+  function formatPaymentReceiptForEscPos(doc3) {
+    const ESC = "\x1B";
+    const LF = "\n";
+    const CENTER = ESC + "a";
+    const LEFT = ESC + "a\0";
+    const RIGHT = ESC + "a";
+    const BOLD_ON = ESC + "E";
+    const BOLD_OFF = ESC + "E\0";
+    const DOUBLE_WIDTH = ESC + "!0";
+    const NORMAL = ESC + "!\0";
+    const INIT = ESC + "@";
+    const CUT = ESC + "m";
+    const FEED = ESC + "d";
+    const DASHED_LINE = ESC + "C";
+    let commands = [];
+    commands.push(INIT);
+    const company = doc3.company || "Default Company";
+    const posProfile = doc3.pos_profile || "";
+    if (company === "Run of the Mill" && doc3.custom_token_number) {
+      commands.push(CENTER);
+      commands.push(DOUBLE_WIDTH);
+      commands.push(BOLD_ON);
+      commands.push(doc3.custom_token_number + LF + LF);
+      commands.push(NORMAL);
+      commands.push(BOLD_OFF);
+    }
+    commands.push(CENTER);
+    const logoCommands = getLogoCommands(company);
+    commands.push(...logoCommands);
+    if (company === "Velo") {
+      commands.push(BOLD_ON);
+      commands.push("Velo" + LF);
+      commands.push(BOLD_OFF);
+      commands.push(posProfile + LF);
+      commands.push("Mob: 4480 0204" + LF);
+    } else if (company === "Run of the Mill") {
+      commands.push(BOLD_ON);
+      commands.push("Run of the Mill" + LF);
+      commands.push(BOLD_OFF);
+      commands.push(posProfile + LF);
+    } else {
+      commands.push(BOLD_ON);
+      commands.push("Neighborhood Cafe" + LF);
+      commands.push(BOLD_OFF);
+      commands.push(posProfile + LF);
+      commands.push("Mob: 55664455" + LF);
+    }
+    commands.push(LF);
+    commands.push(LEFT);
+    commands.push(BOLD_ON);
+    commands.push("INVOICE".padEnd(20) + "\u0641\u0627\u062A\u0648\u0631\u0629" + LF);
+    commands.push(BOLD_OFF);
+    commands.push(LF);
+    commands.push("Order #: " + doc3.name + LF);
+    commands.push(LF);
+    commands.push("Receipt #:" + LF);
+    if (company === "Neighborhood") {
+      commands.push("Table:" + LF);
+      commands.push("No of Pax:" + LF);
+    } else {
+      commands.push("Customer: " + (doc3.customer_name || "") + LF);
+      commands.push("Customer No.: " + (doc3.contact_mobile || "") + LF);
+    }
+    const postingDate = doc3.posting_date || new Date().toISOString().split("T")[0];
+    const postingTime = doc3.posting_time || new Date().toLocaleTimeString();
+    commands.push(postingDate.padEnd(20) + ":\u062A\u0627\u0631\u064A\u062E" + LF);
+    commands.push(postingTime.padEnd(20) + ":\u0627\u0644\u0648\u0642\u062A" + LF);
+    commands.push(LF);
+    if (company === "Neighborhood") {
+      commands.push(CENTER);
+      commands.push(BOLD_ON);
+      commands.push("Dine In" + LF);
+      commands.push(BOLD_OFF);
+      commands.push(LF);
+    }
+    commands.push(LEFT);
+    commands.push("================================" + LF);
+    commands.push(BOLD_ON);
+    commands.push("ITEM      QTY  RATE   AMOUNT" + LF);
+    commands.push(BOLD_OFF);
+    commands.push("================================" + LF);
+    if (doc3.items && doc3.items.length > 0) {
+      doc3.items.forEach((item) => {
+        let itemName = (item.item_name || "").substring(0, 10).padEnd(10);
+        let qty = String(item.qty || 0).padStart(3);
+        let rate = String(Math.round(item.rate || 0)).padStart(5);
+        let amount = String(Math.round(item.amount || 0)).padStart(7);
+        commands.push(itemName + qty + rate + amount + LF);
+      });
+    }
+    commands.push("================================" + LF);
+    const formatMoney = (amount) => String(Math.round(amount || 0));
+    commands.push("Bill Amount:".padEnd(20) + formatMoney(doc3.total).padStart(12) + LF);
+    commands.push("Total Discount:".padEnd(20) + formatMoney(doc3.discount_amount).padStart(12) + LF);
+    commands.push(BOLD_ON);
+    commands.push("Total:".padEnd(20) + formatMoney(doc3.grand_total).padStart(12) + LF);
+    commands.push(BOLD_OFF);
+    commands.push("Paid Amount:".padEnd(20) + formatMoney(doc3.paid_amount).padStart(12) + LF);
+    commands.push("Change Amount:".padEnd(20) + formatMoney(doc3.change_amount).padStart(12) + LF);
+    commands.push("================================" + LF);
+    if (doc3.custom_discount_offer && doc3.discount_amount) {
+      commands.push(doc3.custom_discount_offer + " - " + formatMoney(doc3.discount_amount) + LF);
+    }
+    if (doc3.payments && doc3.payments.length > 0) {
+      doc3.payments.forEach((payment) => {
+        commands.push(payment.mode_of_payment + " " + formatMoney(payment.amount) + LF);
+      });
+    }
+    commands.push("--------------------------------" + LF);
+    commands.push(CENTER);
+    commands.push("Thank you for Choosing Us" + LF);
+    commands.push("Prepared by: " + (doc3.total_qty || "") + LF);
+    commands.push(LF);
+    if (company === "Velo") {
+      commands.push("Velo Policy: 7 days for Exchange" + LF);
+      commands.push("or Store Credit. NO REFUNDS." + LF);
+    } else if (company === "Run of the Mill") {
+      commands.push("Run of the Mill Policy: Kindly" + LF);
+      commands.push("review your items before leaving" + LF);
+      commands.push("the premises." + LF);
+    } else {
+      commands.push("Neighborhood Policy: We appreciate" + LF);
+      commands.push("your visit. Follow us on social" + LF);
+      commands.push("media @neighborhoodcafe" + LF);
+    }
+    commands.push(LF);
+    commands.push(FEED);
+    commands.push(CUT);
+    return commands;
+  }
+  function getLogoCommands(company) {
+    const ESC = "\x1B";
+    const GS = "";
+    const LF = "\n";
+    let logoCommands = [];
+    switch (company) {
+      case "Velo":
+        logoCommands = getVeloLogo();
+        break;
+      case "Run of the Mill":
+        logoCommands = getRunOfTheMillLogo();
+        break;
+      case "Neighborhood":
+      case "Neighborhood Cafe":
+        logoCommands = getNeighborhoodLogo();
+        break;
+      default:
+        logoCommands = getDefaultLogo();
+        break;
+    }
+    return logoCommands;
+  }
+  function getVeloLogo() {
+    const ESC = "\x1B";
+    const GS = "";
+    const LF = "\n";
+    return [
+      ESC + "a",
+      ESC + "!0",
+      "V E L O" + LF,
+      ESC + "!\0",
+      "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550" + LF,
+      LF
+    ];
+  }
+  function getRunOfTheMillLogo() {
+    const ESC = "\x1B";
+    const GS = "";
+    const LF = "\n";
+    return [
+      ESC + "a",
+      ESC + "! ",
+      "RUN OF THE MILL" + LF,
+      ESC + "!\0",
+      "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550" + LF,
+      LF
+    ];
+  }
+  function getNeighborhoodLogo() {
+    const ESC = "\x1B";
+    const GS = "";
+    const LF = "\n";
+    return [
+      ESC + "a",
+      ESC + "!0",
+      "NEIGHBORHOOD" + LF,
+      ESC + "!",
+      "CAFE" + LF,
+      ESC + "!\0",
+      "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550" + LF,
+      LF
+    ];
+  }
+  function getDefaultLogo() {
+    const ESC = "\x1B";
+    const LF = "\n";
+    return [
+      ESC + "a",
+      "*** RESTAURANT ***" + LF,
+      "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550" + LF,
+      LF
+    ];
+  }
+  async function handlePaymentNetworkPrinting(invoiceDoc, pos_profile2) {
     try {
-      if (!isConnected) {
-        const connected = await initQZTray();
-        if (!connected)
-          throw new Error("QZ Tray not connected");
+      if (!pos_profile2.custom_enable_payment_network_prints) {
+        return false;
       }
-      const config = import_qz_tray.default.configs.create(__spreadProps(__spreadValues({}, printerConfig), {
-        encoding: "UTF-8",
-        rasterize: false,
-        altPrinting: false,
-        copies: 1,
-        margins: { top: 0, right: 0, bottom: 0, left: 0 }
-      }));
-      const content = formatKotForEscPos(kotContent);
-      await import_qz_tray.default.print(config, content);
+      const connected = await initQZTray();
+      if (!connected) {
+        console.error("QZ Tray not connected for payment printing.");
+        return false;
+      }
+      const printSettings = pos_profile2.custom_payment_prints_setting || [];
+      if (printSettings.length === 0) {
+        console.error("No payment print settings configured.");
+        return false;
+      }
+      for (const setting of printSettings) {
+        const printerConfig = {
+          name: setting.print_name || `${setting.print_ip}:${setting.print_port}`,
+          host: setting.print_ip,
+          port: setting.print_port
+        };
+        const numberOfCopies = setting.number_of_prints || 1;
+        const success = await printPaymentWithQZTray(printerConfig, invoiceDoc, numberOfCopies);
+        if (!success) {
+          console.error(`Failed to print payment receipt to ${printerConfig.name}`);
+        }
+      }
       return true;
-    } catch (err) {
-      console.error("Error printing with QZ Tray:", err);
+    } catch (error) {
+      console.error("Error in payment network printing:", error);
       return false;
     }
   }
@@ -18809,18 +19067,52 @@ Expected function or array of functions, received type ${typeof value}.`
         const printFormat = pos_profile2.value.print_format || "";
         return encodeURIComponent(printFormat.trim());
       };
-      const load_print_page = (invoice) => {
-        const print_format = pos_profile2.value.print_format_for_online || pos_profile2.value.print_format;
-        const letter_head = pos_profile2.value.letter_head || 0;
-        const formattedValue = getFormattedPrintFormat();
-        const url = frappe.urllib.get_base_url() + "/printview?doctype=Sales%20Invoice&name=" + invoice + "&trigger_print=1&format=" + formattedValue + "&no_letterhead=" + letter_head;
-        console.log("Print-url", url);
-        const printFrame = document.getElementById("printFrame");
-        printFrame.src = url;
-        printFrame.onload = function() {
-          printFrame.contentWindow.focus();
-          printFrame.contentWindow.print();
-        };
+      const load_print_page = async (invoice) => {
+        var _a2;
+        try {
+          if ((_a2 = pos_profile2.value) == null ? void 0 : _a2.custom_enable_payment_network_prints) {
+            console.log("Using network printing for payment receipt");
+            const invoiceDoc = await frappe.call({
+              method: "frappe.client.get",
+              args: {
+                doctype: "Sales Invoice",
+                name: invoice
+              }
+            });
+            if (invoiceDoc && invoiceDoc.message) {
+              const success = await handlePaymentNetworkPrinting(invoiceDoc.message, pos_profile2.value);
+              if (success) {
+                console.log("Network printing successful");
+                return;
+              } else {
+                console.log("Network printing failed, falling back to browser printing");
+              }
+            }
+          }
+          const print_format = pos_profile2.value.print_format_for_online || pos_profile2.value.print_format;
+          const letter_head = pos_profile2.value.letter_head || 0;
+          const formattedValue = getFormattedPrintFormat();
+          const url = frappe.urllib.get_base_url() + "/printview?doctype=Sales%20Invoice&name=" + invoice + "&trigger_print=1&format=" + formattedValue + "&no_letterhead=" + letter_head;
+          console.log("Print-url", url);
+          const printFrame = document.getElementById("printFrame");
+          printFrame.src = url;
+          printFrame.onload = function() {
+            printFrame.contentWindow.focus();
+            printFrame.contentWindow.print();
+          };
+        } catch (error) {
+          console.error("Error in load_print_page:", error);
+          const print_format = pos_profile2.value.print_format_for_online || pos_profile2.value.print_format;
+          const letter_head = pos_profile2.value.letter_head || 0;
+          const formattedValue = getFormattedPrintFormat();
+          const url = frappe.urllib.get_base_url() + "/printview?doctype=Sales%20Invoice&name=" + invoice + "&trigger_print=1&format=" + formattedValue + "&no_letterhead=" + letter_head;
+          const printFrame = document.getElementById("printFrame");
+          printFrame.src = url;
+          printFrame.onload = function() {
+            printFrame.contentWindow.focus();
+            printFrame.contentWindow.print();
+          };
+        }
       };
       const submitReturn = async (event, payment_received = false, print = false) => {
         console.log("invoice_doc.value...", invoice_doc.value);
@@ -18952,7 +19244,7 @@ Expected function or array of functions, received type ${typeof value}.`
                 );
                 console.log("fbr-response", responseCode);
                 if (responseCode) {
-                  load_print_page(response.message.name);
+                  await load_print_page(response.message.name);
                 } else {
                   console.error(
                     "FBR synchronization failed. Print page will not be loaded."
@@ -19091,7 +19383,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     }
                   }
                   if (print) {
-                    load_print_page(response.message.name);
+                    await load_print_page(response.message.name);
                     selectedOffer.value = null;
                   }
                   bus_default.emit("show_mesage", {
@@ -19597,6 +19889,8 @@ Expected function or array of functions, received type ${typeof value}.`
         return printInvoice;
       }, get sync_fbr() {
         return sync_fbr;
+      }, get handlePaymentNetworkPrinting() {
+        return handlePaymentNetworkPrinting;
       } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
@@ -51529,4 +51823,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.2MSNIW6J.js.map
+//# sourceMappingURL=pos.bundle.MGDWLLQY.js.map

@@ -359,6 +359,7 @@ import eventBus from "../../bus.js";
 import indexedDBService from "../../indexedDB";
 import { printInvoice } from "../../printing";
 import { sync_fbr } from "../../tax_integration";
+import { handlePaymentNetworkPrinting } from "../../qzTrayService";
 
 const numpad = ref([
   "1",
@@ -834,30 +835,83 @@ const getFormattedPrintFormat = () => {
   const printFormat = pos_profile.value.print_format || "";
   return encodeURIComponent(printFormat.trim());
 };
-const load_print_page = (invoice) => {
-  const print_format =
-    pos_profile.value.print_format_for_online || pos_profile.value.print_format;
-  const letter_head = pos_profile.value.letter_head || 0;
-  const formattedValue = getFormattedPrintFormat();
+const load_print_page = async (invoice) => {
+  try {
+    // Check if network printing is enabled
+    if (pos_profile.value?.custom_enable_payment_network_prints) {
+      console.log("Using network printing for payment receipt");
+      
+      // Get the full invoice document for network printing
+      const invoiceDoc = await frappe.call({
+        method: "frappe.client.get",
+        args: {
+          doctype: "Sales Invoice",
+          name: invoice
+        }
+      });
+      
+      if (invoiceDoc && invoiceDoc.message) {
+        const success = await handlePaymentNetworkPrinting(invoiceDoc.message, pos_profile.value);
+        if (success) {
+          console.log("Network printing successful");
+          return;
+        } else {
+          console.log("Network printing failed, falling back to browser printing");
+        }
+      }
+    }
+    
+    // Original browser printing logic (fallback or when network printing is disabled)
+    const print_format =
+      pos_profile.value.print_format_for_online || pos_profile.value.print_format;
+    const letter_head = pos_profile.value.letter_head || 0;
+    const formattedValue = getFormattedPrintFormat();
 
-  const url =
-    frappe.urllib.get_base_url() +
-    "/printview?doctype=Sales%20Invoice&name=" +
-    invoice +
-    "&trigger_print=1" +
-    "&format=" +
-    formattedValue +
-    "&no_letterhead=" +
-    letter_head;
-  console.log("Print-url", url);
+    const url =
+      frappe.urllib.get_base_url() +
+      "/printview?doctype=Sales%20Invoice&name=" +
+      invoice +
+      "&trigger_print=1" +
+      "&format=" +
+      formattedValue +
+      "&no_letterhead=" +
+      letter_head;
+    console.log("Print-url", url);
 
-  const printFrame = document.getElementById("printFrame");
-  printFrame.src = url;
+    const printFrame = document.getElementById("printFrame");
+    printFrame.src = url;
 
-  printFrame.onload = function () {
-    printFrame.contentWindow.focus();
-    printFrame.contentWindow.print();
-  };
+    printFrame.onload = function () {
+      printFrame.contentWindow.focus();
+      printFrame.contentWindow.print();
+    };
+  } catch (error) {
+    console.error("Error in load_print_page:", error);
+    
+    // Fallback to original printing method in case of any error
+    const print_format =
+      pos_profile.value.print_format_for_online || pos_profile.value.print_format;
+    const letter_head = pos_profile.value.letter_head || 0;
+    const formattedValue = getFormattedPrintFormat();
+
+    const url =
+      frappe.urllib.get_base_url() +
+      "/printview?doctype=Sales%20Invoice&name=" +
+      invoice +
+      "&trigger_print=1" +
+      "&format=" +
+      formattedValue +
+      "&no_letterhead=" +
+      letter_head;
+
+    const printFrame = document.getElementById("printFrame");
+    printFrame.src = url;
+
+    printFrame.onload = function () {
+      printFrame.contentWindow.focus();
+      printFrame.contentWindow.print();
+    };
+  }
 };
 
 const submitReturn = async (event,
@@ -1011,7 +1065,7 @@ const forExchangeSaleInvoice = async (event,
           );
           console.log("fbr-response", responseCode);
           if (responseCode) {
-            load_print_page(response.message.name);
+            await load_print_page(response.message.name);
           } else {
             console.error(
               "FBR synchronization failed. Print page will not be loaded."
@@ -1189,29 +1243,8 @@ const submitSaleInvoice = async (
             }
 
             if (print) {
-              load_print_page(response.message.name);
+              await load_print_page(response.message.name);
               selectedOffer.value = null;
-
-              // try {
-              //   const responseCode = await sync_fbr(
-              //     invoice_doc.value,
-              //     pos_profile.value,
-              //     false
-              //   );
-              //   console.log("fbr-response", responseCode);
-              //   if (responseCode) {
-              //     load_print_page(response.message.name);
-              //   } else {
-              //     console.error(
-              //       "FBR synchronization failed. Print page will not be loaded."
-              //     );
-              //   }
-              // } catch (error) {
-              //   console.error(
-              //     "Error during FBR sync and print handling:",
-              //     error
-              //   );
-              // }
             }
 
             eventBus.emit("show_mesage", {
