@@ -15203,6 +15203,22 @@ Expected function or array of functions, received type ${typeof value}.`
       const dateTimeString = now.toLocaleString();
       const postingDate = now.toLocaleDateString();
       const postingTime = now.toLocaleTimeString();
+      const company = offlineData.company || "Default Company";
+      let companyDisplayName = "";
+      let mobileNumber = "";
+      if (company === "Velo") {
+        companyDisplayName = "Velo";
+        mobileNumber = "4480 0204";
+      } else if (company === "Run of the Mill") {
+        companyDisplayName = "Run of the Mill";
+        mobileNumber = "1234 5678";
+      } else if (company === "Neighborhood" || company === "Neighborhood Cafe") {
+        companyDisplayName = "Neighborhood Cafe";
+        mobileNumber = "55664455";
+      } else {
+        companyDisplayName = offlineData.resturent_type || "Neighborhood Cafe";
+        mobileNumber = "55664455";
+      }
       const newWindow = window.open("", "_blank");
       newWindow.document.write(`
 <html>
@@ -15274,15 +15290,20 @@ Expected function or array of functions, received type ${typeof value}.`
             page-break-inside: avoid;
             page-break-after: auto;
         }
+        .arabic-text {
+            font-family: Arial Unicode MS, Tahoma;
+            direction: rtl;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
     <div class="print-format">
         <div class="row">
             <div class="col-xs-12" style="text-align:center">
-                <p style="font-size: 16px;"><b>${offlineData.resturent_type || "Neighborhood Cafe"}</b></p>
+                <p style="font-size: 16px;"><b>${companyDisplayName}</b></p>
                 <p>${offlineData.pos_profile || ""}</p>
-                <p><b>Mob:</b>55664455</p>
+                <p><b>Mob:</b> ${mobileNumber}</p>
             </div>
         </div>
 
@@ -15301,7 +15322,7 @@ Expected function or array of functions, received type ${typeof value}.`
                     <tbody>
                         <tr class="innertext">
                             <td></td>
-                            <td style="font-size: 14px;" class="text-right"><b>\u0641\u0627\u062A\u0648\u0631\u0629</b></td>
+                            <td style="font-size: 14px;" class="text-right arabic-text"><b>\u0641\u0627\u062A\u0648\u0631\u0629</b></td>
                         </tr>
                     </tbody>
                 </table>
@@ -15338,11 +15359,11 @@ Expected function or array of functions, received type ${typeof value}.`
                     <tbody>
                         <tr class="innertext">
                             <td>${postingDate}</td>
-                            <td><b>:\u062A\u0627\u0631\u064A\u062E:</b></td>
+                            <td class="arabic-text"><b>:\u062A\u0627\u0631\u064A\u062E</b></td>
                         </tr>
                         <tr class="innertext">
                             <td>${postingTime}</td>
-                            <td><b>:\u0627\u0644\u0648\u0642\u062A</b></td>
+                            <td class="arabic-text"><b>:\u0627\u0644\u0648\u0642\u062A</b></td>
                         </tr>
                     </tbody>
                 </table>
@@ -15495,6 +15516,7 @@ Expected function or array of functions, received type ${typeof value}.`
     const INIT = ESC + "@";
     const CUT = ESC + "m";
     const FEED = ESC + "d";
+    const DOUBLE_HEIGHT = ESC + "!";
     let commands = [];
     commands.push(INIT);
     commands.push(ESC + "C$");
@@ -15552,6 +15574,7 @@ Expected function or array of functions, received type ${typeof value}.`
     return commands;
   }
   function formatPaymentReceiptForEscPos(doc3) {
+    var _a2, _b;
     const ESC = "\x1B";
     const LF = "\n";
     const CENTER = ESC + "a";
@@ -15560,26 +15583,29 @@ Expected function or array of functions, received type ${typeof value}.`
     const BOLD_ON = ESC + "E";
     const BOLD_OFF = ESC + "E\0";
     const DOUBLE_WIDTH = ESC + "!0";
+    const DOUBLE_HEIGHT = ESC + "!";
+    const DOUBLE_WH = ESC + "!8";
     const NORMAL = ESC + "!\0";
     const INIT = ESC + "@";
     const CUT = ESC + "m";
     const FEED = ESC + "d";
-    const DASHED_LINE = ESC + "C";
+    const SET_ARABIC = ESC + "t";
+    const SET_LATIN = ESC + "t\0";
     let commands = [];
     commands.push(INIT);
-    const company = doc3.company || "Default Company";
-    const posProfile = doc3.pos_profile || "";
+    const company = doc3.company || ((_a2 = doc3.pos_profile) == null ? void 0 : _a2.company) || "Neighborhood Cafe";
+    const posProfile = ((_b = doc3.pos_profile) == null ? void 0 : _b.name) || doc3.pos_profile || "";
+    console.log("Company detected:", company);
     if (company === "Run of the Mill" && doc3.custom_token_number) {
       commands.push(CENTER);
-      commands.push(DOUBLE_WIDTH);
       commands.push(BOLD_ON);
-      commands.push(doc3.custom_token_number + LF + LF);
+      commands.push(DOUBLE_WH);
+      commands.push(doc3.custom_token_number + LF);
       commands.push(NORMAL);
       commands.push(BOLD_OFF);
+      commands.push(LF);
     }
     commands.push(CENTER);
-    const logoCommands = getLogoCommands(company);
-    commands.push(...logoCommands);
     if (company === "Velo") {
       commands.push(BOLD_ON);
       commands.push("Velo" + LF);
@@ -15588,45 +15614,60 @@ Expected function or array of functions, received type ${typeof value}.`
       commands.push("Mob: 4480 0204" + LF);
     } else if (company === "Run of the Mill") {
       commands.push(BOLD_ON);
+      commands.push(DOUBLE_WIDTH);
       commands.push("Run of the Mill" + LF);
+      commands.push(NORMAL);
       commands.push(BOLD_OFF);
       commands.push(posProfile + LF);
-    } else {
+    } else if (company === "Neighborhood" || company === "Neighborhood Cafe" || company.includes("Neighborhood")) {
       commands.push(BOLD_ON);
       commands.push("Neighborhood Cafe" + LF);
       commands.push(BOLD_OFF);
-      commands.push(posProfile + LF);
+      commands.push("Demo" + LF);
       commands.push("Mob: 55664455" + LF);
+    } else {
+      if (company && company !== "Default Company") {
+        commands.push(BOLD_ON);
+        commands.push(company + LF);
+        commands.push(BOLD_OFF);
+      } else {
+        commands.push(BOLD_ON);
+        commands.push("Neighborhood Cafe" + LF);
+        commands.push(BOLD_OFF);
+        commands.push("Demo" + LF);
+        commands.push("Mob: 55664455" + LF);
+      }
     }
     commands.push(LF);
     commands.push(LEFT);
     commands.push(BOLD_ON);
-    commands.push("INVOICE".padEnd(20) + "\u0641\u0627\u062A\u0648\u0631\u0629" + LF);
+    commands.push("INVOICE             ");
+    commands.push(SET_ARABIC);
+    commands.push("\u0641\u0627\u062A\u0648\u0631\u0629" + LF);
+    commands.push(SET_LATIN);
     commands.push(BOLD_OFF);
     commands.push(LF);
     commands.push("Order #: " + doc3.name + LF);
     commands.push(LF);
     commands.push("Receipt #:" + LF);
-    if (company === "Neighborhood") {
-      commands.push("Table:" + LF);
-      commands.push("No of Pax:" + LF);
+    if (company === "Neighborhood" || company === "Neighborhood Cafe" || company.includes("Neighborhood")) {
+      commands.push("Customer: Walk In" + LF);
+      commands.push("Customer No.: " + LF);
     } else {
-      commands.push("Customer: " + (doc3.customer_name || "") + LF);
+      commands.push("Customer: " + (doc3.customer_name || "Walk In") + LF);
       commands.push("Customer No.: " + (doc3.contact_mobile || "") + LF);
     }
     const postingDate = doc3.posting_date || new Date().toISOString().split("T")[0];
     const postingTime = doc3.posting_time || new Date().toLocaleTimeString();
-    commands.push(postingDate.padEnd(20) + ":\u062A\u0627\u0631\u064A\u062E" + LF);
-    commands.push(postingTime.padEnd(20) + ":\u0627\u0644\u0648\u0642\u062A" + LF);
+    commands.push(postingDate.padEnd(20));
+    commands.push(SET_ARABIC);
+    commands.push(":\u062A\u0627\u0631\u064A\u062E" + LF);
+    commands.push(SET_LATIN);
+    commands.push(postingTime.padEnd(20));
+    commands.push(SET_ARABIC);
+    commands.push(":\u0627\u0644\u0648\u0642\u062A" + LF);
+    commands.push(SET_LATIN);
     commands.push(LF);
-    if (company === "Neighborhood") {
-      commands.push(CENTER);
-      commands.push(BOLD_ON);
-      commands.push("Dine In" + LF);
-      commands.push(BOLD_OFF);
-      commands.push(LF);
-    }
-    commands.push(LEFT);
     commands.push("================================" + LF);
     commands.push(BOLD_ON);
     commands.push("ITEM      QTY  RATE   AMOUNT" + LF);
@@ -15651,9 +15692,6 @@ Expected function or array of functions, received type ${typeof value}.`
     commands.push("Paid Amount:".padEnd(20) + formatMoney(doc3.paid_amount).padStart(12) + LF);
     commands.push("Change Amount:".padEnd(20) + formatMoney(doc3.change_amount).padStart(12) + LF);
     commands.push("================================" + LF);
-    if (doc3.custom_discount_offer && doc3.discount_amount) {
-      commands.push(doc3.custom_discount_offer + " - " + formatMoney(doc3.discount_amount) + LF);
-    }
     if (doc3.payments && doc3.payments.length > 0) {
       doc3.payments.forEach((payment) => {
         commands.push(payment.mode_of_payment + " " + formatMoney(payment.amount) + LF);
@@ -15662,7 +15700,7 @@ Expected function or array of functions, received type ${typeof value}.`
     commands.push("--------------------------------" + LF);
     commands.push(CENTER);
     commands.push("Thank you for Choosing Us" + LF);
-    commands.push("Prepared by: " + (doc3.total_qty || "") + LF);
+    commands.push("Prepared by: " + (doc3.owner || "") + LF);
     commands.push(LF);
     if (company === "Velo") {
       commands.push("Velo Policy: 7 days for Exchange" + LF);
@@ -15680,79 +15718,6 @@ Expected function or array of functions, received type ${typeof value}.`
     commands.push(FEED);
     commands.push(CUT);
     return commands;
-  }
-  function getLogoCommands(company) {
-    const ESC = "\x1B";
-    const GS = "";
-    const LF = "\n";
-    let logoCommands = [];
-    switch (company) {
-      case "Velo":
-        logoCommands = getVeloLogo();
-        break;
-      case "Run of the Mill":
-        logoCommands = getRunOfTheMillLogo();
-        break;
-      case "Neighborhood":
-      case "Neighborhood Cafe":
-        logoCommands = getNeighborhoodLogo();
-        break;
-      default:
-        logoCommands = getDefaultLogo();
-        break;
-    }
-    return logoCommands;
-  }
-  function getVeloLogo() {
-    const ESC = "\x1B";
-    const GS = "";
-    const LF = "\n";
-    return [
-      ESC + "a",
-      ESC + "!0",
-      "V E L O" + LF,
-      ESC + "!\0",
-      "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550" + LF,
-      LF
-    ];
-  }
-  function getRunOfTheMillLogo() {
-    const ESC = "\x1B";
-    const GS = "";
-    const LF = "\n";
-    return [
-      ESC + "a",
-      ESC + "! ",
-      "RUN OF THE MILL" + LF,
-      ESC + "!\0",
-      "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550" + LF,
-      LF
-    ];
-  }
-  function getNeighborhoodLogo() {
-    const ESC = "\x1B";
-    const GS = "";
-    const LF = "\n";
-    return [
-      ESC + "a",
-      ESC + "!0",
-      "NEIGHBORHOOD" + LF,
-      ESC + "!",
-      "CAFE" + LF,
-      ESC + "!\0",
-      "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550" + LF,
-      LF
-    ];
-  }
-  function getDefaultLogo() {
-    const ESC = "\x1B";
-    const LF = "\n";
-    return [
-      ESC + "a",
-      "*** RESTAURANT ***" + LF,
-      "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550" + LF,
-      LF
-    ];
   }
   async function handlePaymentNetworkPrinting(invoiceDoc, pos_profile2) {
     try {
@@ -15811,6 +15776,67 @@ Expected function or array of functions, received type ${typeof value}.`
       }
     });
     return printerGroups;
+  }
+  function testArabicPrint() {
+    const testDoc = {
+      company: "Neighborhood Cafe",
+      custom_token_number: "12",
+      name: "TEST-INVOICE-001",
+      customer_name: "Test Customer",
+      contact_mobile: "1234567890",
+      posting_date: "2025-01-09",
+      posting_time: "14:30:00",
+      items: [
+        {
+          item_name: "Test Item",
+          qty: 1,
+          rate: 100,
+          amount: 100
+        }
+      ],
+      total: 100,
+      discount_amount: 0,
+      grand_total: 100,
+      paid_amount: 100,
+      change_amount: 0,
+      payments: [
+        {
+          mode_of_payment: "Cash",
+          amount: 100
+        }
+      ],
+      owner: "Test User"
+    };
+    console.log("Testing Arabic print format...");
+    const commands = formatPaymentReceiptForEscPos(testDoc);
+    console.log("Generated commands:", commands);
+    return commands;
+  }
+  if (typeof window !== "undefined") {
+    window.testArabicPrint = testArabicPrint;
+  }
+  function debugCompanyInfo(doc3) {
+    var _a2, _b, _c;
+    console.log("=== Company Debug Info ===");
+    console.log("doc.company:", doc3.company);
+    console.log("doc.pos_profile:", doc3.pos_profile);
+    console.log("doc.pos_profile?.company:", (_a2 = doc3.pos_profile) == null ? void 0 : _a2.company);
+    console.log("doc.pos_profile?.name:", (_b = doc3.pos_profile) == null ? void 0 : _b.name);
+    const detectedCompany = doc3.company || ((_c = doc3.pos_profile) == null ? void 0 : _c.company) || "Neighborhood Cafe";
+    console.log("Final detected company:", detectedCompany);
+    if (detectedCompany === "Velo") {
+      console.log("Will match: Velo");
+    } else if (detectedCompany === "Run of the Mill") {
+      console.log("Will match: Run of the Mill");
+    } else if (detectedCompany === "Neighborhood" || detectedCompany === "Neighborhood Cafe" || detectedCompany.includes("Neighborhood")) {
+      console.log("Will match: Neighborhood");
+    } else {
+      console.log("Will match: Default case");
+    }
+    return detectedCompany;
+  }
+  if (typeof window !== "undefined") {
+    window.debugCompanyInfo = debugCompanyInfo;
   }
 
   // ../tabrah_pos/tabrah_pos/public/js/posapp/kotPrint.js
@@ -51823,4 +51849,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.MGDWLLQY.js.map
+//# sourceMappingURL=pos.bundle.EVXDEQSK.js.map

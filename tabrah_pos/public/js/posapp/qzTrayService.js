@@ -100,21 +100,22 @@ function formatKotForEscPos(kotData) {
     // ESC/POS Commands
     const ESC = '\x1B';
     const LF = '\x0A';
-    const CENTER = ESC + 'a' + '\x01';  // Center alignment
-    const LEFT = ESC + 'a' + '\x00';    // Left alignment
+    const CENTER = ESC + 'a' + '\x01';
+    const LEFT = ESC + 'a' + '\x00';
     const BOLD_ON = ESC + 'E' + '\x01';
     const BOLD_OFF = ESC + 'E' + '\x00';
-    const DOUBLE_WIDTH = ESC + '!' + '\x30'; // Double width + bold
-    const NORMAL = ESC + '!' + '\x00';   // Normal text
-    const INIT = ESC + '@';              // Initialize printer
-    const CUT = ESC + 'm';               // Partial cut
-    const FEED = ESC + 'd' + '\x03';     // Feed 3 lines
+    const DOUBLE_WIDTH = ESC + '!' + '\x30';
+    const NORMAL = ESC + '!' + '\x00';
+    const INIT = ESC + '@';
+    const CUT = ESC + 'm';
+    const FEED = ESC + 'd' + '\x03';
+    const DOUBLE_HEIGHT = ESC + '!' + '\x10';
 
     let commands = [];
     commands.push(INIT);
 
-    // Set print width (may need adjustment based on your printer)
-    commands.push(ESC + 'C' + '\x24');  // 36 characters per line
+    // Set print width
+    commands.push(ESC + 'C' + '\x24');
 
     // Header
     commands.push(CENTER);
@@ -154,17 +155,15 @@ function formatKotForEscPos(kotData) {
 
     // Items
     kotData.items.forEach(item => {
-        // Main item
         let itemName = item.item_name || 'N/A';
         let qty = item.qty || 0;
         
-        // Pad item name and quantity to align properly
         itemName = itemName.padEnd(30).substring(0, 30);
         let qtyStr = String(qty).padStart(3);
         
         commands.push(itemName + qtyStr + LF);
 
-        // Bundle items (if any)
+        // Bundle items
         if (item.product_bundle?.items?.length > 0) {
             item.product_bundle.items.forEach(bundleItem => {
                 let bundleName = '  - ' + (bundleItem.custom_item_name || 'N/A');
@@ -173,7 +172,7 @@ function formatKotForEscPos(kotData) {
             });
         }
 
-        // Item comment/note (if any)
+        // Item comment
         if (item.comment) {
             commands.push('Note: ' + item.comment + LF);
         }
@@ -204,36 +203,41 @@ function formatPaymentReceiptForEscPos(doc) {
     const BOLD_ON = ESC + 'E' + '\x01';
     const BOLD_OFF = ESC + 'E' + '\x00';
     const DOUBLE_WIDTH = ESC + '!' + '\x30';
+    const DOUBLE_HEIGHT = ESC + '!' + '\x10';
+    const DOUBLE_WH = ESC + '!' + '\x38'; // Double width and height
     const NORMAL = ESC + '!' + '\x00';
     const INIT = ESC + '@';
     const CUT = ESC + 'm';
     const FEED = ESC + 'd' + '\x03';
-    const DASHED_LINE = ESC + 'C' + '\x01';
+    
+    // Arabic character encoding
+    const SET_ARABIC = ESC + 't' + '\x06'; // CP864 Arabic
+    const SET_LATIN = ESC + 't' + '\x00';  // Default Latin
 
     let commands = [];
     commands.push(INIT);
 
-    // Get company info
-    const company = doc.company || 'Default Company';
-    const posProfile = doc.pos_profile || '';
+    // Get company info - check multiple possible fields
+    const company = doc.company || doc.pos_profile?.company || 'Neighborhood Cafe';
+    const posProfile = doc.pos_profile?.name || doc.pos_profile || '';
 
-    // Token number for Run of the Mill
+    console.log('Company detected:', company); // Debug log
+
+    // Token number for Run of the Mill - Large and Bold
     if (company === "Run of the Mill" && doc.custom_token_number) {
         commands.push(CENTER);
-        commands.push(DOUBLE_WIDTH);
         commands.push(BOLD_ON);
-        commands.push(doc.custom_token_number + LF + LF);
+        commands.push(DOUBLE_WH); // Double width and height
+        commands.push(doc.custom_token_number + LF);
         commands.push(NORMAL);
         commands.push(BOLD_OFF);
+        commands.push(LF);
     }
 
-    // Header with company logo and info
+    // Header with company info - no separate logo section
     commands.push(CENTER);
     
-    // Add logo based on company
-    const logoCommands = getLogoCommands(company);
-    commands.push(...logoCommands);
-    
+    // Company specific headers (this replaces the logo)
     if (company === "Velo") {
         commands.push(BOLD_ON);
         commands.push('Velo' + LF);
@@ -242,23 +246,43 @@ function formatPaymentReceiptForEscPos(doc) {
         commands.push('Mob: 4480 0204' + LF);
     } else if (company === "Run of the Mill") {
         commands.push(BOLD_ON);
+        commands.push(DOUBLE_WIDTH);
         commands.push('Run of the Mill' + LF);
+        commands.push(NORMAL);
         commands.push(BOLD_OFF);
         commands.push(posProfile + LF);
-    } else {
+    } else if (company === "Neighborhood" || company === "Neighborhood Cafe" || company.includes("Neighborhood")) {
         commands.push(BOLD_ON);
         commands.push('Neighborhood Cafe' + LF);
         commands.push(BOLD_OFF);
-        commands.push(posProfile + LF);
+        commands.push('Demo' + LF);
         commands.push('Mob: 55664455' + LF);
+    } else {
+        // Default case - try to show actual company name if available
+        if (company && company !== 'Default Company') {
+            commands.push(BOLD_ON);
+            commands.push(company + LF);
+            commands.push(BOLD_OFF);
+        } else {
+            commands.push(BOLD_ON);
+            commands.push('Neighborhood Cafe' + LF);
+            commands.push(BOLD_OFF);
+            commands.push('Demo' + LF);
+            commands.push('Mob: 55664455' + LF);
+        }
     }
-
+    
     commands.push(LF);
 
-    // Invoice title
+    // Invoice title - with proper Arabic encoding
     commands.push(LEFT);
     commands.push(BOLD_ON);
-    commands.push('INVOICE'.padEnd(20) + 'فاتورة' + LF);
+    commands.push('INVOICE             ');
+    
+    // Switch to Arabic encoding for Arabic text
+    commands.push(SET_ARABIC);
+    commands.push('فاتورة' + LF);
+    commands.push(SET_LATIN); // Switch back to Latin
     commands.push(BOLD_OFF);
     commands.push(LF);
 
@@ -269,33 +293,32 @@ function formatPaymentReceiptForEscPos(doc) {
     // Receipt info section
     commands.push('Receipt #:' + LF);
     
-    if (company === "Neighborhood") {
-        commands.push('Table:' + LF);
-        commands.push('No of Pax:' + LF);
+    if (company === "Neighborhood" || company === "Neighborhood Cafe" || company.includes("Neighborhood")) {
+        commands.push('Customer: Walk In' + LF);
+        commands.push('Customer No.: ' + LF);
     } else {
-        commands.push('Customer: ' + (doc.customer_name || '') + LF);
+        commands.push('Customer: ' + (doc.customer_name || 'Walk In') + LF);
         commands.push('Customer No.: ' + (doc.contact_mobile || '') + LF);
     }
 
-    // Date and time
+    // Date and time - with proper Arabic encoding
     const postingDate = doc.posting_date || new Date().toISOString().split('T')[0];
     const postingTime = doc.posting_time || new Date().toLocaleTimeString();
     
-    commands.push(postingDate.padEnd(20) + ':تاريخ' + LF);
-    commands.push(postingTime.padEnd(20) + ':الوقت' + LF);
+    // Date with Arabic
+    commands.push(postingDate.padEnd(20));
+    commands.push(SET_ARABIC);
+    commands.push(':تاريخ' + LF);
+    commands.push(SET_LATIN);
+    
+    // Time with Arabic
+    commands.push(postingTime.padEnd(20));
+    commands.push(SET_ARABIC);
+    commands.push(':الوقت' + LF);
+    commands.push(SET_LATIN);
     commands.push(LF);
 
-    // Dine In section for Neighborhood
-    if (company === "Neighborhood") {
-        commands.push(CENTER);
-        commands.push(BOLD_ON);
-        commands.push('Dine In' + LF);
-        commands.push(BOLD_OFF);
-        commands.push(LF);
-    }
-
     // Items table header
-    commands.push(LEFT);
     commands.push('================================' + LF);
     commands.push(BOLD_ON);
     commands.push('ITEM      QTY  RATE   AMOUNT' + LF);
@@ -328,11 +351,6 @@ function formatPaymentReceiptForEscPos(doc) {
     commands.push('Change Amount:'.padEnd(20) + formatMoney(doc.change_amount).padStart(12) + LF);
     commands.push('================================' + LF);
 
-    // Custom discount offer
-    if (doc.custom_discount_offer && doc.discount_amount) {
-        commands.push(doc.custom_discount_offer + ' - ' + formatMoney(doc.discount_amount) + LF);
-    }
-
     // Payment modes
     if (doc.payments && doc.payments.length > 0) {
         doc.payments.forEach(payment => {
@@ -346,7 +364,7 @@ function formatPaymentReceiptForEscPos(doc) {
     // Footer
     commands.push(CENTER);
     commands.push('Thank you for Choosing Us' + LF);
-    commands.push('Prepared by: ' + (doc.total_qty || '') + LF);
+    commands.push('Prepared by: ' + (doc.owner || '') + LF);
     commands.push(LF);
 
     // Company policy
@@ -364,8 +382,6 @@ function formatPaymentReceiptForEscPos(doc) {
     }
 
     commands.push(LF);
-
-    // Feed and cut
     commands.push(FEED);
     commands.push(CUT);
 
@@ -374,32 +390,20 @@ function formatPaymentReceiptForEscPos(doc) {
 
 // Function to get logo commands based on company
 function getLogoCommands(company) {
-    const ESC = '\x1B';
-    const GS = '\x1D';
-    const LF = '\x0A';
-    
-    // ESC/POS Image printing commands
-    // GS v 0 - Print raster bit image
-    // ESC * - Print bit image
-    
     let logoCommands = [];
     
     switch (company) {
         case "Velo":
-            // Velo logo commands
             logoCommands = getVeloLogo();
             break;
         case "Run of the Mill":
-            // Run of the Mill logo commands
             logoCommands = getRunOfTheMillLogo();
             break;
         case "Neighborhood":
         case "Neighborhood Cafe":
-            // Neighborhood Cafe logo commands
             logoCommands = getNeighborhoodLogo();
             break;
         default:
-            // Default/fallback logo
             logoCommands = getDefaultLogo();
             break;
     }
@@ -407,102 +411,64 @@ function getLogoCommands(company) {
     return logoCommands;
 }
 
-// Velo logo bitmap data
+// Velo logo
 function getVeloLogo() {
-    const ESC = '\x1B';
-    const GS = '\x1D';
-    const LF = '\x0A';
-    
-    // Simple text-based logo for Velo (you can replace with actual bitmap)
     return [
-        ESC + 'a' + '\x01', // Center align
-        ESC + '!' + '\x30', // Double width
-        'V E L O' + LF,
-        ESC + '!' + '\x00', // Normal width
-        '════════════════════' + LF,
-        LF
+        '\n',
+        '  V E L O  \n',
+        '═══════════\n',
+        '\n'
     ];
 }
 
-// Run of the Mill logo bitmap data
+// Run of the Mill logo
 function getRunOfTheMillLogo() {
-    const ESC = '\x1B';
-    const GS = '\x1D';
-    const LF = '\x0A';
-    
     return [
-        ESC + 'a' + '\x01', // Center align
-        ESC + '!' + '\x20', // Double height
-        'RUN OF THE MILL' + LF,
-        ESC + '!' + '\x00', // Normal
-        '════════════════════' + LF,
-        LF
+        '\n',
+        ' RUN OF THE MILL \n',
+        '═════════════════\n',
+        '\n'
     ];
 }
 
-// Neighborhood Cafe logo bitmap data
+// Neighborhood Cafe logo
 function getNeighborhoodLogo() {
-    const ESC = '\x1B';
-    const GS = '\x1D';
-    const LF = '\x0A';
-    
     return [
-        ESC + 'a' + '\x01', // Center align
-        ESC + '!' + '\x30', // Double width
-        'NEIGHBORHOOD' + LF,
-        ESC + '!' + '\x10', // Double height
-        'CAFE' + LF,
-        ESC + '!' + '\x00', // Normal
-        '════════════════════' + LF,
-        LF
+        '\n',
+        ' NEIGHBORHOOD \n',
+        '    CAFE      \n',
+        '══════════════\n',
+        '\n'
     ];
 }
 
 // Default logo
 function getDefaultLogo() {
-    const ESC = '\x1B';
-    const LF = '\x0A';
-    
     return [
-        ESC + 'a' + '\x01', // Center align
-        '*** RESTAURANT ***' + LF,
-        '════════════════════' + LF,
-        LF
+        '\n',
+        '*** RESTAURANT ***\n',
+        '══════════════════\n',
+        '\n'
     ];
 }
 
-// Function to convert image to ESC/POS bitmap (for future use with actual images)
+// Convert image to ESC/POS bitmap (stub)
 function convertImageToBitmap(imageData, width, height) {
-    // This function would convert actual image data to ESC/POS bitmap format
-    // For now, returning placeholder
-    const ESC = '\x1B';
-    const GS = '\x1D';
-    
-    // ESC/POS bitmap command structure:
-    // GS v 0 m xL xH yL yH d1...dk
-    // where m = mode, xL xH = width, yL yH = height, d1...dk = image data
-    
-    return [
-        GS + 'v' + '0', // Raster bit image
-        // Width and height bytes would go here
-        // Followed by actual bitmap data
-    ];
+    return [];
 }
 
 export async function handlePaymentNetworkPrinting(invoiceDoc, pos_profile) {
     try {
         if (!pos_profile.custom_enable_payment_network_prints) {
-            return false; // Network printing not enabled
+            return false;
         }
 
-        // Initialize QZ Tray
         const connected = await initQZTray();
         if (!connected) {
             console.error('QZ Tray not connected for payment printing.');
             return false;
         }
 
-        // Get payment print settings
         const printSettings = pos_profile.custom_payment_prints_setting || [];
         
         if (printSettings.length === 0) {
@@ -510,7 +476,6 @@ export async function handlePaymentNetworkPrinting(invoiceDoc, pos_profile) {
             return false;
         }
 
-        // Print to each configured printer
         for (const setting of printSettings) {
             const printerConfig = {
                 name: setting.print_name || `${setting.print_ip}:${setting.print_port}`,
@@ -580,4 +545,77 @@ export function groupItemsByPrinter(items, pos_profile) {
     });
     
     return printerGroups;
-} 
+}
+
+// Test function for Arabic printing and token formatting
+export function testArabicPrint() {
+    const testDoc = {
+        company: "Neighborhood Cafe",
+        custom_token_number: "12",
+        name: "TEST-INVOICE-001",
+        customer_name: "Test Customer",
+        contact_mobile: "1234567890",
+        posting_date: "2025-01-09",
+        posting_time: "14:30:00",
+        items: [
+            {
+                item_name: "Test Item",
+                qty: 1,
+                rate: 100,
+                amount: 100
+            }
+        ],
+        total: 100,
+        discount_amount: 0,
+        grand_total: 100,
+        paid_amount: 100,
+        change_amount: 0,
+        payments: [
+            {
+                mode_of_payment: "Cash",
+                amount: 100
+            }
+        ],
+        owner: "Test User"
+    };
+    
+    console.log("Testing Arabic print format...");
+    const commands = formatPaymentReceiptForEscPos(testDoc);
+    console.log("Generated commands:", commands);
+    return commands;
+}
+
+// Make test function globally available
+if (typeof window !== 'undefined') {
+    window.testArabicPrint = testArabicPrint;
+}
+
+// Debug function to check company information
+export function debugCompanyInfo(doc) {
+    console.log('=== Company Debug Info ===');
+    console.log('doc.company:', doc.company);
+    console.log('doc.pos_profile:', doc.pos_profile);
+    console.log('doc.pos_profile?.company:', doc.pos_profile?.company);
+    console.log('doc.pos_profile?.name:', doc.pos_profile?.name);
+    
+    const detectedCompany = doc.company || doc.pos_profile?.company || 'Neighborhood Cafe';
+    console.log('Final detected company:', detectedCompany);
+    
+    // Test which condition will be matched
+    if (detectedCompany === "Velo") {
+        console.log('Will match: Velo');
+    } else if (detectedCompany === "Run of the Mill") {
+        console.log('Will match: Run of the Mill');
+    } else if (detectedCompany === "Neighborhood" || detectedCompany === "Neighborhood Cafe" || detectedCompany.includes("Neighborhood")) {
+        console.log('Will match: Neighborhood');
+    } else {
+        console.log('Will match: Default case');
+    }
+    
+    return detectedCompany;
+}
+
+// Make debug function globally available
+if (typeof window !== 'undefined') {
+    window.debugCompanyInfo = debugCompanyInfo;
+}

@@ -46,6 +46,26 @@ export async function printPreInvoice(offlineData) {
         const postingDate = now.toLocaleDateString();
         const postingTime = now.toLocaleTimeString();
 
+        // Get company-specific information
+        const company = offlineData.company || 'Default Company';
+        let companyDisplayName = '';
+        let mobileNumber = '';
+
+        // Set company-specific details
+        if (company === "Velo") {
+            companyDisplayName = 'Velo';
+            mobileNumber = '4480 0204';
+        } else if (company === "Run of the Mill") {
+            companyDisplayName = 'Run of the Mill';
+            mobileNumber = '1234 5678'; // Add actual number
+        } else if (company === "Neighborhood" || company === "Neighborhood Cafe") {
+            companyDisplayName = 'Neighborhood Cafe';
+            mobileNumber = '55664455';
+        } else {
+            companyDisplayName = offlineData.resturent_type || 'Neighborhood Cafe';
+            mobileNumber = '55664455';
+        }
+
         const newWindow = window.open("", "_blank");
 
         newWindow.document.write(`
@@ -118,15 +138,20 @@ export async function printPreInvoice(offlineData) {
             page-break-inside: avoid;
             page-break-after: auto;
         }
+        .arabic-text {
+            font-family: Arial Unicode MS, Tahoma;
+            direction: rtl;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
     <div class="print-format">
         <div class="row">
             <div class="col-xs-12" style="text-align:center">
-                <p style="font-size: 16px;"><b>${offlineData.resturent_type || 'Neighborhood Cafe'}</b></p>
+                <p style="font-size: 16px;"><b>${companyDisplayName}</b></p>
                 <p>${offlineData.pos_profile || ''}</p>
-                <p><b>Mob:</b>55664455</p>
+                <p><b>Mob:</b> ${mobileNumber}</p>
             </div>
         </div>
 
@@ -145,7 +170,7 @@ export async function printPreInvoice(offlineData) {
                     <tbody>
                         <tr class="innertext">
                             <td></td>
-                            <td style="font-size: 14px;" class="text-right"><b>فاتورة</b></td>
+                            <td style="font-size: 14px;" class="text-right arabic-text"><b>فاتورة</b></td>
                         </tr>
                     </tbody>
                 </table>
@@ -182,11 +207,11 @@ export async function printPreInvoice(offlineData) {
                     <tbody>
                         <tr class="innertext">
                             <td>${postingDate}</td>
-                            <td><b>:تاريخ:</b></td>
+                            <td class="arabic-text"><b>:تاريخ</b></td>
                         </tr>
                         <tr class="innertext">
                             <td>${postingTime}</td>
-                            <td><b>:الوقت</b></td>
+                            <td class="arabic-text"><b>:الوقت</b></td>
                         </tr>
                     </tbody>
                 </table>
