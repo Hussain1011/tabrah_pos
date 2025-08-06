@@ -105,11 +105,12 @@ function formatKotForEscPos(kotData) {
     const BOLD_ON = ESC + 'E' + '\x01';
     const BOLD_OFF = ESC + 'E' + '\x00';
     const DOUBLE_WIDTH = ESC + '!' + '\x30';
+    const DOUBLE_HEIGHT = ESC + '!' + '\x10';
+    const DOUBLE_WH = ESC + '!' + '\x38'; // Double width and height
     const NORMAL = ESC + '!' + '\x00';
     const INIT = ESC + '@';
     const CUT = ESC + 'm';
     const FEED = ESC + 'd' + '\x03';
-    const DOUBLE_HEIGHT = ESC + '!' + '\x10';
 
     let commands = [];
     commands.push(INIT);
@@ -117,10 +118,27 @@ function formatKotForEscPos(kotData) {
     // Set print width
     commands.push(ESC + 'C' + '\x24');
 
+    // Token number for Run of the Mill - Large and Bold at the top
+    if (kotData.company === "Run of the Mill" && kotData.custom_token_number) {
+        commands.push(CENTER);
+        commands.push(BOLD_ON);
+        commands.push(DOUBLE_WH); // Double width and height
+        commands.push(kotData.custom_token_number + LF);
+        commands.push(NORMAL);
+        commands.push(BOLD_OFF);
+        commands.push(LF);
+    }
+
     // Header
     commands.push(CENTER);
     commands.push(DOUBLE_WIDTH);
-    commands.push('KITCHEN ORDER TICKET' + LF + LF);
+    if (kotData.company === "Run of the Mill") {
+        commands.push('RUN OF THE MILL' + LF);
+        commands.push(NORMAL);
+        commands.push('KITCHEN ORDER TICKET' + LF + LF);
+    } else {
+        commands.push('KITCHEN ORDER TICKET' + LF + LF);
+    }
     commands.push(NORMAL);
 
     // Order Info Section
@@ -618,4 +636,32 @@ export function debugCompanyInfo(doc) {
 // Make debug function globally available
 if (typeof window !== 'undefined') {
     window.debugCompanyInfo = debugCompanyInfo;
+}
+
+// Test token number generation
+export function testTokenNumber() {
+    console.log('Testing token number generation...');
+    
+    frappe.call({
+        method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
+        args: {
+            company: "Run of the Mill",
+            pos_profile: "Test Profile"
+        },
+        callback: function(response) {
+            if (response.message) {
+                console.log('Next token number:', response.message);
+            } else {
+                console.log('No token number returned (company not Run of the Mill or error)');
+            }
+        },
+        error: function(error) {
+            console.error('Error getting token number:', error);
+        }
+    });
+}
+
+// Make test function globally available
+if (typeof window !== 'undefined') {
+    window.testTokenNumber = testTokenNumber;
 }

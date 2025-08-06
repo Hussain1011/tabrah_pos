@@ -1,5 +1,3 @@
-
-
 from __future__ import unicode_literals
 import json
 import frappe
@@ -3053,3 +3051,50 @@ def get_sales_invoice_child_table(sales_invoice, sales_invoice_item):
         "Sales Invoice Item", {"parent": parent_doc.name, "name": sales_invoice_item}
     )
     return child_doc
+
+
+@frappe.whitelist()
+def get_next_token_number(company, pos_profile):
+    """
+    Get the next token number for Run of the Mill company
+    Token numbers reset daily and are specific to company and pos_profile
+    """
+    try:
+        # Only generate token numbers for Run of the Mill
+        if company != "Run of the Mill":
+            return None
+            
+        # Get today's date
+        today = frappe.utils.today()
+        
+        # Find the latest token number for today, this company, and pos_profile
+        latest_invoice = frappe.db.sql("""
+            SELECT custom_token_number 
+            FROM `tabSales Invoice` 
+            WHERE company = %s 
+            AND pos_profile = %s 
+            AND DATE(posting_date) = %s 
+            AND custom_token_number IS NOT NULL 
+            AND custom_token_number != ''
+            AND docstatus != 2
+            ORDER BY CAST(custom_token_number AS UNSIGNED) DESC 
+            LIMIT 1
+        """, (company, pos_profile, today), as_dict=True)
+        
+        if latest_invoice and latest_invoice[0].custom_token_number:
+            try:
+                # Increment the latest token number
+                latest_token = int(latest_invoice[0].custom_token_number)
+                next_token = latest_token + 1
+            except (ValueError, TypeError):
+                # If conversion fails, start from 1
+                next_token = 1
+        else:
+            # No token found for today, start from 1
+            next_token = 1
+            
+        return str(next_token)
+        
+    except Exception as e:
+        frappe.log_error(f"Error getting next token number: {str(e)}", "Token Number Error")
+        return "1"  # Default to 1 if there's an error

@@ -15512,17 +15512,33 @@ Expected function or array of functions, received type ${typeof value}.`
     const BOLD_ON = ESC + "E";
     const BOLD_OFF = ESC + "E\0";
     const DOUBLE_WIDTH = ESC + "!0";
+    const DOUBLE_HEIGHT = ESC + "!";
+    const DOUBLE_WH = ESC + "!8";
     const NORMAL = ESC + "!\0";
     const INIT = ESC + "@";
     const CUT = ESC + "m";
     const FEED = ESC + "d";
-    const DOUBLE_HEIGHT = ESC + "!";
     let commands = [];
     commands.push(INIT);
     commands.push(ESC + "C$");
+    if (kotData.company === "Run of the Mill" && kotData.custom_token_number) {
+      commands.push(CENTER);
+      commands.push(BOLD_ON);
+      commands.push(DOUBLE_WH);
+      commands.push(kotData.custom_token_number + LF);
+      commands.push(NORMAL);
+      commands.push(BOLD_OFF);
+      commands.push(LF);
+    }
     commands.push(CENTER);
     commands.push(DOUBLE_WIDTH);
-    commands.push("KITCHEN ORDER TICKET" + LF + LF);
+    if (kotData.company === "Run of the Mill") {
+      commands.push("RUN OF THE MILL" + LF);
+      commands.push(NORMAL);
+      commands.push("KITCHEN ORDER TICKET" + LF + LF);
+    } else {
+      commands.push("KITCHEN ORDER TICKET" + LF + LF);
+    }
     commands.push(NORMAL);
     commands.push(LEFT);
     commands.push(BOLD_ON);
@@ -15838,6 +15854,29 @@ Expected function or array of functions, received type ${typeof value}.`
   if (typeof window !== "undefined") {
     window.debugCompanyInfo = debugCompanyInfo;
   }
+  function testTokenNumber() {
+    console.log("Testing token number generation...");
+    frappe.call({
+      method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
+      args: {
+        company: "Run of the Mill",
+        pos_profile: "Test Profile"
+      },
+      callback: function(response) {
+        if (response.message) {
+          console.log("Next token number:", response.message);
+        } else {
+          console.log("No token number returned (company not Run of the Mill or error)");
+        }
+      },
+      error: function(error) {
+        console.error("Error getting token number:", error);
+      }
+    });
+  }
+  if (typeof window !== "undefined") {
+    window.testTokenNumber = testTokenNumber;
+  }
 
   // ../tabrah_pos/tabrah_pos/public/js/posapp/kotPrint.js
   async function printKot(offlineData) {
@@ -15929,6 +15968,12 @@ Expected function or array of functions, received type ${typeof value}.`
                 <div class="print-format">
         <div style="margin-bottom: 5px;">
         </div>
+                    ${offlineData.company === "Run of the Mill" && offlineData.custom_token_number ? `<div style="text-align: center; margin-bottom: 10px;">
+                            <h1 style="font-size: 48px; font-weight: bold; margin: 0; padding: 10px; border: 3px solid black;">
+                                ${offlineData.custom_token_number}
+                            </h1>
+                            <p style="font-size: 18px; font-weight: bold; margin: 5px 0;">Run of the Mill</p>
+                        </div>` : '<div style="text-align: center; margin-bottom: 10px;"><h2>KITCHEN ORDER TICKET</h2></div>'}
                     <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
                         <p class="text-center" style="margin-bottom: 2px;">Server: N/A</p>
                         <p class="text-center" style="margin-bottom: 2px;">No of Pax: ${offlineData.cover || "N/A"}</p>
@@ -16241,6 +16286,28 @@ Expected function or array of functions, received type ${typeof value}.`
       const generateKotPrint = async (printerArg = null) => {
         if (items.value.length === 0)
           return;
+        let tokenNumber = null;
+        if (pos_profile2.value.company === "Run of the Mill") {
+          try {
+            const response = await frappe.call({
+              method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
+              args: {
+                company: pos_profile2.value.company,
+                pos_profile: pos_profile2.value.name
+              }
+            });
+            if (response.message) {
+              tokenNumber = response.message;
+              if (!invoice_doc.value) {
+                invoice_doc.value = {};
+              }
+              invoice_doc.value.custom_token_number = tokenNumber;
+              console.log(`Generated token number: ${tokenNumber} for Run of the Mill`);
+            }
+          } catch (error) {
+            console.error("Error generating token number:", error);
+          }
+        }
         if (pos_profile2.value.custom_enable_kot_network_printing) {
           const doc4 = await get_invoice_doc();
           doc4.grand_total = grandTotal.value;
@@ -16251,6 +16318,9 @@ Expected function or array of functions, received type ${typeof value}.`
           doc4.time = now2.toLocaleTimeString("en-US", { hour12: false });
           doc4.items = items.value;
           doc4.pos_profile = pos_profile2.value;
+          if (tokenNumber) {
+            doc4.custom_token_number = tokenNumber;
+          }
           printKot(doc4);
           return;
         }
@@ -16312,6 +16382,9 @@ Expected function or array of functions, received type ${typeof value}.`
           items: doc3.kot_items,
           pos_profile: pos_profile2.value
         });
+        if (tokenNumber) {
+          printDoc.custom_token_number = tokenNumber;
+        }
         itemsToPrint.forEach((item) => {
           if (!printedItems[item.item_code])
             printedItems[item.item_code] = {};
@@ -16620,7 +16693,7 @@ Expected function or array of functions, received type ${typeof value}.`
         return invoice_doc.value;
       };
       const get_invoice_doc = () => {
-        var _a2;
+        var _a2, _b;
         let doc3 = {};
         if ((_a2 = invoice_doc.value) == null ? void 0 : _a2.name) {
           doc3 = __spreadValues({}, invoice_doc.value);
@@ -16657,6 +16730,9 @@ Expected function or array of functions, received type ${typeof value}.`
         doc3.exchangeItem = exchangeItem.value;
         doc3.returnDoc = returnDoc.value;
         doc3.cover = cover.value;
+        if ((_b = invoice_doc.value) == null ? void 0 : _b.custom_token_number) {
+          doc3.custom_token_number = invoice_doc.value.custom_token_number;
+        }
         return doc3;
       };
       const get_payments = () => {
@@ -51849,4 +51925,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.EVXDEQSK.js.map
+//# sourceMappingURL=pos.bundle.MVKLY5CZ.js.map
