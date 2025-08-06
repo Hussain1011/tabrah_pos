@@ -117,6 +117,15 @@ async function handleBrowserPrinting(offlineData) {
                 <div class="print-format">
         <div style="margin-bottom: 5px;">
         </div>
+                    ${offlineData.company === "Run of the Mill" && offlineData.custom_token_number ? 
+                        `<div style="text-align: center; margin-bottom: 10px;">
+                            <h1 style="font-size: 48px; font-weight: bold; margin: 0; padding: 10px; border: 3px solid black;">
+                                ${offlineData.custom_token_number}
+                            </h1>
+                            <p style="font-size: 18px; font-weight: bold; margin: 5px 0;">Run of the Mill</p>
+                        </div>` : 
+                        '<div style="text-align: center; margin-bottom: 10px;"><h2>KITCHEN ORDER TICKET</h2></div>'
+                    }
                     <div style="display:flex;justify-content:space-between;margin-bottom: 2px;">
                         <p class="text-center" style="margin-bottom: 2px;">Server: N/A</p>
                         <p class="text-center" style="margin-bottom: 2px;">No of Pax: ${offlineData.cover || 'N/A'}</p>

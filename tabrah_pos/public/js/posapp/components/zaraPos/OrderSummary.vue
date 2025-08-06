@@ -861,6 +861,33 @@ function filterNonJuiceBeverageBundleItems(bundle) {
 const generateKotPrint = async (printerArg = null) => {
   if (items.value.length === 0) return;
 
+  // Generate token number for Run of the Mill company
+  let tokenNumber = null;
+  if (pos_profile.value.company === "Run of the Mill") {
+    try {
+      const response = await frappe.call({
+        method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
+        args: {
+          company: pos_profile.value.company,
+          pos_profile: pos_profile.value.name
+        }
+      });
+      
+      if (response.message) {
+        tokenNumber = response.message;
+        // Store token number in invoice_doc for later use in sales invoice
+        if (!invoice_doc.value) {
+          invoice_doc.value = {};
+        }
+        invoice_doc.value.custom_token_number = tokenNumber;
+        console.log(`Generated token number: ${tokenNumber} for Run of the Mill`);
+      }
+    } catch (error) {
+      console.error("Error generating token number:", error);
+      // Continue without token number if generation fails
+    }
+  }
+
   // Check if network printing is enabled first
   if (pos_profile.value.custom_enable_kot_network_printing) {
     const doc = await get_invoice_doc();
@@ -872,6 +899,11 @@ const generateKotPrint = async (printerArg = null) => {
     doc.time = now.toLocaleTimeString('en-US', { hour12: false });
     doc.items = items.value;
     doc.pos_profile = pos_profile.value;
+    
+    // Add token number to the document if generated
+    if (tokenNumber) {
+      doc.custom_token_number = tokenNumber;
+    }
     
     // Send to network printer
     printKot(doc);
@@ -942,6 +974,11 @@ const generateKotPrint = async (printerArg = null) => {
     items: doc.kot_items,
     pos_profile: pos_profile.value
   };
+
+  // Add token number to the print document if generated
+  if (tokenNumber) {
+    printDoc.custom_token_number = tokenNumber;
+  }
 
   // Update printedItems for this printer
   itemsToPrint.forEach(item => {
@@ -1371,6 +1408,12 @@ const get_invoice_doc = () => {
   doc.exchangeItem = exchangeItem.value
   doc.returnDoc = returnDoc.value
   doc.cover = cover.value; // Add cover to invoice_doc
+  
+  // Add token number if it was generated during KOT printing
+  if (invoice_doc.value?.custom_token_number) {
+    doc.custom_token_number = invoice_doc.value.custom_token_number;
+  }
+  
   return doc;
 };
 const get_payments = () => {
