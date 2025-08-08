@@ -16293,7 +16293,8 @@ Expected function or array of functions, received type ${typeof value}.`
               method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
               args: {
                 company: pos_profile2.value.company,
-                pos_profile: pos_profile2.value.name
+                pos_profile: pos_profile2.value.name,
+                pos_opening_shift: pos_opening_shift.value.name
               }
             });
             if (response.message) {
@@ -51925,4 +51926,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.MVKLY5CZ.js.map
+//# sourceMappingURL=pos.bundle.43GDUHCQ.js.map

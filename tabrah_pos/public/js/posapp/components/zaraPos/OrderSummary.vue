@@ -869,7 +869,8 @@ const generateKotPrint = async (printerArg = null) => {
         method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
         args: {
           company: pos_profile.value.company,
-          pos_profile: pos_profile.value.name
+          pos_profile: pos_profile.value.name,
+          pos_opening_shift: pos_opening_shift.value.name
         }
       });
       
