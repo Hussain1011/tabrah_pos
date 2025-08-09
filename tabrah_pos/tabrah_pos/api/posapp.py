@@ -3052,49 +3052,39 @@ def get_sales_invoice_child_table(sales_invoice, sales_invoice_item):
     )
     return child_doc
 
-
+from frappe.utils import cint
 @frappe.whitelist()
-def get_next_token_number(company, pos_profile):
+def get_next_token_number(company, pos_profile, pos_opening_shift):
     """
-    Get the next token number for Run of the Mill company
-    Token numbers reset daily and are specific to company and pos_profile
+    Get the next token number from POS Opening Shift.
+    If token is empty or zero → start from 1.
+    Otherwise → return current token and increment in POS Opening Shift.
     """
     try:
         # Only generate token numbers for Run of the Mill
         if company != "Run of the Mill":
             return None
-            
-        # Get today's date
-        today = frappe.utils.today()
-        
-        # Find the latest token number for today, this company, and pos_profile
-        latest_invoice = frappe.db.sql("""
-            SELECT custom_token_number 
-            FROM `tabSales Invoice` 
-            WHERE company = %s 
-            AND pos_profile = %s 
-            AND DATE(posting_date) = %s 
-            AND custom_token_number IS NOT NULL 
-            AND custom_token_number != ''
-            AND docstatus != 2
-            ORDER BY CAST(custom_token_number AS UNSIGNED) DESC 
-            LIMIT 1
-        """, (company, pos_profile, today), as_dict=True)
-        
-        if latest_invoice and latest_invoice[0].custom_token_number:
-            try:
-                # Increment the latest token number
-                latest_token = int(latest_invoice[0].custom_token_number)
-                next_token = latest_token + 1
-            except (ValueError, TypeError):
-                # If conversion fails, start from 1
-                next_token = 1
-        else:
-            # No token found for today, start from 1
+
+        # Get the POS Opening Shift doc
+        shift_doc = frappe.get_doc("POS Opening Shift", pos_opening_shift)
+
+        # Read current token
+        current_token = cint(shift_doc.custom_current_token)
+
+        if not current_token or current_token <= 0:
+            # If empty or zero → set to 1
             next_token = 1
-            
+        else:
+            # If more than 0 → return current and increment
+            next_token = current_token
+
+        # Update shift token for next time
+        shift_doc.custom_current_token = next_token + 1
+        shift_doc.save(ignore_permissions=True)
+        frappe.db.commit()
+
         return str(next_token)
-        
+
     except Exception as e:
         frappe.log_error(f"Error getting next token number: {str(e)}", "Token Number Error")
         return "1"  # Default to 1 if there's an error

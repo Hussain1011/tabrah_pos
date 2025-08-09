@@ -118,16 +118,17 @@ function formatKotForEscPos(kotData) {
     // Set print width
     commands.push(ESC + 'C' + '\x24');
 
-    // Token number for Run of the Mill - Large and Bold at the top
+     // Token number for Run of the Mill - Centered, Large, and Bold
     if (kotData.company === "Run of the Mill" && kotData.custom_token_number) {
-        commands.push(CENTER);
-        commands.push(BOLD_ON);
-        commands.push(DOUBLE_WH); // Double width and height
-        commands.push(kotData.custom_token_number + LF);
-        commands.push(NORMAL);
-        commands.push(BOLD_OFF);
-        commands.push(LF);
+        commands.push(CENTER);       // Center text
+        commands.push(BOLD_ON);      // Bold on
+        commands.push(DOUBLE_WH);    // Double width & height
+        commands.push(kotData.custom_token_number + LF); // Token number
+        commands.push(NORMAL);       // Back to normal size
+        commands.push(BOLD_OFF);     // Bold off
+        commands.push(LF);           // Line feed
     }
+
 
     // Header
     commands.push(CENTER);
