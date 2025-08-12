@@ -861,36 +861,59 @@ function filterNonJuiceBeverageBundleItems(bundle) {
 const generateKotPrint = async (printerArg = null) => {
   if (items.value.length === 0) return;
 
-  // Generate token number for Run of the Mill company
-  let tokenNumber = null;
-  if (pos_profile.value.company === "Run of the Mill") {
-    try {
-      const response = await frappe.call({
-        method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
-        args: {
-          company: pos_profile.value.company,
-          pos_profile: pos_profile.value.name,
-          pos_opening_shift: pos_opening_shift.value.name
-        }
-      });
-      
-      if (response.message) {
-        tokenNumber = response.message;
-        // Store token number in invoice_doc for later use in sales invoice
-        if (!invoice_doc.value) {
-          invoice_doc.value = {};
-        }
-        invoice_doc.value.custom_token_number = tokenNumber;
-        console.log(`Generated token number: ${tokenNumber} for Run of the Mill`);
-      }
-    } catch (error) {
-      console.error("Error generating token number:", error);
-      // Continue without token number if generation fails
-    }
-  }
+  // Load held orders context and previously printed items
+  const heldOrders = JSON.parse(localStorage.getItem('heldOrders')) || [];
+  const currentOrder = heldOrders.find(order => order.id === holdOrderId.value);
+  let printedItems = {};
+  if (currentOrder) printedItems = { ...(currentOrder.printed_items || {}) };
 
-  // Check if network printing is enabled first
+  // Prefer an existing token
+  let tokenNumber = invoice_doc.value?.custom_token_number || (currentOrder?.custom_token_number || null);
+
+  // Network printing path first
   if (pos_profile.value.custom_enable_kot_network_printing) {
+    // Determine items that still need to be printed for network (consolidated key)
+    let itemsToPrint = items.value.filter(item => {
+      const p = printedItems[item.item_code]?.network;
+      const printedQty = p ? p.qty : 0;
+      return item.qty > printedQty;
+    });
+
+    if (itemsToPrint.length === 0) {
+      eventBus.emit('show_mesage', { text: 'Already printed items', color: 'error' });
+      return;
+    }
+
+    // Generate token only if missing and company matches
+    if (!tokenNumber && pos_profile.value.company === "Run of the Mill") {
+      try {
+        const response = await frappe.call({
+          method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
+          args: {
+            company: pos_profile.value.company,
+            pos_profile: pos_profile.value.name,
+            pos_opening_shift: pos_opening_shift.value.name
+          }
+        });
+        if (response.message) {
+          tokenNumber = response.message;
+          if (!invoice_doc.value) invoice_doc.value = {};
+          invoice_doc.value.custom_token_number = tokenNumber;
+          // Persist to held order
+          if (currentOrder) {
+            currentOrder.custom_token_number = tokenNumber;
+            const idx = heldOrders.findIndex(o => o.id === currentOrder.id);
+            if (idx !== -1) {
+              heldOrders[idx] = { ...currentOrder };
+              localStorage.setItem('heldOrders', JSON.stringify(heldOrders));
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error generating token number:", error);
+      }
+    }
+
     const doc = await get_invoice_doc();
     doc.grand_total = grandTotal.value;
     doc.gstAmountCash = gstAmount.value;
@@ -898,24 +921,27 @@ const generateKotPrint = async (printerArg = null) => {
     const now = new Date();
     doc.date = now.toISOString().split('T')[0];
     doc.time = now.toLocaleTimeString('en-US', { hour12: false });
-    doc.items = items.value;
+    doc.items = itemsToPrint;
     doc.pos_profile = pos_profile.value;
-    
-    // Add token number to the document if generated
     if (tokenNumber) {
       doc.custom_token_number = tokenNumber;
     }
-    
-    // Send to network printer
+
+    // Update printed map for network
+    itemsToPrint.forEach(item => {
+      if (!printedItems[item.item_code]) printedItems[item.item_code] = {};
+      printedItems[item.item_code].network = {
+        qty: item.qty,
+        timestamp: new Date().toISOString(),
+      };
+    });
+
+    holdOrder(printedItems);
     printKot(doc);
     return;
   }
 
-  const heldOrders = JSON.parse(localStorage.getItem('heldOrders')) || [];
-  const currentOrder = heldOrders.find(order => order.id === holdOrderId.value);
-  let printedItems = {};
-  if (currentOrder) printedItems = { ...(currentOrder.printed_items || {}) };
-
+  // Local (non-network) printing
   let printer = printerArg;
   if (!printer && pos_profile.value.allow_kot_mulitple_print == 1) {
     openPrinterDialog();
@@ -923,7 +949,7 @@ const generateKotPrint = async (printerArg = null) => {
   }
   if (!printer) printer = 'grill'; // fallback for single printer
 
-  // Only print items that haven't been printed before or have new quantities for this printer
+  // Determine items that still need to be printed for this specific printer
   let itemsToPrint = items.value.filter(item => {
     const p = printedItems[item.item_code]?.[printer];
     const printedQty = p ? p.qty : 0;
@@ -938,6 +964,37 @@ const generateKotPrint = async (printerArg = null) => {
       color: 'error',
     });
     return;
+  }
+
+  // Generate token only if missing and company matches
+  if (!tokenNumber && pos_profile.value.company === "Run of the Mill") {
+    try {
+      const response = await frappe.call({
+        method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
+        args: {
+          company: pos_profile.value.company,
+          pos_profile: pos_profile.value.name,
+          pos_opening_shift: pos_opening_shift.value.name
+        }
+      });
+      if (response.message) {
+        tokenNumber = response.message;
+        if (!invoice_doc.value) invoice_doc.value = {};
+        invoice_doc.value.custom_token_number = tokenNumber;
+        // Persist to held order
+        if (currentOrder) {
+          currentOrder.custom_token_number = tokenNumber;
+          const idx = heldOrders.findIndex(o => o.id === currentOrder.id);
+          if (idx !== -1) {
+            heldOrders[idx] = { ...currentOrder };
+            localStorage.setItem('heldOrders', JSON.stringify(heldOrders));
+          }
+        }
+        console.log(`Generated token number: ${tokenNumber} for Run of the Mill`);
+      }
+    } catch (error) {
+      console.error("Error generating token number:", error);
+    }
   }
 
   const doc = await get_invoice_doc();
@@ -975,8 +1032,6 @@ const generateKotPrint = async (printerArg = null) => {
     items: doc.kot_items,
     pos_profile: pos_profile.value
   };
-
-  // Add token number to the print document if generated
   if (tokenNumber) {
     printDoc.custom_token_number = tokenNumber;
   }
@@ -1182,6 +1237,7 @@ const holdOrder = (printedItems = {}) => {
           printed_items: mergedPrinted,
           cover: cover.value,
           customer: selectedCustomer.value,
+          custom_token_number: invoice_doc.value?.custom_token_number || heldOrders[existingOrderIndex].custom_token_number || null,
         };
         console.log(
           `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
@@ -1222,6 +1278,7 @@ const holdOrder = (printedItems = {}) => {
         printed_items: printedItems, // Use passed printedItems for new order
         cover: cover.value,
         customer: selectedCustomer.value,
+        custom_token_number: invoice_doc.value?.custom_token_number || null,
       };
 
       heldOrders.push(currentOrder);
@@ -1910,6 +1967,9 @@ onMounted(() => {
     items.value = order.items;
     cover.value = order.cover || 0; // Load persons from hold order
     selectedCustomer.value = order.customer || '';
+    // restore token into current invoice context
+    if (!invoice_doc.value) invoice_doc.value = {};
+    invoice_doc.value.custom_token_number = order.custom_token_number || '';
     eventBus.emit("selected_table", order.table || '');
     makePayloadForInvoice();
   });
