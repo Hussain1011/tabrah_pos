@@ -15506,32 +15506,37 @@ Expected function or array of functions, received type ${typeof value}.`
   }
   function formatKotForEscPos(kotData) {
     const ESC = "\x1B";
+    const GS = "";
     const LF = "\n";
     const CENTER = ESC + "a";
     const LEFT = ESC + "a\0";
     const BOLD_ON = ESC + "E";
     const BOLD_OFF = ESC + "E\0";
-    const DOUBLE_WIDTH = ESC + "!0";
-    const DOUBLE_HEIGHT = ESC + "!";
-    const DOUBLE_WH = ESC + "!8";
+    const SIZE_NORMAL = GS + "!\0";
+    const SIZE_2X = GS + "!";
+    const SIZE_4X = GS + "!3";
+    const ESC_DOUBLE_WH = ESC + "!8";
     const NORMAL = ESC + "!\0";
     const INIT = ESC + "@";
     const CUT = ESC + "m";
     const FEED = ESC + "d";
     let commands = [];
     commands.push(INIT);
-    commands.push(ESC + "C$");
     if (kotData.company === "Run of the Mill" && kotData.custom_token_number) {
+      commands.push(LF);
       commands.push(CENTER);
       commands.push(BOLD_ON);
-      commands.push(DOUBLE_WH);
-      commands.push(kotData.custom_token_number + LF);
-      commands.push(NORMAL);
+      commands.push(ESC_DOUBLE_WH);
+      commands.push(SIZE_4X);
+      commands.push(String(kotData.custom_token_number) + LF);
+      commands.push(SIZE_NORMAL);
       commands.push(BOLD_OFF);
       commands.push(LF);
+      commands.push(LEFT);
     }
     commands.push(CENTER);
-    commands.push(DOUBLE_WIDTH);
+    commands.push(BOLD_ON);
+    commands.push(SIZE_NORMAL);
     if (kotData.company === "Run of the Mill") {
       commands.push("RUN OF THE MILL" + LF);
       commands.push(NORMAL);
@@ -51926,4 +51931,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.43GDUHCQ.js.map
+//# sourceMappingURL=pos.bundle.UPBD5X5A.js.map
