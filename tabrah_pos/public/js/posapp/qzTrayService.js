@@ -99,14 +99,16 @@ export async function printPaymentWithQZTray(printerConfig, invoiceDoc, numberOf
 function formatKotForEscPos(kotData) {
     // ESC/POS Commands
     const ESC = '\x1B';
+    const GS = '\x1D';
     const LF = '\x0A';
     const CENTER = ESC + 'a' + '\x01';
     const LEFT = ESC + 'a' + '\x00';
     const BOLD_ON = ESC + 'E' + '\x01';
     const BOLD_OFF = ESC + 'E' + '\x00';
-    const DOUBLE_WIDTH = ESC + '!' + '\x30';
-    const DOUBLE_HEIGHT = ESC + '!' + '\x10';
-    const DOUBLE_WH = ESC + '!' + '\x38'; // Double width and height
+    const SIZE_NORMAL = GS + '!' + '\x00';
+    const SIZE_2X = GS + '!' + '\x11'; // 2x width, 2x height
+    const SIZE_4X = GS + '!' + '\x33'; // 4x width, 4x height (if supported)
+    const ESC_DOUBLE_WH = ESC + '!' + '\x38'; // ESC ! with double width & height
     const NORMAL = ESC + '!' + '\x00';
     const INIT = ESC + '@';
     const CUT = ESC + 'm';
@@ -115,24 +117,28 @@ function formatKotForEscPos(kotData) {
     let commands = [];
     commands.push(INIT);
 
-    // Set print width
-    commands.push(ESC + 'C' + '\x24');
+    // Removed device-specific width command which can affect centering
+    // commands.push(ESC + 'C' + '\x24');
 
-     // Token number for Run of the Mill - Centered, Large, and Bold
+    // Token number for Run of the Mill - Centered, Very Large, and Bold
     if (kotData.company === "Run of the Mill" && kotData.custom_token_number) {
-        commands.push(CENTER);       // Center text
-        commands.push(BOLD_ON);      // Bold on
-        commands.push(DOUBLE_WH);    // Double width & height
-        commands.push(kotData.custom_token_number + LF); // Token number
-        commands.push(NORMAL);       // Back to normal size
-        commands.push(BOLD_OFF);     // Bold off
-        commands.push(LF);           // Line feed
+        commands.push(LF);             // spacing above
+        commands.push(CENTER);         // ensure center alignment
+        commands.push(BOLD_ON);        // bold
+        commands.push(ESC_DOUBLE_WH);  // ESC-based double width & height for compatibility
+        commands.push(SIZE_4X);        // GS-based 4x size (if supported)
+        commands.push(String(kotData.custom_token_number) + LF);
+        commands.push(SIZE_NORMAL);    // reset size
+        commands.push(BOLD_OFF);       // bold off
+        commands.push(LF);             // spacing below
+        commands.push(LEFT);           // reset alignment
     }
 
 
     // Header
     commands.push(CENTER);
-    commands.push(DOUBLE_WIDTH);
+    commands.push(BOLD_ON);
+    commands.push(SIZE_NORMAL); // Reset size for header
     if (kotData.company === "Run of the Mill") {
         commands.push('RUN OF THE MILL' + LF);
         commands.push(NORMAL);
