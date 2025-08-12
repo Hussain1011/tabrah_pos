@@ -360,6 +360,7 @@ import indexedDBService from "../../indexedDB";
 import { printInvoice } from "../../printing";
 import { sync_fbr } from "../../tax_integration";
 import { handlePaymentNetworkPrinting } from "../../qzTrayService";
+import { printKot } from "../../kotPrint.js";
 
 const numpad = ref([
   "1",
@@ -408,6 +409,17 @@ const fbrResponse = ref("");
 const requiredOrderId = ref(false);
 
 const selectedOffer = ref(null);
+
+// Helper to keep unique payment modes by mode_of_payment
+const uniqueByModeOfPayment = (arr) => {
+  const seen = new Set();
+  return (arr || []).filter((p) => {
+    const key = String(p.mode_of_payment || "").toLowerCase().trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
 
 const setDefaultValue = () => {
   amountTake.value = null;
@@ -809,6 +821,7 @@ const offlineProfileData = () => {
       paymentModes.value = pos_profile.value.payments.filter((payment) => {
         return payment.custom_order_type == selectedOrderType.value;
       });
+      paymentModes.value = uniqueByModeOfPayment(paymentModes.value);
       paymentModes.value.forEach((item) => {
         if (item.default) {
           item.selected = true;
@@ -835,6 +848,63 @@ const getFormattedPrintFormat = () => {
   const printFormat = pos_profile.value.print_format || "";
   return encodeURIComponent(printFormat.trim());
 };
+
+// Helper: Print KOT after payment, if enabled. No hold-order interaction
+const printKotOnPayment = async (invoiceName) => {
+  try {
+    if (!pos_profile.value?.custom_allow_kot_print_on_payments) return;
+
+    // Fetch the full invoice document to get items for KOT
+    const res = await frappe.call({
+      method: "frappe.client.get",
+      args: { doctype: "Sales Invoice", name: invoiceName },
+    });
+    if (!res || !res.message) return;
+    const inv = res.message;
+
+    // Determine token: reuse if present, otherwise generate for Run of the Mill
+    let tokenNumber = inv.custom_token_number || invoice_doc.value?.custom_token_number || null;
+    if (!tokenNumber && (inv.company === "Run of the Mill" || pos_profile.value.company === "Run of the Mill")) {
+      try {
+        const tokenRes = await frappe.call({
+          method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
+          args: {
+            company: inv.company || pos_profile.value.company,
+            pos_profile: pos_profile.value.name,
+            pos_opening_shift: invoice_doc.value?.posa_pos_opening_shift || "",
+          },
+        });
+        if (tokenRes && tokenRes.message) {
+          tokenNumber = tokenRes.message;
+          // Persist in current invoice context for consistency
+          if (!invoice_doc.value) invoice_doc.value = {};
+          invoice_doc.value.custom_token_number = tokenNumber;
+        }
+      } catch (e) {
+        console.error("Failed to get token number on payment KOT:", e);
+      }
+    }
+
+    // Build KOT doc for printing (no hold order updates)
+    const now = new Date();
+    const kotDoc = {
+      items: inv.items || [],
+      pos_profile: pos_profile.value,
+      date: now.toISOString().split("T")[0],
+      time: now.toLocaleTimeString("en-US", { hour12: false }),
+      table_no: inv.table_no || invoice_doc.value?.table_no || "",
+      cover: inv.cover || invoice_doc.value?.cover || 0,
+      company: inv.company || pos_profile.value.company,
+      custom_token_number: tokenNumber || undefined,
+    };
+
+    // Trigger KOT printing using existing pipeline (network or browser)
+    await printKot(kotDoc);
+  } catch (err) {
+    console.error("Error printing KOT after payment:", err);
+  }
+};
+
 const load_print_page = async (invoice) => {
   try {
     // Check if network printing is enabled
@@ -854,7 +924,9 @@ const load_print_page = async (invoice) => {
         const success = await handlePaymentNetworkPrinting(invoiceDoc.message, pos_profile.value);
         if (success) {
           console.log("Network printing successful");
-          return;
+          // After payment print, optionally print KOT (no hold order)
+          await printKotOnPayment(invoice);
+           return;
         } else {
           console.log("Network printing failed, falling back to browser printing");
         }
@@ -881,9 +953,11 @@ const load_print_page = async (invoice) => {
     const printFrame = document.getElementById("printFrame");
     printFrame.src = url;
 
-    printFrame.onload = function () {
+    printFrame.onload = async function () {
       printFrame.contentWindow.focus();
       printFrame.contentWindow.print();
+      // After initiating browser print, also KOT print if enabled
+      await printKotOnPayment(invoice);
     };
   } catch (error) {
     console.error("Error in load_print_page:", error);
@@ -907,9 +981,11 @@ const load_print_page = async (invoice) => {
     const printFrame = document.getElementById("printFrame");
     printFrame.src = url;
 
-    printFrame.onload = function () {
+    printFrame.onload = async function () {
       printFrame.contentWindow.focus();
       printFrame.contentWindow.print();
+      // After initiating browser print, also KOT print if enabled
+      await printKotOnPayment(invoice);
     };
   }
 };
@@ -1644,6 +1720,7 @@ watch(
       paymentModes.value = pos_profile.value.payments.filter((payment) => {
         return payment.custom_order_type == newVal;
       });
+      paymentModes.value = uniqueByModeOfPayment(paymentModes.value);
     }
   },
   { deep: true }
@@ -1934,6 +2011,7 @@ onMounted(() => {
     paymentModes.value = pos_profile.value.payments.filter((payment) => {
       return payment.custom_order_type == selectedOrderType.value;
     });
+    paymentModes.value = uniqueByModeOfPayment(paymentModes.value);
 
     const hasDefaultPayment = paymentModes.value.some(
       (mode) => mode.default === 1 || mode.selected
@@ -1962,6 +2040,7 @@ onMounted(() => {
     paymentModes.value = pos_profile.value.payments.filter((payment) => {
       return payment.custom_order_type == selectedOrderType.value;
     });
+    paymentModes.value = uniqueByModeOfPayment(paymentModes.value);
   });
   eventBus.on("required-order-id", (data) => {
     requiredOrderId.value = data;
@@ -1994,7 +2073,7 @@ onMounted(() => {
   eventBus.on("send_pos_profile", (profile) => {
     pos_profile.value = profile;
     employeesList.value = profile.employee_list
-    paymentModes.value = profile.payments;
+    paymentModes.value = uniqueByModeOfPayment(profile.payments);
     pos_profile.value.payments.forEach((item) => {
       // Set selected to false for all items
       // Set selected to true if the item is the default
