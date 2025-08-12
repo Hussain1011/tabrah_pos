@@ -16289,32 +16289,54 @@ Expected function or array of functions, received type ${typeof value}.`
         });
       }
       const generateKotPrint = async (printerArg = null) => {
+        var _a2;
         if (items.value.length === 0)
           return;
-        let tokenNumber = null;
-        if (pos_profile2.value.company === "Run of the Mill") {
-          try {
-            const response = await frappe.call({
-              method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
-              args: {
-                company: pos_profile2.value.company,
-                pos_profile: pos_profile2.value.name,
-                pos_opening_shift: pos_opening_shift.value.name
-              }
-            });
-            if (response.message) {
-              tokenNumber = response.message;
-              if (!invoice_doc.value) {
-                invoice_doc.value = {};
-              }
-              invoice_doc.value.custom_token_number = tokenNumber;
-              console.log(`Generated token number: ${tokenNumber} for Run of the Mill`);
-            }
-          } catch (error) {
-            console.error("Error generating token number:", error);
-          }
-        }
+        const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+        const currentOrder = heldOrders.find((order) => order.id === holdOrderId.value);
+        let printedItems = {};
+        if (currentOrder)
+          printedItems = __spreadValues({}, currentOrder.printed_items || {});
+        let tokenNumber = ((_a2 = invoice_doc.value) == null ? void 0 : _a2.custom_token_number) || ((currentOrder == null ? void 0 : currentOrder.custom_token_number) || null);
         if (pos_profile2.value.custom_enable_kot_network_printing) {
+          let itemsToPrint2 = items.value.filter((item) => {
+            var _a3;
+            const p2 = (_a3 = printedItems[item.item_code]) == null ? void 0 : _a3.network;
+            const printedQty = p2 ? p2.qty : 0;
+            return item.qty > printedQty;
+          });
+          if (itemsToPrint2.length === 0) {
+            bus_default.emit("show_mesage", { text: "Already printed items", color: "error" });
+            return;
+          }
+          if (!tokenNumber && pos_profile2.value.company === "Run of the Mill") {
+            try {
+              const response = await frappe.call({
+                method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
+                args: {
+                  company: pos_profile2.value.company,
+                  pos_profile: pos_profile2.value.name,
+                  pos_opening_shift: pos_opening_shift.value.name
+                }
+              });
+              if (response.message) {
+                tokenNumber = response.message;
+                if (!invoice_doc.value)
+                  invoice_doc.value = {};
+                invoice_doc.value.custom_token_number = tokenNumber;
+                if (currentOrder) {
+                  currentOrder.custom_token_number = tokenNumber;
+                  const idx = heldOrders.findIndex((o) => o.id === currentOrder.id);
+                  if (idx !== -1) {
+                    heldOrders[idx] = __spreadValues({}, currentOrder);
+                    localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
+                  }
+                }
+              }
+            } catch (error) {
+              console.error("Error generating token number:", error);
+            }
+          }
           const doc4 = await get_invoice_doc();
           doc4.grand_total = grandTotal.value;
           doc4.gstAmountCash = gstAmount.value;
@@ -16322,19 +16344,23 @@ Expected function or array of functions, received type ${typeof value}.`
           const now2 = new Date();
           doc4.date = now2.toISOString().split("T")[0];
           doc4.time = now2.toLocaleTimeString("en-US", { hour12: false });
-          doc4.items = items.value;
+          doc4.items = itemsToPrint2;
           doc4.pos_profile = pos_profile2.value;
           if (tokenNumber) {
             doc4.custom_token_number = tokenNumber;
           }
+          itemsToPrint2.forEach((item) => {
+            if (!printedItems[item.item_code])
+              printedItems[item.item_code] = {};
+            printedItems[item.item_code].network = {
+              qty: item.qty,
+              timestamp: new Date().toISOString()
+            };
+          });
+          holdOrder(printedItems);
           printKot(doc4);
           return;
         }
-        const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
-        const currentOrder = heldOrders.find((order) => order.id === holdOrderId.value);
-        let printedItems = {};
-        if (currentOrder)
-          printedItems = __spreadValues({}, currentOrder.printed_items || {});
         let printer = printerArg;
         if (!printer && pos_profile2.value.allow_kot_mulitple_print == 1) {
           openPrinterDialog();
@@ -16343,8 +16369,8 @@ Expected function or array of functions, received type ${typeof value}.`
         if (!printer)
           printer = "grill";
         let itemsToPrint = items.value.filter((item) => {
-          var _a2;
-          const p2 = (_a2 = printedItems[item.item_code]) == null ? void 0 : _a2[printer];
+          var _a3;
+          const p2 = (_a3 = printedItems[item.item_code]) == null ? void 0 : _a3[printer];
           const printedQty = p2 ? p2.qty : 0;
           let group = (item.item_group || "").toLowerCase();
           if (group === "juice" || group === "beverage")
@@ -16358,6 +16384,35 @@ Expected function or array of functions, received type ${typeof value}.`
           });
           return;
         }
+        if (!tokenNumber && pos_profile2.value.company === "Run of the Mill") {
+          try {
+            const response = await frappe.call({
+              method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
+              args: {
+                company: pos_profile2.value.company,
+                pos_profile: pos_profile2.value.name,
+                pos_opening_shift: pos_opening_shift.value.name
+              }
+            });
+            if (response.message) {
+              tokenNumber = response.message;
+              if (!invoice_doc.value)
+                invoice_doc.value = {};
+              invoice_doc.value.custom_token_number = tokenNumber;
+              if (currentOrder) {
+                currentOrder.custom_token_number = tokenNumber;
+                const idx = heldOrders.findIndex((o) => o.id === currentOrder.id);
+                if (idx !== -1) {
+                  heldOrders[idx] = __spreadValues({}, currentOrder);
+                  localStorage.setItem("heldOrders", JSON.stringify(heldOrders));
+                }
+              }
+              console.log(`Generated token number: ${tokenNumber} for Run of the Mill`);
+            }
+          } catch (error) {
+            console.error("Error generating token number:", error);
+          }
+        }
         const doc3 = await get_invoice_doc();
         doc3.grand_total = grandTotal.value;
         doc3.gstAmountCash = gstAmount.value;
@@ -16366,9 +16421,9 @@ Expected function or array of functions, received type ${typeof value}.`
         doc3.date = now.toISOString().split("T")[0];
         doc3.time = now.toLocaleTimeString("en-US", { hour12: false });
         doc3.kot_items = itemsToPrint.map((item) => {
-          var _a2;
+          var _a3;
           let finalQty;
-          const p2 = (_a2 = printedItems[item.item_code]) == null ? void 0 : _a2[printer];
+          const p2 = (_a3 = printedItems[item.item_code]) == null ? void 0 : _a3[printer];
           const hasBeenPrinted = !!p2;
           if (!hasBeenPrinted) {
             finalQty = item.qty;
@@ -16532,6 +16587,7 @@ Expected function or array of functions, received type ${typeof value}.`
         return encodeURIComponent(printFormat.trim());
       };
       const holdOrder = (printedItems = {}) => {
+        var _a2, _b;
         if (items.value.length > 0) {
           loadingHold.value = true;
           const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
@@ -16548,7 +16604,8 @@ Expected function or array of functions, received type ${typeof value}.`
                 timestamp: new Date().toISOString(),
                 printed_items: mergedPrinted,
                 cover: cover.value,
-                customer: selectedCustomer.value
+                customer: selectedCustomer.value,
+                custom_token_number: ((_a2 = invoice_doc.value) == null ? void 0 : _a2.custom_token_number) || heldOrders[existingOrderIndex].custom_token_number || null
               });
               console.log(
                 `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
@@ -16581,7 +16638,8 @@ Expected function or array of functions, received type ${typeof value}.`
               timestamp: new Date().toISOString(),
               printed_items: printedItems,
               cover: cover.value,
-              customer: selectedCustomer.value
+              customer: selectedCustomer.value,
+              custom_token_number: ((_b = invoice_doc.value) == null ? void 0 : _b.custom_token_number) || null
             };
             heldOrders.push(currentOrder);
             console.log("Order held successfully:", currentOrder);
@@ -17090,6 +17148,9 @@ Expected function or array of functions, received type ${typeof value}.`
           items.value = order.items;
           cover.value = order.cover || 0;
           selectedCustomer.value = order.customer || "";
+          if (!invoice_doc.value)
+            invoice_doc.value = {};
+          invoice_doc.value.custom_token_number = order.custom_token_number || "";
           bus_default.emit("selected_table", order.table || "");
           makePayloadForInvoice();
         });
@@ -51931,4 +51992,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.UPBD5X5A.js.map
+//# sourceMappingURL=pos.bundle.JRTERQQA.js.map
