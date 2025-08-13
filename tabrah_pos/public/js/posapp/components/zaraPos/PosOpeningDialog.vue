@@ -262,8 +262,15 @@ export default {
     });
     watch(selectedPosProfile, (val) => {
       payments_methods.value = [];
-      payments_methods.value = payments_method_data.value
-        .filter((element) => element.parent === val)
+      const list = payments_method_data.value.filter((element) => element.parent === val);
+      const seen = new Set();
+      payments_methods.value = list
+        .filter((el) => {
+          const key = String(el.mode_of_payment || '').toLowerCase().trim();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
         .map((element) => {
           const balanceEntry = branch_account_balances.value.find(
             (entry) => entry.pos_profile === val

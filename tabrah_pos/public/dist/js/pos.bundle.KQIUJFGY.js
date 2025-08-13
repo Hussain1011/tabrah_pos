@@ -18913,6 +18913,16 @@ Expected function or array of functions, received type ${typeof value}.`
       const fbrResponse = ref("");
       const requiredOrderId = ref(false);
       const selectedOffer = ref(null);
+      const uniqueByModeOfPayment = (arr) => {
+        const seen = /* @__PURE__ */ new Set();
+        return (arr || []).filter((p2) => {
+          const key = String(p2.mode_of_payment || "").toLowerCase().trim();
+          if (seen.has(key))
+            return false;
+          seen.add(key);
+          return true;
+        });
+      };
       const setDefaultValue = () => {
         amountTake.value = null;
         discount.value = "";
@@ -19212,6 +19222,7 @@ Expected function or array of functions, received type ${typeof value}.`
           paymentModes.value = pos_profile2.value.payments.filter((payment) => {
             return payment.custom_order_type == selectedOrderType.value;
           });
+          paymentModes.value = uniqueByModeOfPayment(paymentModes.value);
           paymentModes.value.forEach((item) => {
             if (item.default) {
               item.selected = true;
@@ -19236,6 +19247,55 @@ Expected function or array of functions, received type ${typeof value}.`
         const printFormat = pos_profile2.value.print_format || "";
         return encodeURIComponent(printFormat.trim());
       };
+      const printKotOnPayment = async (invoiceName) => {
+        var _a2, _b, _c, _d, _e;
+        try {
+          if (!((_a2 = pos_profile2.value) == null ? void 0 : _a2.custom_allow_kot_print_on_payments))
+            return;
+          const res = await frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Sales Invoice", name: invoiceName }
+          });
+          if (!res || !res.message)
+            return;
+          const inv = res.message;
+          let tokenNumber = inv.custom_token_number || ((_b = invoice_doc.value) == null ? void 0 : _b.custom_token_number) || null;
+          if (!tokenNumber && (inv.company === "Run of the Mill" || pos_profile2.value.company === "Run of the Mill")) {
+            try {
+              const tokenRes = await frappe.call({
+                method: "tabrah_pos.tabrah_pos.api.posapp.get_next_token_number",
+                args: {
+                  company: inv.company || pos_profile2.value.company,
+                  pos_profile: pos_profile2.value.name,
+                  pos_opening_shift: ((_c = invoice_doc.value) == null ? void 0 : _c.posa_pos_opening_shift) || ""
+                }
+              });
+              if (tokenRes && tokenRes.message) {
+                tokenNumber = tokenRes.message;
+                if (!invoice_doc.value)
+                  invoice_doc.value = {};
+                invoice_doc.value.custom_token_number = tokenNumber;
+              }
+            } catch (e) {
+              console.error("Failed to get token number on payment KOT:", e);
+            }
+          }
+          const now = new Date();
+          const kotDoc = {
+            items: inv.items || [],
+            pos_profile: pos_profile2.value,
+            date: now.toISOString().split("T")[0],
+            time: now.toLocaleTimeString("en-US", { hour12: false }),
+            table_no: inv.table_no || ((_d = invoice_doc.value) == null ? void 0 : _d.table_no) || "",
+            cover: inv.cover || ((_e = invoice_doc.value) == null ? void 0 : _e.cover) || 0,
+            company: inv.company || pos_profile2.value.company,
+            custom_token_number: tokenNumber || void 0
+          };
+          await printKot(kotDoc);
+        } catch (err) {
+          console.error("Error printing KOT after payment:", err);
+        }
+      };
       const load_print_page = async (invoice) => {
         var _a2;
         try {
@@ -19252,6 +19312,7 @@ Expected function or array of functions, received type ${typeof value}.`
               const success = await handlePaymentNetworkPrinting(invoiceDoc.message, pos_profile2.value);
               if (success) {
                 console.log("Network printing successful");
+                await printKotOnPayment(invoice);
                 return;
               } else {
                 console.log("Network printing failed, falling back to browser printing");
@@ -19265,9 +19326,10 @@ Expected function or array of functions, received type ${typeof value}.`
           console.log("Print-url", url);
           const printFrame = document.getElementById("printFrame");
           printFrame.src = url;
-          printFrame.onload = function() {
+          printFrame.onload = async function() {
             printFrame.contentWindow.focus();
             printFrame.contentWindow.print();
+            await printKotOnPayment(invoice);
           };
         } catch (error) {
           console.error("Error in load_print_page:", error);
@@ -19277,9 +19339,10 @@ Expected function or array of functions, received type ${typeof value}.`
           const url = frappe.urllib.get_base_url() + "/printview?doctype=Sales%20Invoice&name=" + invoice + "&trigger_print=1&format=" + formattedValue + "&no_letterhead=" + letter_head;
           const printFrame = document.getElementById("printFrame");
           printFrame.src = url;
-          printFrame.onload = function() {
+          printFrame.onload = async function() {
             printFrame.contentWindow.focus();
             printFrame.contentWindow.print();
+            await printKotOnPayment(invoice);
           };
         }
       };
@@ -19814,6 +19877,7 @@ Expected function or array of functions, received type ${typeof value}.`
             paymentModes.value = pos_profile2.value.payments.filter((payment) => {
               return payment.custom_order_type == newVal;
             });
+            paymentModes.value = uniqueByModeOfPayment(paymentModes.value);
           }
         },
         { deep: true }
@@ -19976,6 +20040,7 @@ Expected function or array of functions, received type ${typeof value}.`
           paymentModes.value = pos_profile2.value.payments.filter((payment) => {
             return payment.custom_order_type == selectedOrderType.value;
           });
+          paymentModes.value = uniqueByModeOfPayment(paymentModes.value);
           const hasDefaultPayment = paymentModes.value.some(
             (mode) => mode.default === 1 || mode.selected
           );
@@ -19999,6 +20064,7 @@ Expected function or array of functions, received type ${typeof value}.`
           paymentModes.value = pos_profile2.value.payments.filter((payment) => {
             return payment.custom_order_type == selectedOrderType.value;
           });
+          paymentModes.value = uniqueByModeOfPayment(paymentModes.value);
         });
         bus_default.on("required-order-id", (data) => {
           requiredOrderId.value = data;
@@ -20026,7 +20092,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.on("send_pos_profile", (profile) => {
           pos_profile2.value = profile;
           employeesList.value = profile.employee_list;
-          paymentModes.value = profile.payments;
+          paymentModes.value = uniqueByModeOfPayment(profile.payments);
           pos_profile2.value.payments.forEach((item) => {
             if (item.default) {
               item.selected = true;
@@ -20050,7 +20116,7 @@ Expected function or array of functions, received type ${typeof value}.`
         bus_default.off("go-for-payment");
         bus_default.off("send_pos_profile");
       });
-      const __returned__ = { numpad, invoice_doc, pos_profile: pos_profile2, paymentType, paymentModes, totalPaidAmount, taxRate, amountTake, tip, changeAmount, newTax, btnLoading, btnLoading1, selectedOrderType, orderId, discount, showDialog, splitPayment, confirmSplit, offlineMode, punching, employeesList, orderBy, complementaryItem, complementaryItemDetails, showOffersDialog, offers, discountSource, fbrResponse, requiredOrderId, selectedOffer, setDefaultValue, validateDiscount, backToProductMenu, openSplitPaymentDialog, cancelSplit, closeDialog, updateRemainingAmount, submitSplitPayment, handleNumpadClick, updateDocPayment, changePaymentType, set_full_amount, offlineProfileData, cancelOrder, getFormattedPrintFormat, load_print_page, submitReturn, checkSubmitType, forExchangeSaleInvoice, submitSaleInvoice, formatNumber, openOffersDialog, applyDiscount, applyOffer, removeOffer, onManualDiscountInput, ref, onMounted, watch: watch2, onUnmounted, computed: computed2, get eventBus() {
+      const __returned__ = { numpad, invoice_doc, pos_profile: pos_profile2, paymentType, paymentModes, totalPaidAmount, taxRate, amountTake, tip, changeAmount, newTax, btnLoading, btnLoading1, selectedOrderType, orderId, discount, showDialog, splitPayment, confirmSplit, offlineMode, punching, employeesList, orderBy, complementaryItem, complementaryItemDetails, showOffersDialog, offers, discountSource, fbrResponse, requiredOrderId, selectedOffer, uniqueByModeOfPayment, setDefaultValue, validateDiscount, backToProductMenu, openSplitPaymentDialog, cancelSplit, closeDialog, updateRemainingAmount, submitSplitPayment, handleNumpadClick, updateDocPayment, changePaymentType, set_full_amount, offlineProfileData, cancelOrder, getFormattedPrintFormat, printKotOnPayment, load_print_page, submitReturn, checkSubmitType, forExchangeSaleInvoice, submitSaleInvoice, formatNumber, openOffersDialog, applyDiscount, applyOffer, removeOffer, onManualDiscountInput, ref, onMounted, watch: watch2, onUnmounted, computed: computed2, get eventBus() {
         return bus_default;
       }, get indexedDBService() {
         return indexedDB_default;
@@ -20060,6 +20126,8 @@ Expected function or array of functions, received type ${typeof value}.`
         return sync_fbr;
       }, get handlePaymentNetworkPrinting() {
         return handlePaymentNetworkPrinting;
+      }, get printKot() {
+        return printKot;
       } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
@@ -22414,7 +22482,15 @@ Expected function or array of functions, received type ${typeof value}.`
       });
       watch2(selectedPosProfile, (val) => {
         payments_methods.value = [];
-        payments_methods.value = payments_method_data.value.filter((element) => element.parent === val).map((element) => {
+        const list = payments_method_data.value.filter((element) => element.parent === val);
+        const seen = /* @__PURE__ */ new Set();
+        payments_methods.value = list.filter((el) => {
+          const key = String(el.mode_of_payment || "").toLowerCase().trim();
+          if (seen.has(key))
+            return false;
+          seen.add(key);
+          return true;
+        }).map((element) => {
           const balanceEntry = branch_account_balances.value.find(
             (entry) => entry.pos_profile === val
           );
@@ -51992,4 +52068,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.JRTERQQA.js.map
+//# sourceMappingURL=pos.bundle.KQIUJFGY.js.map
