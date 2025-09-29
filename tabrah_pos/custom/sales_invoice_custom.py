@@ -35,11 +35,12 @@ def on_submit(self, method):
                                     'posting_date': self.posting_date,
                                     'posting_time': self.posting_time,
                                     'reference_doctype': self.doctype,
-                                    'reference_name': self.name,
+                                    'reference_name': "NH-SINV-25-4120",
                                     'cost_center': self.cost_center,
                                     'qty': packed_item.qty
                                 })
                                 doc.insert()
+                                self.custom_foodpanda_order_id = doc.name
                                 doc.submit()
                                 print(doc)
                     else:
@@ -52,10 +53,11 @@ def on_submit(self, method):
                                 'posting_date': self.posting_date,
                                 'posting_time': self.posting_time,
                                 'reference_doctype': self.doctype,
-                                'reference_name': self.name,
+                                'reference_name': "NH-SINV-25-4120",
                                 'cost_center': self.cost_center,
                                 'qty': d.qty
                             })
                             doc.insert()
+                            self.custom_foodpanda_order_id = doc.name
                             doc.submit()
 

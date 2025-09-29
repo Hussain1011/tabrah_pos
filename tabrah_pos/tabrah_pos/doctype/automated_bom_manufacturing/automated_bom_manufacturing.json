@@ -40,6 +40,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "reference_name",
    "fieldtype": "Dynamic Link",
    "in_standard_filter": 1,
@@ -162,6 +163,7 @@
    "reqd": 1
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [
@@ -170,7 +172,7 @@
    "link_fieldname": "automated_bom_manufacturing"
   }
  ],
- "modified": "2023-11-06 10:38:31.573728",
+ "modified": "2025-09-29 17:59:16.102492",
  "modified_by": "Administrator",
  "module": "Tabrah Pos",
  "name": "Automated BOM Manufacturing",
@@ -190,6 +192,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

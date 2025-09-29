@@ -96,10 +96,13 @@ doc_events = {
 		"validate": "tabrah_pos.custom.branch_pos.validate"
 	},
     "Sales Invoice": {
+        "before_save": "tabrah_pos.custom.sales_invoice_custom.on_submit",
         "validate": "tabrah_pos.tabrah_pos.api.invoice.validate",
-        "before_submit": "tabrah_pos.tabrah_pos.api.invoice.before_submit",
+        "before_submit":[
+            
+            "tabrah_pos.tabrah_pos.api.invoice.before_submit",
+        ],
         "before_cancel": "tabrah_pos.tabrah_pos.api.invoice.before_cancel",
-        "on_submit":"tabrah_pos.custom.sales_invoice_custom.on_submit",
     },
     "Customer": {
         "validate": "tabrah_pos.tabrah_pos.api.customer.validate",

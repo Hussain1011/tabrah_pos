@@ -23,6 +23,49 @@ def validate(doc, method):
 
 
 def before_submit(doc, method):
+    for d in doc.items:
+        if d.custom_is_complimentary_item == 1:
+           
+            # prevent pricing rules from reapplying rates
+            doc.flags.ignore_pricing_rule = True
+            doc.ignore_pricing_rule = 1
+
+            if row_should_be_free(doc, d):
+                make_item_zero(d)
+
+            # If you also want taxes to be zero in these cases, uncomment:
+            # for tx in (doc.taxes or []):
+            #     tx.tax_amount = 0
+            #     tx.base_tax_amount = 0
+            #     tx.total = 0
+            #     tx.base_total = 0
+            #     tx.tax_amount_after_discount_amount = 0
+            #     tx.base_tax_amount_after_discount_amount = 0
+
+            # recompute all totals after edits
+            doc.calculate_taxes_and_totals()
+
+    if doc.total == 0 and doc.rounded_total == 0 and doc.grand_total ==0 and doc.base_grand_total == 0:
+        
+        doc.outstanding_amount = 0
+        doc.in_words = 0
+        doc.is_pos = 0
+        doc.status = 'Paid'
+        doc.payment_due_date = doc.posting_date
+
+        doc.append('payment_schedule', {
+                        'due_date': doc.posting_date,
+                        'invoice_portion': '100%',
+                        'discount': 0,
+                        'payment_amount': 0,
+                        'outstanding': 0,
+                        'base_payment_amount': 0,
+                        'base_outstanding': 0,
+                    })
+        
+        doc.set_missing_values()
+        doc.calculate_taxes_and_totals()
+        
     if doc.is_pos:    
         if doc.pos_profile:
             branch = frappe.get_doc(
@@ -32,13 +75,13 @@ def before_submit(doc, method):
             if branch:
                 doc.custom_branch = branch.name
                 
-                qr_generator = frappe.db.get_value(
-                    "QR Generator",
-                    {"branch": ["like", f"%{branch.name}%"]},
-                    "name"
-                )
-                if qr_generator:
-                    doc.custom_feedback_qr = qr_generator
+                # qr_generator = frappe.db.get_value(
+                #     "QR Generator",
+                #     {"branch": ["like", f"%{branch.name}%"]},
+                #     "name"
+                # )
+                # if qr_generator:
+                #     doc.custom_feedback_qr = qr_generator
 
                 if branch.enable_fbr == 1 and len(doc.payments) > 0:
                     fbr_pos_charges = branch.fbr_pos_charges
@@ -90,11 +133,51 @@ def before_submit(doc, method):
                     if doc.paid_amount > doc.grand_total:
                         doc.change_amount = doc.paid_amount - doc.grand_total
                         doc.base_change_amount = doc.paid_amount - doc.grand_total
+    
+    auto_bom = frappe.get_doc("Automated BOM Manufacturing", doc.custom_foodpanda_order_id)
+    auto_bom.reference_name = doc.name
+    auto_bom.save()
 
     add_loyalty_point(doc)
     create_sales_order(doc)
     update_coupon(doc, "used")
 
+def should_zero_out(doc):
+    """
+    Header-level condition. Change to your real rule.
+    Examples:
+      return bool(doc.get("custom_make_free"))
+      return doc.customer_group == "Employees"
+      return doc.get("is_return")  # etc.
+    """
+    return bool(doc.get("custom_make_free"))
+
+def row_should_be_free(doc, it):
+    """
+    Row-level filter. Keep it broad if ALL rows should become free
+    once header condition is true.
+    """
+    # Example per-row flag:
+    # return it.get("custom_free_item") == 1
+    return True   # all rows
+
+def make_item_zero(it):
+    """Zero all price-affecting fields; mark as free for reporting."""
+    it.is_free_item = 1
+    it.discount_percentage = 0
+    it.discount_amount = 0
+    it.rate = 0
+    it.base_rate = 0
+    it.net_rate = 0
+    it.price_list_rate = 0
+    it.amount = 0
+    it.base_amount = 0
+    it.net_amount = 0
+    it.base_net_total = 0
+
+    # clear optional margin fields if present
+    if hasattr(it, "margin_rate_or_amount"): it.margin_rate_or_amount = 0
+    if hasattr(it, "margin_type"): it.margin_type = ""
 
 def before_cancel(doc, method):
     update_coupon(doc, "cancelled")
