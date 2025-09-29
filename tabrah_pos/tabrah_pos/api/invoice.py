@@ -134,7 +134,7 @@ def before_submit(doc, method):
                         doc.change_amount = doc.paid_amount - doc.grand_total
                         doc.base_change_amount = doc.paid_amount - doc.grand_total
                         
-    pos_profile = frappe.get_doc("POS Profile", self.pos_profile)
+    pos_profile = frappe.get_doc("POS Profile", doc.pos_profile)
     if pos_profile.post_auto_consumption_on_sales and doc.custom_foodpanda_order_id:
         auto_bom = frappe.get_doc("Automated BOM Manufacturing", doc.custom_foodpanda_order_id)
         auto_bom.reference_name = doc.name
