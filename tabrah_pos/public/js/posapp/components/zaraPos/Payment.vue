@@ -436,12 +436,12 @@ const setDefaultValue = () => {
   discountSource.value = "manual";
   invoice_doc.value.addition_discount = null;
   invoice_doc.value.custom_discount_offer = null;
-  const complementryMode = pos_profile.value.payments
-    .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
-    .map(profile => ({
-      ...profile,
-      amount: 0 // Set amount to zero
-    }));
+  // const complementryMode = pos_profile.value.payments
+  //   .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+  //   .map(profile => ({
+  //     ...profile,
+  //     amount: 0 // Set amount to zero
+  //   }));
 };
 const validateDiscount = (value) => {
   const maxAllowed = pos_profile.value.posa_max_discount_allowed;
@@ -1230,10 +1230,15 @@ const submitSaleInvoice = async (
         const matchedPayment = paymentModes.value.find(
           (mode) => mode.mode_of_payment === payment.mode_of_payment
         );
+          let finalAmount = matchedPayment ? matchedPayment.amount : payment.amount;
 
+          // If mode is Credit, force the amount to 0 (debt to customer)
+          if (payment.mode_of_payment === "Credit") {
+              finalAmount = 0;
+          }
         return {
           ...payment,
-          amount: matchedPayment ? matchedPayment.amount : payment.amount, // Use the existing amount if no match
+          amount: finalAmount, // Use the existing amount if no match
         };
       });
 
@@ -1250,16 +1255,16 @@ const submitSaleInvoice = async (
       data.customer_credit_dict = [];
       data.is_cashback = true;
       invoice_doc.value.custom_invoice_status = "In Queue";
-      if (complementaryItem.value) {
-        const complementryMode = pos_profile.value.payments
-          .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
-          .map(profile => ({
-            ...profile,
-            amount: complementaryItemDetails.value.original_rate, // Add original amount
-          }));
-        console.log("complementryMode", complementryMode);
-        invoice_doc.value.payments.push(complementryMode[0])
-      }
+      // if (complementaryItem.value) {
+      //   const complementryMode = pos_profile.value.payments
+      //     .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
+      //     .map(profile => ({
+      //       ...profile,
+      //       amount: complementaryItemDetails.value.original_rate, // Add original amount
+      //     }));
+      //   console.log("complementryMode", complementryMode);
+      //   invoice_doc.value.payments.push(complementryMode[0])
+      // }
 
 
       if (

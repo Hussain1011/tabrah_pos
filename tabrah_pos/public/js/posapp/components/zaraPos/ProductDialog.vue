@@ -194,6 +194,7 @@ import eventBus from "../../bus";
       if (discount.value <= pos_profile.value.posa_max_discount_allowed) {
         // Always sync complementary state before emitting
         selectedProduct.value.complementryItem = Boolean(complementaryItem.value);
+        selectedProduct.value.custom_is_complimentary_item = Boolean(complementaryItem.value);
         if (complementaryItem.value) {
           selectedProduct.value.rate = 0;
         }
@@ -209,7 +210,7 @@ import eventBus from "../../bus";
         discount.value = "";
         // Only reset rate if complementary is checked, otherwise preserve manual edits
         if (complementaryItem.value) {
-          selectedProduct.value.rate = selectedProduct.value.original_rate;
+          // selectedProduct.value.rate = selectedProduct.value.original_rate;
         }
       }
     };
@@ -260,12 +261,14 @@ const handleComplementaryToggle = () => {
     }
     selectedProduct.value.rate = 0;
     selectedProduct.value.complementryItem = true;
+    selectedProduct.value.custom_is_complimentary_item = true;
   } else {
     // Only restore rate if original_rate is not zero
     if (selectedProduct.value.original_rate && selectedProduct.value.original_rate > 0) {
       selectedProduct.value.rate = selectedProduct.value.original_rate;
     }
     selectedProduct.value.complementryItem = false;
+    selectedProduct.value.custom_is_complimentary_item = false;
   }
 };
 
