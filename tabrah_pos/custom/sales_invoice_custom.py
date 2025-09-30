@@ -1,4 +1,5 @@
 import frappe
+import json
 from erpnext.stock.get_item_details import get_default_bom
 
 
@@ -22,6 +23,7 @@ def on_submit(self, method):
         pos_profile = frappe.get_doc("POS Profile", self.pos_profile)
         if pos_profile.post_auto_consumption_on_sales and self.cost_center:
             if len(self.items) > 0:
+                auto_boms = []
                 for d in self.items:
                     packed_items = get_packed_items(self.name, d.item_code)
                     if packed_items:
@@ -35,12 +37,12 @@ def on_submit(self, method):
                                     'posting_date': self.posting_date,
                                     'posting_time': self.posting_time,
                                     'reference_doctype': self.doctype,
-                                    'reference_name': "NH-SINV-25-4120",
+                                    'reference_name': "ACC-SINV-2025-00077",
                                     'cost_center': self.cost_center,
                                     'qty': packed_item.qty
                                 })
                                 doc.insert()
-                                self.custom_foodpanda_order_id = doc.name
+                                auto_boms.append(doc.name)
                                 doc.submit()
                                 print(doc)
                     else:
@@ -53,11 +55,13 @@ def on_submit(self, method):
                                 'posting_date': self.posting_date,
                                 'posting_time': self.posting_time,
                                 'reference_doctype': self.doctype,
-                                'reference_name': "NH-SINV-25-4120",
+                                'reference_name': "ACC-SINV-2025-00077",
                                 'cost_center': self.cost_center,
                                 'qty': d.qty
                             })
                             doc.insert()
-                            self.custom_foodpanda_order_id = doc.name
+                            auto_boms.append(doc.name)
                             doc.submit()
+
+                self.custom_foodpanda_order_id = json.dumps(auto_boms)
 
