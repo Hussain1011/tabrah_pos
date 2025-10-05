@@ -89,7 +89,7 @@ def onsubmit(self, method):
             child.uom = it.uom
             child.remarks = "remarks"
         kot_doc.insert(ignore_permissions=True)    
-        frappe.db.commit()
+        # frappe.db.commit()
 
     
     frappe.publish_realtime(
