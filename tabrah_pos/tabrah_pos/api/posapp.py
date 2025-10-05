@@ -3166,12 +3166,13 @@ def get_pending_kots(company, pos_profile, statuses=None, limit=200):
         # For each item_group, make a separate payload block
         for item_group, items in grouped.items():
             result.append({
-                "id": kot.name,
-                "orderNo": kot.kot_no,
-                "date": str(kot.creation.date()),
+                "name": kot.name,
+                "kot_no": kot.kot_no,
                 "status": kot.status,
+                "sales_invoice": kot.sales_invoice,
+                "token_no": kot.token_no,
                 "item_group": item_group,
-                "items": items
+                "items": items,
             })
 
     return result
