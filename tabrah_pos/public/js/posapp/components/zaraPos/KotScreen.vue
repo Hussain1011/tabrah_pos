@@ -259,11 +259,13 @@
 </template>
 
 <script setup>
-import { ref, computed,onMounted } from 'vue';
+import { set } from 'lodash';
+import { ref, computed,onMounted,watch } from 'vue';
 
 const selectedCategory = ref(null);
 const categories = ref([]);
 const pos_profile = ref("");
+const allKotOrders=ref([]); // All KOT orders fetched from the server
 const orders = ref([
   // {
   //   id: 1,
@@ -291,7 +293,17 @@ const orders = ref([
 const todoOrders = computed(() => orders.value.filter(o => o.status === 'todo'));
 const inProgressOrders = computed(() => orders.value.filter(o => o.status === 'inprogress'));
 const completedOrders = computed(() => orders.value.filter(o => o.status === 'completed'));
-
+watch(selectedCategory, (newVal) => {
+  // getKotOrders()
+  console.log('alll...',``,allKotOrders.value)
+  const filtered = allKotOrders.value.filter(
+    order => order.item_group == newVal.item_group
+  )
+  orders.value = filtered
+  orders.value = allKotOrders.value.filter(
+    order => order.item_group == newVal.item_group
+  )
+})
 const getKotOrders = async (pos_profile_name) => {
   try {
     const response = await frappe.call({
@@ -302,12 +314,31 @@ const getKotOrders = async (pos_profile_name) => {
         },
       });
     if (response.message) {
-      orders.value = response.message;
+      orders.value = []
+      console.log("sel",selectedCategory.value)
+      orders.value = response.message.filter(
+    order => order.item_group == selectedCategory.value.item_group
+  )
+   
+   
+      allKotOrders.value = response.message;
     }
   } catch (error) {
     console.error("Error getting order", error);
   }
 };
+// ✅ Function to filter orders by selected category
+function filterOrders() {
+  if (!selectedCategory.value) {
+    orders.value = allKotOrders.value
+    return
+  }
+
+  orders.value = allKotOrders.value.filter(
+    order => order.item_group == selectedCategory.value.item_group
+  )
+  console.log("filtered",orders.value)
+}
 const updateKotOrderStatus = async (kot, status) => {
   try {
     const response = await frappe.call({
