@@ -3131,7 +3131,7 @@ def get_pending_kots(company, pos_profile, statuses=None, limit=200):
             statuses = statuses.split(',')
         filters = {"status": ["in", statuses]}
         if company:
-            filters = {"company":company}
+            filters = {"pos_profile":company}
         if pos_profile:
             filters = {"pos_profile":pos_profile}
         kots = frappe.get_all("Kitchen Order Ticket",

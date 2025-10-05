@@ -65,3 +65,35 @@ def on_submit(self, method):
 
                 self.custom_foodpanda_order_id = json.dumps(auto_boms)
 
+def onsubmit(self, method):
+
+    pos_profile = frappe.get_doc("POS Profile", self.pos_profile)
+    if pos_profile.custom_allow_kot_print_on_payments:
+        kot_doc = frappe.new_doc("Kitchen Order Ticket")
+        kot_doc.company = self.company
+        kot_doc.pos_profile = self.pos_profile
+        if self.table_no:
+            kot_doc.table_no = self.table_no
+        kot_doc.token_no = self.table_no
+        kot_doc.notes = 'notes'
+        kot_doc.status = 'todo'
+        kot_doc.pos_opening_shift = self.posa_pos_opening_shift
+        kot_doc.sales_invoice = self.name
+        for it in self.items:
+            child = kot_doc.append("items", {})
+            child.item_code = it.item_code
+            item_grp = frappe.get_doc("Item", child.item_code)
+            child.item_name = it.item_name
+            child.item_group = item_grp.item_group
+            child.qty = it.qty
+            child.uom = it.uom
+            child.remarks = "remarks"
+        kot_doc.insert(ignore_permissions=True)    
+        frappe.db.commit()
+
+    
+    frappe.publish_realtime(
+        "kot_created",
+        {"kot": self.as_dict()},
+        after_commit=True
+    )

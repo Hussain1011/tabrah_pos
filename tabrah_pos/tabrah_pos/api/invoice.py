@@ -144,33 +144,6 @@ def before_submit(doc, method):
             auto_bom.reference_name = doc.name
             auto_bom.save()
 
-    if pos_profile.custom_allow_kot_print_on_payments:
-        kot_doc = frappe.new_doc("Kitchen Order Ticket")
-        kot_doc.company = doc.company
-        kot_doc.pos_profile = doc.pos_profile
-        if doc.table_no:
-            kot_doc.table_no = doc.table_no
-        kot_doc.token_no = doc.table_no
-        kot_doc.notes = 'notes'
-        kot_doc.status = 'todo'
-        kot_doc.pos_opening_shift = doc.posa_pos_opening_shift
-        kot_doc.sales_invoice = doc.name
-        for it in doc.items:
-            child = kot_doc.append("items", {})
-            child.item_code = it.item_code
-            item_grp = frappe.get_doc("Item", child.item_code)
-            child.item_name = it.item_name
-            child.item_group = item_grp.item_group
-            child.qty = it.qty
-            child.uom = it.uom
-            child.remarks = "remarks"
-        kot_doc.insert(ignore_permissions=True)
-    
-    frappe.publish_realtime(
-        "kot_created",
-        {"kot": doc.as_dict()},
-        after_commit=True
-    )
 
     add_loyalty_point(doc)
     create_sales_order(doc)
