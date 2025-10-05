@@ -102,6 +102,7 @@ doc_events = {
             
             "tabrah_pos.tabrah_pos.api.invoice.before_submit",
         ],
+        "on_submit": "tabrah_pos.custom.sales_invoice_custom.onsubmit",
         "before_cancel": "tabrah_pos.tabrah_pos.api.invoice.before_cancel",
     },
     "Customer": {
