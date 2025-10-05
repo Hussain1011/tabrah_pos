@@ -3141,9 +3141,40 @@ def get_pending_kots(company, pos_profile, statuses=None, limit=200):
             limit=limit
         )
         # fetch items
-        for k in kots:
-            k["items"] = frappe.get_all("Kitchen Order Ticket Item", fields=["item_name as name","qty as quantity","item_group"], filters={"parent": k.name})
-        return kots
+        # for k in kots:
+        #     k["items"] = frappe.get_all("Kitchen Order Ticket Item", fields=["item_name as name","qty as quantity","item_group"], filters={"parent": k.name})
+        # return kots
+        if not kots:
+            return []
+
+        # Step 2: Build result
+        result = []
+
+        for kot in kots:
+            # Fetch items for each KOT
+            kot_items = frappe.get_all(
+                "Kitchen Order Ticket Item",
+                fields=["item_name as name", "qty as quantity", "item_group"],
+                filters={"parent": kot.name}
+            )
+
+            # Group items by item_group
+            grouped = {}
+            for item in kot_items:
+                grouped.setdefault(item["item_group"], []).append(item)
+
+            # For each item_group, make a separate payload block
+            for item_group, items in grouped.items():
+                result.append({
+                    "id": kot.name,
+                    "orderNo": kot.kot_no,
+                    "date": str(kot.creation.date()),
+                    "status": kot.status,
+                    "item_group": item_group,
+                    "items": items
+                })
+
+        return result
     
     except Exception as e:
         frappe.log_error(f"Error getting KOTs: {str(e)}", "KOT Error")
