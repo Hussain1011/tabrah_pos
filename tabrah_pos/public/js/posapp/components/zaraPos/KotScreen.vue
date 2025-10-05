@@ -42,6 +42,7 @@
               v-model="selectedCategory"
               :items="categories"
               label="Kot Category"
+              item-title="item_group"
               density="comfortable"
               variant="outlined"
               hide-details
@@ -251,8 +252,8 @@
 <script setup>
 import { ref, computed,onMounted } from 'vue';
 
-const selectedCategory = ref('All');
-const categories = ['All', 'Coffee', 'Juice', 'Pizza'];
+const selectedCategory = ref(null);
+const categories = ref([]);
 const pos_profile = ref("");
 const orders = ref([
   // {
@@ -327,6 +328,9 @@ const check_opening_entry = async () => {
 
     if (r.message) {
       pos_profile.value = r.message.pos_profile;
+      categories.value = pos_profile.value.item_groups;
+      selectedCategory.value = categories.value[0]
+
     } 
   } catch (error) {
     console.error("Error checking opening entry", error);

@@ -51133,8 +51133,8 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
     __name: "KotScreen",
     setup(__props, { expose: __expose }) {
       __expose();
-      const selectedCategory = ref("All");
-      const categories = ["All", "Coffee", "Juice", "Pizza"];
+      const selectedCategory = ref(null);
+      const categories = ref([]);
       const pos_profile2 = ref("");
       const orders = ref([]);
       const todoOrders = computed2(() => orders.value.filter((o) => o.status === "todo"));
@@ -51183,6 +51183,8 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
           );
           if (r.message) {
             pos_profile2.value = r.message.pos_profile;
+            categories.value = pos_profile2.value.item_groups;
+            selectedCategory.value = categories.value[0];
           }
         } catch (error) {
           console.error("Error checking opening entry", error);
@@ -51349,10 +51351,11 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
                           "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $setup.selectedCategory = $event),
                           items: $setup.categories,
                           label: "Kot Category",
+                          "item-title": "item_group",
                           density: "comfortable",
                           variant: "outlined",
                           "hide-details": ""
-                        }, null, 8, ["modelValue"])
+                        }, null, 8, ["modelValue", "items"])
                       ]),
                       _: 1
                     })
@@ -51851,4 +51854,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.ZKYDJ2KW.js.map
+//# sourceMappingURL=pos.bundle.VSB2GUYV.js.map
