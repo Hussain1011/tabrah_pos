@@ -84,7 +84,10 @@
             >
               <div class="mb-2">
                 <v-chip color="primary" size="default" class="mr-2">
-                  <span class="text-h6 font-weight-bold">Order #{{ order.kot_no }}</span>
+                  <span class="text-h6 font-weight-bold">Order #{{ order.sales_invoice }}</span>
+                </v-chip>
+                <v-chip color="primary" size="default" class="mr-2">
+                  <span class="text-h6 font-weight-bold">Token #{{ order.token_no }}</span>
                 </v-chip>
                 <v-chip color="grey" size="default" variant="outlined" v-if="order?.date"> 
                   <span class="text-body-1">{{ order.date }}</span>
@@ -139,7 +142,10 @@
             >
               <div class="mb-2">
                 <v-chip color="warning" size="default" class="mr-2">
-                  <span class="text-h6 font-weight-bold">Order #{{ order.kot_no }}</span>
+                  <span class="text-h6 font-weight-bold">Order #{{ order.sales_invoice }}</span>
+                </v-chip>
+                <v-chip color="warning" size="default" class="mr-2">
+                  <span class="text-h6 font-weight-bold">Token #{{ order.token_no }}</span>
                 </v-chip>
                 <v-chip v-if="order?.date" color="grey" size="default" variant="outlined">
                   <span class="text-body-1">{{ order.date }}</span>
@@ -194,7 +200,10 @@
             >
               <div class="mb-2">
                 <v-chip color="success" size="small" class="mr-2">
-                  Order #{{ order.kot_no }}
+                  Order #{{ order.sales_invoice }}
+                </v-chip>
+                <v-chip color="success" size="default" class="mr-2">
+                  <span class="text-h6 font-weight-bold">Token #{{ order.token_no }}</span>
                 </v-chip>
                 <v-chip v-if="order?.date" color="grey" size="small" variant="outlined">
                   {{ order.date }}

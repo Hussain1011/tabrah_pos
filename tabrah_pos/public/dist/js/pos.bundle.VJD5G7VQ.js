@@ -51230,13 +51230,16 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
   var _hoisted_1112 = { style: { "overflow-y": "auto", "flex": "1" } };
   var _hoisted_1211 = { class: "mb-2" };
   var _hoisted_139 = { class: "text-h6 font-weight-bold" };
-  var _hoisted_148 = { class: "text-body-1" };
-  var _hoisted_157 = { style: { "overflow-y": "auto", "flex": "1" } };
-  var _hoisted_166 = { class: "mb-2" };
-  var _hoisted_176 = { class: "text-h6 font-weight-bold" };
-  var _hoisted_185 = { class: "text-body-1" };
-  var _hoisted_195 = { style: { "overflow-y": "auto", "flex": "1" } };
-  var _hoisted_204 = { class: "mb-2" };
+  var _hoisted_148 = { class: "text-h6 font-weight-bold" };
+  var _hoisted_157 = { class: "text-body-1" };
+  var _hoisted_166 = { style: { "overflow-y": "auto", "flex": "1" } };
+  var _hoisted_176 = { class: "mb-2" };
+  var _hoisted_185 = { class: "text-h6 font-weight-bold" };
+  var _hoisted_195 = { class: "text-h6 font-weight-bold" };
+  var _hoisted_204 = { class: "text-body-1" };
+  var _hoisted_2110 = { style: { "overflow-y": "auto", "flex": "1" } };
+  var _hoisted_225 = { class: "mb-2" };
+  var _hoisted_235 = { class: "text-h6 font-weight-bold" };
   function render15(_ctx, _cache, $props, $setup, $data, $options) {
     const _component_v_col = resolveComponent("v-col");
     const _component_v_row = resolveComponent("v-row");
@@ -51434,7 +51437,17 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
                                     class: "mr-2"
                                   }, {
                                     default: withCtx(() => [
-                                      createBaseVNode("span", _hoisted_139, "Order #" + toDisplayString(order.kot_no), 1)
+                                      createBaseVNode("span", _hoisted_139, "Order #" + toDisplayString(order.sales_invoice), 1)
+                                    ]),
+                                    _: 2
+                                  }, 1024),
+                                  createVNode(_component_v_chip, {
+                                    color: "primary",
+                                    size: "default",
+                                    class: "mr-2"
+                                  }, {
+                                    default: withCtx(() => [
+                                      createBaseVNode("span", _hoisted_148, "Token #" + toDisplayString(order.token_no), 1)
                                     ]),
                                     _: 2
                                   }, 1024),
@@ -51445,7 +51458,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
                                     variant: "outlined"
                                   }, {
                                     default: withCtx(() => [
-                                      createBaseVNode("span", _hoisted_148, toDisplayString(order.date), 1)
+                                      createBaseVNode("span", _hoisted_157, toDisplayString(order.date), 1)
                                     ]),
                                     _: 2
                                   }, 1024)) : createCommentVNode("v-if", true)
@@ -51525,7 +51538,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
                           _: 1
                         }),
                         createVNode(_component_v_divider, { class: "mb-4" }),
-                        createBaseVNode("div", _hoisted_157, [
+                        createBaseVNode("div", _hoisted_166, [
                           (openBlock(true), createElementBlock(Fragment, null, renderList($setup.inProgressOrders, (order) => {
                             return openBlock(), createBlock(_component_v_card, {
                               key: order.id,
@@ -51533,14 +51546,24 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
                               elevation: "3"
                             }, {
                               default: withCtx(() => [
-                                createBaseVNode("div", _hoisted_166, [
+                                createBaseVNode("div", _hoisted_176, [
                                   createVNode(_component_v_chip, {
                                     color: "warning",
                                     size: "default",
                                     class: "mr-2"
                                   }, {
                                     default: withCtx(() => [
-                                      createBaseVNode("span", _hoisted_176, "Order #" + toDisplayString(order.kot_no), 1)
+                                      createBaseVNode("span", _hoisted_185, "Order #" + toDisplayString(order.sales_invoice), 1)
+                                    ]),
+                                    _: 2
+                                  }, 1024),
+                                  createVNode(_component_v_chip, {
+                                    color: "warning",
+                                    size: "default",
+                                    class: "mr-2"
+                                  }, {
+                                    default: withCtx(() => [
+                                      createBaseVNode("span", _hoisted_195, "Token #" + toDisplayString(order.token_no), 1)
                                     ]),
                                     _: 2
                                   }, 1024),
@@ -51551,7 +51574,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
                                     variant: "outlined"
                                   }, {
                                     default: withCtx(() => [
-                                      createBaseVNode("span", _hoisted_185, toDisplayString(order.date), 1)
+                                      createBaseVNode("span", _hoisted_204, toDisplayString(order.date), 1)
                                     ]),
                                     _: 2
                                   }, 1024)) : createCommentVNode("v-if", true)
@@ -51631,7 +51654,7 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
                           _: 1
                         }),
                         createVNode(_component_v_divider, { class: "mb-4" }),
-                        createBaseVNode("div", _hoisted_195, [
+                        createBaseVNode("div", _hoisted_2110, [
                           (openBlock(true), createElementBlock(Fragment, null, renderList($setup.completedOrders, (order) => {
                             return openBlock(), createBlock(_component_v_card, {
                               key: order.id,
@@ -51639,14 +51662,24 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
                               elevation: "3"
                             }, {
                               default: withCtx(() => [
-                                createBaseVNode("div", _hoisted_204, [
+                                createBaseVNode("div", _hoisted_225, [
                                   createVNode(_component_v_chip, {
                                     color: "success",
                                     size: "small",
                                     class: "mr-2"
                                   }, {
                                     default: withCtx(() => [
-                                      createTextVNode(" Order #" + toDisplayString(order.kot_no), 1)
+                                      createTextVNode(" Order #" + toDisplayString(order.sales_invoice), 1)
+                                    ]),
+                                    _: 2
+                                  }, 1024),
+                                  createVNode(_component_v_chip, {
+                                    color: "success",
+                                    size: "default",
+                                    class: "mr-2"
+                                  }, {
+                                    default: withCtx(() => [
+                                      createBaseVNode("span", _hoisted_235, "Token #" + toDisplayString(order.token_no), 1)
                                     ]),
                                     _: 2
                                   }, 1024),
@@ -51854,4 +51887,4 @@ Expected #hex, #hexa, rgb(), rgba(), hsl(), hsla(), object or number`);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=pos.bundle.VSB2GUYV.js.map
+//# sourceMappingURL=pos.bundle.VJD5G7VQ.js.map
