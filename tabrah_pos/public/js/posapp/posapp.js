@@ -1,5 +1,5 @@
 import { createApp, h } from 'vue';
-import Home from './Hello.vue';
+import Home from './main.vue';
 
 // import Vuetify from 'vuetify';
 import 'vuetify/styles'; // If using Vuetify 3
