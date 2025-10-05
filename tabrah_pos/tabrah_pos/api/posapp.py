@@ -3123,25 +3123,31 @@ def create_kot(order=None, items=None, table_no=None, company=None, warehouse=No
     return {"name": doc.name, "kot_no": doc.kot_no, "status": doc.status}
 
 @frappe.whitelist()
-def get_pending_kots(company=None, pos_profile=None, statuses=None, limit=200):
-    statuses = statuses or ["todo", "inprogress", "completed"]
-    if isinstance(statuses, str):
-        statuses = statuses.split(',')
-    filters = {"status": ["in", statuses]}
-    if company:
-        filters["company"] = company
-    if pos_profile:
-        filters["pos_profile"] = pos_profile
-    kots = frappe.get_all("Kitchen Order Ticket",
-        fields=["name", "kot_no", "status", "token_no", "company", "pos_profile", "sales_invoice"],
-        filters=filters,
-        order_by="token_no desc",
-        limit=limit
-    )
-    # fetch items
-    for k in kots:
-        k["items"] = frappe.get_all("Kitchen Order Ticket Item", fields=["item_name as name","qty as quantity","item_group"], filters={"parent": k.name})
-    return kots
+def get_pending_kots(company, pos_profile, statuses=None, limit=200):
+    filters = {}
+    try:
+        statuses = statuses or ["todo", "inprogress", "completed"]
+        if isinstance(statuses, str):
+            statuses = statuses.split(',')
+        filters = {"status": ["in", statuses]}
+        if company:
+            filters = {"company":company}
+        if pos_profile:
+            filters = {"pos_profile":pos_profile}
+        kots = frappe.get_all("Kitchen Order Ticket",
+            fields=["name", "kot_no", "status", "token_no", "company", "pos_profile", "sales_invoice"],
+            filters=filters,
+            order_by="token_no desc",
+            limit=limit
+        )
+        # fetch items
+        for k in kots:
+            k["items"] = frappe.get_all("Kitchen Order Ticket Item", fields=["item_name as name","qty as quantity","item_group"], filters={"parent": k.name})
+        return kots
+    
+    except Exception as e:
+        frappe.log_error(f"Error getting KOTs: {str(e)}", "KOT Error")
+        return "1"  # Default to 1 if there's an error
 
 @frappe.whitelist()
 def update_kot_status(kot_name, status):
@@ -3158,7 +3164,7 @@ def update_kot_status(kot_name, status):
         {"kot": doc.as_dict()},
         after_commit=True
     )
-    
+
     return {"name": doc.name, "status": doc.status}
 
 

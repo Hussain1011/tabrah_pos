@@ -150,7 +150,7 @@ def before_submit(doc, method):
         kot_doc.pos_profile = doc.pos_profile
         if doc.table_no:
             kot_doc.table_no = doc.table_no
-        kot_doc.token_no = doc.custom_token_number
+        kot_doc.token_no = doc.table_no
         kot_doc.notes = 'notes'
         kot_doc.status = 'todo'
         kot_doc.pos_opening_shift = doc.posa_pos_opening_shift
@@ -158,7 +158,7 @@ def before_submit(doc, method):
         for it in doc.items:
             child = kot_doc.append("items", {})
             child.item_code = it.item_code
-            item_grp = frappe.get_doc("Item", doc.pos_profile)
+            item_grp = frappe.get_doc("Item", child.item_code)
             child.item_name = it.item_name
             child.item_group = item_grp.item_group
             child.qty = it.qty
