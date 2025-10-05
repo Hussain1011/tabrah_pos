@@ -10,9 +10,9 @@ import * as directives from 'vuetify/directives'
 
 
 
-frappe.provide('frappe.CustomerScreen');
+frappe.provide('frappe.KotScreen');
 
-frappe.CustomerScreen.customerscreen = class {
+frappe.KotScreen.kotscreen = class {
     constructor({ parent }) {
         this.$parent = $(document);
         this.page = parent.page;

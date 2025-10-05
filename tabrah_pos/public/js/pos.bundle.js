@@ -1,6 +1,8 @@
 import './toConsole';
 import './posapp/posapp';
 import './posapp/customer_screen';
+import './posapp/kotscreen';
+
 
 
 frappe.form.link_formatters['Item'] = function (value, doc) {
