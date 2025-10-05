@@ -3088,3 +3088,89 @@ def get_next_token_number(company, pos_profile, pos_opening_shift):
     except Exception as e:
         frappe.log_error(f"Error getting next token number: {str(e)}", "Token Number Error")
         return "1"  # Default to 1 if there's an error
+
+
+# for Digital KOT
+@frappe.whitelist()
+def create_kot(order=None, items=None, table_no=None, company=None, warehouse=None, notes=None, pos_opening_shift=None, sales_invoice=None):
+    """
+    Create a KOT from POS cart (without requiring Sales Invoice).
+    items is expected as list of dicts: [{item_code, item_name, qty, uom, remarks}]
+    """
+    if isinstance(items, str):
+        items = json.loads(items)
+
+    if not items:
+        frappe.throw(_("No items provided for KOT"))
+
+
+    doc = frappe.new_doc("Kitchen Order Ticket")
+    doc.company = company
+    doc.warehouse = warehouse
+    doc.table_no = table_no
+    doc.notes = notes
+    doc.pos_opening_shift = pos_opening_shift
+    doc.sales_invoice = sales_invoice
+    for it in items:
+        child = doc.append("items", {})
+        child.item_code = it.get("item_code")
+        child.item_name = it.get("item_name")
+        child.qty = it.get("qty", 1)
+        child.uom = it.get("uom")
+        child.remarks = it.get("remarks")
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return {"name": doc.name, "kot_no": doc.kot_no, "status": doc.status}
+
+@frappe.whitelist()
+def get_pending_kots(company=None, pos_profile=None, statuses=None, limit=200):
+    statuses = statuses or ["Pending", "Accepted", "Preparing"]
+    if isinstance(statuses, str):
+        statuses = statuses.split(',')
+    filters = {"status": ["in", statuses]}
+    if company:
+        filters["company"] = company
+    if pos_profile:
+        filters["pos_profile"] = pos_profile
+    kots = frappe.get_all("Kitchen Order Ticket",
+        fields=["name", "kot_no", "status", "table_no", "company", "pos_profile"],
+        filters=filters,
+        order_by="name desc",
+        limit=limit
+    )
+    # fetch items
+    for k in kots:
+        k["items"] = frappe.get_all("Kitchen Order Ticket Item", fields=["item_code","item_name","qty","uom","remarks"], filters={"parent": k.name})
+    return kots
+
+@frappe.whitelist()
+def update_kot_status(kot_name, status):
+    allowed = ["Pending", "Accepted", "Preparing", "Ready", "Served", "Cancelled"]
+    if status not in allowed:
+        frappe.throw(_("Invalid status"))
+    doc = frappe.get_doc("Kitchen Order Ticket", kot_name)
+    doc.status = status
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return {"name": doc.name, "status": doc.status}
+
+# Optional: auto‑KOT from Sales Invoice (if you want that flow)
+@frappe.whitelist()
+def create_kot_from_sales_invoice(doc, method=None):
+    """Hook for Sales Invoice on_submit. Extracts kitchen items and creates a KOT."""
+    # doc is a Sales Invoice document
+    items = []
+    for it in doc.items:
+        if getattr(it, "is_kitchen_item", 1): 
+            # Todo: add flag in Item if needed
+            items.append({
+            "item_code": it.item_code,
+            "item_name": it.item_name,
+            "qty": it.qty,
+            "uom": it.uom,
+            "remarks": getattr(it, "kot_remarks", None)
+            })
+    if not items:
+        return
+    
+    return create_kot(items=items, table_no=getattr(doc, "table_no", None), company=doc.company, warehouse=doc.set_warehouse, notes=None, pos_opening_shift=getattr(doc, "pos_opening_shift", None), sales_invoice=doc.name)
