@@ -3124,7 +3124,7 @@ def create_kot(order=None, items=None, table_no=None, company=None, warehouse=No
 
 @frappe.whitelist()
 def get_pending_kots(company=None, pos_profile=None, statuses=None, limit=200):
-    statuses = statuses or ["Pending", "Accepted", "Preparing"]
+    statuses = statuses or ["todo", "inprogress", "completed"]
     if isinstance(statuses, str):
         statuses = statuses.split(',')
     filters = {"status": ["in", statuses]}
@@ -3133,26 +3133,34 @@ def get_pending_kots(company=None, pos_profile=None, statuses=None, limit=200):
     if pos_profile:
         filters["pos_profile"] = pos_profile
     kots = frappe.get_all("Kitchen Order Ticket",
-        fields=["name", "kot_no", "status", "table_no", "company", "pos_profile"],
+        fields=["name", "kot_no", "status", "token_no", "company", "pos_profile", "sales_invoice"],
         filters=filters,
-        order_by="name desc",
+        order_by="token_no desc",
         limit=limit
     )
     # fetch items
     for k in kots:
-        k["items"] = frappe.get_all("Kitchen Order Ticket Item", fields=["item_code","item_name","qty","uom","remarks"], filters={"parent": k.name})
+        k["items"] = frappe.get_all("Kitchen Order Ticket Item", fields=["item_name as name","qty as quantity","item_group"], filters={"parent": k.name})
     return kots
 
 @frappe.whitelist()
 def update_kot_status(kot_name, status):
-    allowed = ["Pending", "Accepted", "Preparing", "Ready", "Served", "Cancelled"]
+    allowed = ["todo", "inprogress", "completed", "delivered"]
     if status not in allowed:
         frappe.throw(_("Invalid status"))
     doc = frappe.get_doc("Kitchen Order Ticket", kot_name)
     doc.status = status
     doc.save(ignore_permissions=True)
     frappe.db.commit()
+
+    frappe.publish_realtime(
+        "kot_created",
+        {"kot": doc.as_dict()},
+        after_commit=True
+    )
+    
     return {"name": doc.name, "status": doc.status}
+
 
 # Optional: auto‑KOT from Sales Invoice (if you want that flow)
 @frappe.whitelist()
