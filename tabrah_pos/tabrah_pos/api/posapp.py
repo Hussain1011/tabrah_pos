@@ -3125,29 +3125,61 @@ def create_kot(order=None, items=None, table_no=None, company=None, warehouse=No
 @frappe.whitelist()
 def get_pending_kots(company, pos_profile, statuses=None, limit=200):
     filters = {}
-    try:
-        statuses = statuses or ["todo", "inprogress", "completed"]
-        if isinstance(statuses, str):
-            statuses = statuses.split(',')
-        filters = {"status": ["in", statuses]}
-        if company:
-            filters = {"pos_profile":company}
-        if pos_profile:
-            filters = {"pos_profile":pos_profile}
-        kots = frappe.get_all("Kitchen Order Ticket",
-            fields=["name", "kot_no", "status", "token_no", "company", "pos_profile", "sales_invoice"],
-            filters=filters,
-            order_by="token_no desc",
-            limit=limit
+    # try:
+    statuses = statuses or ["todo", "inprogress", "completed"]
+    if isinstance(statuses, str):
+        statuses = statuses.split(',')
+    filters = {"status": ["in", statuses]}
+    if company:
+        filters = {"pos_profile":company}
+    if pos_profile:
+        filters = {"pos_profile":pos_profile}
+    kots = frappe.get_all("Kitchen Order Ticket",
+        fields=["name", "kot_no", "status", "token_no", "company", "pos_profile", "sales_invoice"],
+        filters=filters,
+        order_by="token_no desc",
+        limit=limit
+    )
+    # fetch items
+    # for k in kots:
+    #     k["items"] = frappe.get_all("Kitchen Order Ticket Item", fields=["item_name as name","qty as quantity","item_group"], filters={"parent": k.name})
+    # return kots
+    if not kots:
+        return []
+
+    # Step 2: Build result
+    result = []
+
+    for kot in kots:
+        # Fetch items for each KOT
+        kot_items = frappe.get_all(
+            "Kitchen Order Ticket Item",
+            fields=["item_name as name", "qty as quantity", "item_group"],
+            filters={"parent": kot.name}
         )
-        # fetch items
-        for k in kots:
-            k["items"] = frappe.get_all("Kitchen Order Ticket Item", fields=["item_name as name","qty as quantity","item_group"], filters={"parent": k.name})
-        return kots
+
+        # Group items by item_group
+        grouped = {}
+        for item in kot_items:
+            grouped.setdefault(item["item_group"], []).append(item)
+
+        # For each item_group, make a separate payload block
+        for item_group, items in grouped.items():
+            result.append({
+                "name": kot.name,
+                "kot_no": kot.kot_no,
+                "status": kot.status,
+                "sales_invoice": kot.sales_invoice,
+                "token_no": kot.token_no,
+                "item_group": item_group,
+                "items": items,
+            })
+
+    return result
     
-    except Exception as e:
-        frappe.log_error(f"Error getting KOTs: {str(e)}", "KOT Error")
-        return "1"  # Default to 1 if there's an error
+    # except Exception as e:
+    #     frappe.log_error(f"Error getting KOTs: {str(e)}", "KOT Error")
+    #     return "1"  # Default to 1 if there's an error
 
 @frappe.whitelist()
 def update_kot_status(kot_name, status):

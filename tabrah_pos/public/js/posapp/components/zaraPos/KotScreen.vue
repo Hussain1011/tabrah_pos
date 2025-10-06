@@ -42,6 +42,7 @@
               v-model="selectedCategory"
               :items="categories"
               label="Kot Category"
+              item-title="item_group"
               density="comfortable"
               variant="outlined"
               hide-details
@@ -83,7 +84,10 @@
             >
               <div class="mb-2">
                 <v-chip color="primary" size="default" class="mr-2">
-                  <span class="text-h6 font-weight-bold">Order #{{ order.kot_no }}</span>
+                  <span class="text-h6 font-weight-bold">Order #{{ order.sales_invoice }}</span>
+                </v-chip>
+                <v-chip color="primary" size="default" class="mr-2">
+                  <span class="text-h6 font-weight-bold">Token #{{ order.token_no }}</span>
                 </v-chip>
                 <v-chip color="grey" size="default" variant="outlined" v-if="order?.date"> 
                   <span class="text-body-1">{{ order.date }}</span>
@@ -138,7 +142,10 @@
             >
               <div class="mb-2">
                 <v-chip color="warning" size="default" class="mr-2">
-                  <span class="text-h6 font-weight-bold">Order #{{ order.kot_no }}</span>
+                  <span class="text-h6 font-weight-bold">Order #{{ order.sales_invoice }}</span>
+                </v-chip>
+                <v-chip color="warning" size="default" class="mr-2">
+                  <span class="text-h6 font-weight-bold">Token #{{ order.token_no }}</span>
                 </v-chip>
                 <v-chip v-if="order?.date" color="grey" size="default" variant="outlined">
                   <span class="text-body-1">{{ order.date }}</span>
@@ -193,7 +200,10 @@
             >
               <div class="mb-2">
                 <v-chip color="success" size="small" class="mr-2">
-                  Order #{{ order.kot_no }}
+                  Order #{{ order.sales_invoice }}
+                </v-chip>
+                <v-chip color="success" size="default" class="mr-2">
+                  <span class="text-h6 font-weight-bold">Token #{{ order.token_no }}</span>
                 </v-chip>
                 <v-chip v-if="order?.date" color="grey" size="small" variant="outlined">
                   {{ order.date }}
@@ -249,11 +259,13 @@
 </template>
 
 <script setup>
-import { ref, computed,onMounted } from 'vue';
+import { set } from 'lodash';
+import { ref, computed,onMounted,watch } from 'vue';
 
-const selectedCategory = ref('All');
-const categories = ['All', 'Coffee', 'Juice', 'Pizza'];
+const selectedCategory = ref(null);
+const categories = ref([]);
 const pos_profile = ref("");
+const allKotOrders=ref([]); // All KOT orders fetched from the server
 const orders = ref([
   // {
   //   id: 1,
@@ -281,7 +293,17 @@ const orders = ref([
 const todoOrders = computed(() => orders.value.filter(o => o.status === 'todo'));
 const inProgressOrders = computed(() => orders.value.filter(o => o.status === 'inprogress'));
 const completedOrders = computed(() => orders.value.filter(o => o.status === 'completed'));
-
+watch(selectedCategory, (newVal) => {
+  // getKotOrders()
+  console.log('alll...',``,allKotOrders.value)
+  const filtered = allKotOrders.value.filter(
+    order => order.item_group == newVal.item_group
+  )
+  orders.value = filtered
+  orders.value = allKotOrders.value.filter(
+    order => order.item_group == newVal.item_group
+  )
+})
 const getKotOrders = async (pos_profile_name) => {
   try {
     const response = await frappe.call({
@@ -292,12 +314,31 @@ const getKotOrders = async (pos_profile_name) => {
         },
       });
     if (response.message) {
-      orders.value = response.message;
+      orders.value = []
+      console.log("sel",selectedCategory.value)
+      orders.value = response.message.filter(
+    order => order.item_group == selectedCategory.value.item_group
+  )
+   
+   
+      allKotOrders.value = response.message;
     }
   } catch (error) {
     console.error("Error getting order", error);
   }
 };
+// ✅ Function to filter orders by selected category
+function filterOrders() {
+  if (!selectedCategory.value) {
+    orders.value = allKotOrders.value
+    return
+  }
+
+  orders.value = allKotOrders.value.filter(
+    order => order.item_group == selectedCategory.value.item_group
+  )
+  console.log("filtered",orders.value)
+}
 const updateKotOrderStatus = async (kot, status) => {
   try {
     const response = await frappe.call({
@@ -327,6 +368,9 @@ const check_opening_entry = async () => {
 
     if (r.message) {
       pos_profile.value = r.message.pos_profile;
+      categories.value = pos_profile.value.item_groups;
+      selectedCategory.value = categories.value[0]
+
     } 
   } catch (error) {
     console.error("Error checking opening entry", error);
