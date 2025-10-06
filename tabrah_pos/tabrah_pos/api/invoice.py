@@ -45,6 +45,9 @@ def before_submit(doc, method):
 
             # recompute all totals after edits
             doc.calculate_taxes_and_totals()
+        
+        if d.posa_notes:
+            d.posa_notes = d.posa_notes
 
     if doc.total == 0 and doc.rounded_total == 0 and doc.grand_total ==0 and doc.base_grand_total == 0:
         

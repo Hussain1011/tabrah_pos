@@ -38,6 +38,7 @@ def on_submit(self, method):
                                     'posting_time': self.posting_time,
                                     'reference_doctype': self.doctype,
                                     'reference_name': "NH-SINV-25-1287",
+                                    # 'reference_name': "ACC-SINV-2025-00077",
                                     'cost_center': self.cost_center,
                                     'qty': packed_item.qty
                                 })
@@ -56,6 +57,7 @@ def on_submit(self, method):
                                 'posting_time': self.posting_time,
                                 'reference_doctype': self.doctype,
                                 'reference_name': "NH-SINV-25-1287",
+                                # 'reference_name': "ACC-SINV-2025-00077",
                                 'cost_center': self.cost_center,
                                 'qty': d.qty
                             })
@@ -87,7 +89,7 @@ def onsubmit(self, method):
             child.item_group = item_grp.item_group
             child.qty = it.qty
             child.uom = it.uom
-            child.remarks = "remarks"
+            child.remarks = it.posa_notes
         kot_doc.insert(ignore_permissions=True)    
         # frappe.db.commit()
 

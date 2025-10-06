@@ -1675,7 +1675,7 @@ const makePayloadForInvoice = () => {
       amount: item.rate,
       complementryItem: item.complementryItem,
       custom_is_complimentary_item: item.custom_is_complimentary_item,
-      comment:item.comment,
+      posa_notes:item.comment,
       product_bundle: item.product_bundle,
       original_rate: item.original_rate,
       // net_amount: taxIncludeNetamount,
