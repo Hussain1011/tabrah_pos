@@ -37,7 +37,7 @@ def on_submit(self, method):
                                     'posting_date': self.posting_date,
                                     'posting_time': self.posting_time,
                                     'reference_doctype': self.doctype,
-                                    'reference_name': "ACC-SINV-2025-00077",
+                                    'reference_name': "NH-SINV-25-1287",
                                     'cost_center': self.cost_center,
                                     'qty': packed_item.qty
                                 })
@@ -55,7 +55,7 @@ def on_submit(self, method):
                                 'posting_date': self.posting_date,
                                 'posting_time': self.posting_time,
                                 'reference_doctype': self.doctype,
-                                'reference_name': "ACC-SINV-2025-00077",
+                                'reference_name': "NH-SINV-25-1287",
                                 'cost_center': self.cost_center,
                                 'qty': d.qty
                             })
