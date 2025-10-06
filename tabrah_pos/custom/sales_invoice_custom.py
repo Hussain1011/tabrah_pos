@@ -74,7 +74,7 @@ def onsubmit(self, method):
         kot_doc.pos_profile = self.pos_profile
         if self.table_no:
             kot_doc.table_no = self.table_no
-        kot_doc.token_no = self.table_no
+        kot_doc.token_no = self.custom_token_number
         kot_doc.notes = 'notes'
         kot_doc.status = 'todo'
         kot_doc.pos_opening_shift = self.posa_pos_opening_shift
