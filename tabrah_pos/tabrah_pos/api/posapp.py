@@ -3154,7 +3154,7 @@ def get_pending_kots(company, pos_profile, statuses=None, limit=200):
         # Fetch items for each KOT
         kot_items = frappe.get_all(
             "Kitchen Order Ticket Item",
-            fields=["item_name as name", "qty as quantity", "item_group"],
+            fields=["item_name as name", "qty as quantity", "item_group", "remarks"],
             filters={"parent": kot.name}
         )
 
