@@ -43,6 +43,7 @@
               :items="categories"
               label="Kot Category"
               item-title="item_group"
+              return-object
               density="comfortable"
               variant="outlined"
               hide-details
@@ -55,7 +56,7 @@
               color="#21A0A0"
               size="default"
               prepend-icon="mdi-refresh"
-              @click="getKotOrders()"
+              @click="refreshOrders()"
               block
             >
               Refresh Orders
@@ -99,16 +100,18 @@
               </v-card-subtitle>
               
               <v-list dense class="pa-0">
-                <v-list-item
-                  v-for="(item, idx) in order.items"
-                  :key="idx"
-                  class="px-0"
-                  style="min-height: 35px;"
-                >
-                  <v-list-item-title class="text-body-1 font-weight-medium">
-                    {{ item.quantity }}x {{ item.name }}
-                  </v-list-item-title>
-                </v-list-item>
+                <template v-for="(item, idx) in order.items" :key="idx">
+                  <v-list-item class="px-0" style="min-height: 35px;">
+                    <v-list-item-title class="text-body-1 font-weight-medium">
+                      {{ item.quantity }}x {{ item.name }}
+                    </v-list-item-title>
+                  </v-list-item>
+                  <v-list-item class="px-0 pt-0" style="min-height: 25px;">
+                    <v-list-item-subtitle class="text-body-1 " style="font-style: italic; font-weight: 500;">
+                      Comments: {{ item.remarks || '-' }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </template>
               </v-list>
 
               <v-btn
@@ -157,16 +160,18 @@
               </v-card-subtitle>
               
               <v-list dense class="pa-0">
-                <v-list-item
-                  v-for="(item, idx) in order.items"
-                  :key="idx"
-                  class="px-0"
-                  style="min-height: 35px;"
-                >
-                  <v-list-item-title class="text-body-1 font-weight-medium">
-                    {{ item.quantity }}x {{ item.name }}
-                  </v-list-item-title>
-                </v-list-item>
+                <template v-for="(item, idx) in order.items" :key="idx">
+                  <v-list-item class="px-0" style="min-height: 35px;">
+                    <v-list-item-title class="text-body-1 font-weight-medium">
+                      {{ item.quantity }}x {{ item.name }}
+                    </v-list-item-title>
+                  </v-list-item>
+                  <v-list-item class="px-0 pt-0" style="min-height: 25px;">
+                    <v-list-item-subtitle class="text-body-1 " style="font-style: italic; font-weight: 500;">
+                      Comments: {{ item.remarks || '-' }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </template>
               </v-list>
 
               <v-btn
@@ -215,16 +220,18 @@
               </v-card-subtitle>
               
               <v-list dense class="pa-0">
-                <v-list-item
-                  v-for="(item, idx) in order.items"
-                  :key="idx"
-                  class="px-0"
-                  style="min-height: 30px;"
-                >
-                  <v-list-item-title class="text-body-2">
-                    {{ item.quantity }}x {{ item.name }}
-                  </v-list-item-title>
-                </v-list-item>
+                <template v-for="(item, idx) in order.items" :key="idx">
+                  <v-list-item class="px-0" style="min-height: 30px;">
+                    <v-list-item-title class="text-body-2">
+                      {{ item.quantity }}x {{ item.name }}
+                    </v-list-item-title>
+                  </v-list-item>
+                  <v-list-item class="px-0 pt-0" style="min-height: 20px;">
+                    <v-list-item-subtitle class="text-body-1 " style="font-style: italic; font-weight: 500;">
+                      Comments: {{ item.remarks || '-' }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </template>
               </v-list>
 
               <v-row class="mt-3" no-gutters>
@@ -260,103 +267,85 @@
 
 <script setup>
 import { set } from 'lodash';
-import { ref, computed,onMounted,watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 
 const selectedCategory = ref(null);
 const categories = ref([]);
 const pos_profile = ref("");
-const allKotOrders=ref([]); // All KOT orders fetched from the server
-const orders = ref([
-  // {
-  //   id: 1,
-  //   orderNo: '001',
-  //   date: '2025-10-04',
-  //   status: 'todo',
-  //   items: [
-  //     { name: 'Chicken Biryani', quantity: 2 },
-  //     { name: 'Butter Naan', quantity: 4 },
-  //     { name: 'Raita', quantity: 2 }
-  //   ]
-  // },
-  // {
-  //   id: 2,
-  //   orderNo: '002',
-  //   date: '2025-10-04',
-  //   status: 'todo',
-  //   items: [
-  //     { name: 'Karahi Chicken', quantity: 1 },
-  //     { name: 'Roti', quantity: 6 }
-  //   ]
-  // },
-]);
+const allKotOrders = ref([]); // All KOT orders fetched from the server
+const orders = ref([]);
 
 const todoOrders = computed(() => orders.value.filter(o => o.status === 'todo'));
 const inProgressOrders = computed(() => orders.value.filter(o => o.status === 'inprogress'));
 const completedOrders = computed(() => orders.value.filter(o => o.status === 'completed'));
-watch(selectedCategory, (newVal) => {
-  // getKotOrders()
-  console.log('alll...',``,allKotOrders.value)
-  const filtered = allKotOrders.value.filter(
-    order => order.item_group == newVal.item_group
-  )
-  orders.value = filtered
+
+// Function to filter orders based on selected category
+const filterOrdersByCategory = () => {
+  if (!selectedCategory.value || !selectedCategory.value.item_group) {
+    orders.value = [];
+    return;
+  }
+  
   orders.value = allKotOrders.value.filter(
-    order => order.item_group == newVal.item_group
-  )
-})
-const getKotOrders = async (pos_profile_name) => {
+    order => order.item_group === selectedCategory.value.item_group
+  );
+  
+  console.log('Filtered orders:', orders.value.length, 'for category:', selectedCategory.value.item_group);
+};
+
+// Watch for changes in selectedCategory
+watch(selectedCategory, (newCategory, oldCategory) => {
+  console.log('Category changed from', oldCategory?.item_group, 'to', newCategory?.item_group);
+  filterOrdersByCategory();
+});
+
+const getKotOrders = async () => {
   try {
     const response = await frappe.call({
-        method: "tabrah_pos.tabrah_pos.api.posapp.get_pending_kots",
-        args: {
-          pos_profile: pos_profile.value.name,
-          company: pos_profile.value.company
-        },
-      });
+      method: "tabrah_pos.tabrah_pos.api.posapp.get_pending_kots",
+      args: {
+        pos_profile: pos_profile.value.name,
+        company: pos_profile.value.company
+      },
+    });
+    
     if (response.message) {
-      orders.value = []
-      console.log("sel",selectedCategory.value)
-      orders.value = response.message.filter(
-    order => order.item_group == selectedCategory.value.item_group
-  )
-   
-   
-      allKotOrders.value = response.message;
+      console.log('Fetched KOT orders:', response.message.length);
+      allKotOrders.value = [...response.message];
+      
+      // Filter orders based on currently selected category
+      filterOrdersByCategory();
     }
   } catch (error) {
     console.error("Error getting order", error);
   }
 };
-// ✅ Function to filter orders by selected category
-function filterOrders() {
-  if (!selectedCategory.value) {
-    orders.value = allKotOrders.value
-    return
-  }
 
-  orders.value = allKotOrders.value.filter(
-    order => order.item_group == selectedCategory.value.item_group
-  )
-  console.log("filtered",orders.value)
-}
+// Refresh function that fetches all orders and then filters
+const refreshOrders = async () => {
+  console.log('Refreshing orders...');
+  await getKotOrders();
+};
+
 const updateKotOrderStatus = async (kot, status) => {
   try {
     const response = await frappe.call({
-        method: "tabrah_pos.tabrah_pos.api.posapp.update_kot_status",
-        args: {
-          pos_profile: pos_profile.value.name,
-          kot_name: kot.name,
-          status: status
-        },
-      });
+      method: "tabrah_pos.tabrah_pos.api.posapp.update_kot_status",
+      args: {
+        pos_profile: pos_profile.value.name,
+        kot_name: kot.name,
+        status: status
+      },
+    });
+    
     if (response.message) {
       kot.status = status;
-    
     }
   } catch (error) {
-    console.error("Error getting order", error);
+    console.error("Error updating order status", error);
   }
 };
+
 const check_opening_entry = async () => {
   try {
     const r = await frappe.call(
@@ -369,24 +358,28 @@ const check_opening_entry = async () => {
     if (r.message) {
       pos_profile.value = r.message.pos_profile;
       categories.value = pos_profile.value.item_groups;
-      selectedCategory.value = categories.value[0]
-
-    } 
+      
+      // Set the first category as default
+      if (categories.value.length > 0) {
+        selectedCategory.value = categories.value[0];
+      }
+    }
   } catch (error) {
     console.error("Error checking opening entry", error);
   }
 };
-onMounted(async () => {
-  await check_opening_entry()
-  getKotOrders();
-  frappe.realtime.on("kot_created", function (data) {
-    console.log('refresh-data',data)
-        if(data.kot){
-          getKotOrders()
-        }
-      });
-});
 
+onMounted(async () => {
+  await check_opening_entry();
+  await getKotOrders();
+  
+  frappe.realtime.on("kot_created", function (data) {
+    console.log('KOT created event:', data);
+    if (data.kot) {
+      getKotOrders();
+    }
+  });
+});
 </script>
 
 <style scoped>
