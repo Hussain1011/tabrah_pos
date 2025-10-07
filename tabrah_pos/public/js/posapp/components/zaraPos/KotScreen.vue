@@ -39,11 +39,14 @@
         <v-col cols="12" md="3">
           <v-card elevation="3" class="pa-3 d-flex align-center" style="height: 100%;">
             <v-select
-              v-model="selectedCategory"
+              v-model="selectedCategories"
               :items="categories"
-              label="Kot Category"
+              label="Kot Categories"
               item-title="item_group"
               return-object
+              multiple
+              chips
+              closable-chips
               density="comfortable"
               variant="outlined"
               hide-details
@@ -106,7 +109,7 @@
                       {{ item.quantity }}x {{ item.name }}
                     </v-list-item-title>
                   </v-list-item>
-                  <v-list-item class="px-0 pt-0" style="min-height: 25px;">
+                  <v-list-item class="px-0 pt-0" style="min-height: 30px;">
                     <v-list-item-subtitle class="text-body-1 " style="font-style: italic; font-weight: 500;">
                       Comments: {{ item.remarks || '-' }}
                     </v-list-item-subtitle>
@@ -166,7 +169,7 @@
                       {{ item.quantity }}x {{ item.name }}
                     </v-list-item-title>
                   </v-list-item>
-                  <v-list-item class="px-0 pt-0" style="min-height: 25px;">
+                  <v-list-item class="px-0 pt-0" style="min-height: 30px;">
                     <v-list-item-subtitle class="text-body-1 " style="font-style: italic; font-weight: 500;">
                       Comments: {{ item.remarks || '-' }}
                     </v-list-item-subtitle>
@@ -226,7 +229,7 @@
                       {{ item.quantity }}x {{ item.name }}
                     </v-list-item-title>
                   </v-list-item>
-                  <v-list-item class="px-0 pt-0" style="min-height: 20px;">
+                  <v-list-item class="px-0 pt-0" style="min-height: 28px;">
                     <v-list-item-subtitle class="text-body-1 " style="font-style: italic; font-weight: 500;">
                       Comments: {{ item.remarks || '-' }}
                     </v-list-item-subtitle>
@@ -269,7 +272,7 @@
 import { set } from 'lodash';
 import { ref, computed, onMounted, watch } from 'vue';
 
-const selectedCategory = ref(null);
+const selectedCategories = ref([]);
 const categories = ref([]);
 const pos_profile = ref("");
 const allKotOrders = ref([]); // All KOT orders fetched from the server
@@ -279,25 +282,30 @@ const todoOrders = computed(() => orders.value.filter(o => o.status === 'todo'))
 const inProgressOrders = computed(() => orders.value.filter(o => o.status === 'inprogress'));
 const completedOrders = computed(() => orders.value.filter(o => o.status === 'completed'));
 
-// Function to filter orders based on selected category
+// Function to filter orders based on selected categories
 const filterOrdersByCategory = () => {
-  if (!selectedCategory.value || !selectedCategory.value.item_group) {
+  if (!selectedCategories.value || selectedCategories.value.length === 0) {
     orders.value = [];
     return;
   }
   
+  // Get all selected category names
+  const selectedCategoryNames = selectedCategories.value.map(cat => cat.item_group);
+  
+  // Filter orders that match any of the selected categories
   orders.value = allKotOrders.value.filter(
-    order => order.item_group === selectedCategory.value.item_group
+    order => selectedCategoryNames.includes(order.item_group)
   );
   
-  console.log('Filtered orders:', orders.value.length, 'for category:', selectedCategory.value.item_group);
+  console.log('Filtered orders:', orders.value.length, 'for categories:', selectedCategoryNames);
 };
 
-// Watch for changes in selectedCategory
-watch(selectedCategory, (newCategory, oldCategory) => {
-  console.log('Category changed from', oldCategory?.item_group, 'to', newCategory?.item_group);
+// Watch for changes in selectedCategories
+watch(selectedCategories, (newCategories, oldCategories) => {
+  const newCategoryNames = newCategories.map(c => c.item_group);
+  console.log('Categories changed to:', newCategoryNames);
   filterOrdersByCategory();
-});
+}, { deep: true });
 
 const getKotOrders = async () => {
   try {
@@ -359,9 +367,9 @@ const check_opening_entry = async () => {
       pos_profile.value = r.message.pos_profile;
       categories.value = pos_profile.value.item_groups;
       
-      // Set the first category as default
+      // Set all categories as default selection
       if (categories.value.length > 0) {
-        selectedCategory.value = categories.value[0];
+        selectedCategories.value = [...categories.value];
       }
     }
   } catch (error) {
