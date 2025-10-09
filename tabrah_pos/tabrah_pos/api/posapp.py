@@ -3154,21 +3154,48 @@ def get_pending_kots(company, pos_profile, statuses=None, limit=200):
         # Fetch items for each KOT
         kot_items = frappe.get_all(
             "Kitchen Order Ticket Item",
-            fields=["item_name as name", "qty as quantity", "item_group", "remarks"],
-            filters={"parent": kot.name}
+            fields=["name", "item_name as name", "qty as quantity", "item_group", "remarks", "item_status"],
+            filters={"parent": kot.name, "item_status": ["in", statuses]}
         )
 
+        if not kot_items:
+            continue
         # Group items by item_group
         grouped = {}
         for item in kot_items:
             grouped.setdefault(item["item_group"], []).append(item)
 
+
+        merged_groups = {}
+        for item_group, items in grouped.items():
+            key = item_group
+
+            # Combine Smoothies + Add-ons
+            if item_group in ["Smoothies-RM", "AddOns-RM"]:
+                key = "Smoothies-RM"
+
+            if key not in merged_groups:
+                merged_groups[key] = []
+
+            merged_groups[key].extend(items)
+
         # For each item_group, make a separate payload block
         for item_group, items in grouped.items():
+            # Extract child statuses
+            statuses_in_group = {i.get("item_status", "todo").lower() for i in items}
+
+            # Derive group status logic
+            if all(s == "completed" for s in statuses_in_group):
+                group_status = "completed"
+            elif any(s == "inprogress" for s in statuses_in_group):
+                group_status = "inprogress"
+            else:
+                group_status = "todo"
+
             result.append({
                 "name": kot.name,
                 "kot_no": kot.kot_no,
-                "status": kot.status,
+                "status": group_status,
                 "sales_invoice": kot.sales_invoice,
                 "token_no": kot.token_no,
                 "item_group": item_group,
@@ -3182,22 +3209,68 @@ def get_pending_kots(company, pos_profile, statuses=None, limit=200):
     #     return "1"  # Default to 1 if there's an error
 
 @frappe.whitelist()
-def update_kot_status(kot_name, status):
-    allowed = ["todo", "inprogress", "completed", "delivered"]
-    if status not in allowed:
-        frappe.throw(_("Invalid status"))
-    doc = frappe.get_doc("Kitchen Order Ticket", kot_name)
-    doc.status = status
-    doc.save(ignore_permissions=True)
+def update_kot_status(item_id=None, item_ids=None, new_status=None):
+    # allowed = ["todo", "inprogress", "completed", "delivered"]
+    # if status not in allowed:
+    #     frappe.throw(_("Invalid status"))
+    # doc = frappe.get_doc("Kitchen Order Ticket", kot_name)
+    # doc.status = status
+    # doc.save(ignore_permissions=True)
+    # frappe.db.commit()
+    """
+    Update item(s) in Kitchen Order Ticket Item.
+    - If one item_id is sent: updates that row only.
+    - If multiple item_ids are sent: updates all of them together.
+    """
+    if not new_status:
+        frappe.throw("New status is required.")
+
+    # Normalize input into a list
+    item_list = []
+
+    if item_ids:
+        # If frontend sends JSON array → parse it
+        if isinstance(item_ids, str):
+            import json
+            item_list = json.loads(item_ids)
+        else:
+            item_list = item_ids
+    elif item_id:
+        item_list = [item_id]
+    else:
+        frappe.throw("Item ID(s) required.")
+
+    parent_kot_set = set()
+
+    # Update each item
+    for iid in item_list:
+        frappe.db.set_value("Kitchen Order Ticket Item", iid, "item_status", new_status)
+        parent_kot = frappe.db.get_value("Kitchen Order Ticket Item", iid, "parent")
+        if parent_kot:
+            parent_kot_set.add(parent_kot)
+
+    # For each affected KOT parent, update if all done
+    for kot in parent_kot_set:
+        remaining = frappe.db.count(
+            "Kitchen Order Ticket Item",
+            {"parent": kot, "item_status": ["!=", "completed"]}
+        )
+
+        # auto-update parent only when everything done
+        if remaining == 0:
+            frappe.db.set_value("Kitchen Order Ticket", kot, "status", "completed")
+        elif remaining > 0 and new_status == "inprogress":
+            frappe.db.set_value("Kitchen Order Ticket", kot, "status", "inprogress")
+
     frappe.db.commit()
 
     frappe.publish_realtime(
         "kot_created",
-        {"kot": doc.as_dict()},
+        {"kot": kot.as_dict()},
         after_commit=True
     )
 
-    return {"name": doc.name, "status": doc.status}
+    return {"name": kot.name, "status": kot.status}
 
 
 # Optional: auto‑KOT from Sales Invoice (if you want that flow)
