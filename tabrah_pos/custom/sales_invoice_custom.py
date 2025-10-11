@@ -90,6 +90,7 @@ def onsubmit(self, method):
             child.qty = it.qty
             child.uom = it.uom
             child.remarks = it.posa_notes
+            child.item_status = 'todo'
         kot_doc.insert(ignore_permissions=True)    
         # frappe.db.commit()
 
