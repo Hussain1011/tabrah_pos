@@ -106,7 +106,7 @@
                 <template v-for="(item, idx) in order.items" :key="idx">
                   <v-list-item class="px-0" style="min-height: 35px;">
                     <v-list-item-title class="text-body-1 font-weight-medium">
-                      {{ item.quantity }}x {{ item.name }}
+                      {{ item.quantity }}x {{ item.item_name }}
                     </v-list-item-title>
                   </v-list-item>
                   <v-list-item class="px-0 pt-0" style="min-height: 30px;">
@@ -166,7 +166,7 @@
                 <template v-for="(item, idx) in order.items" :key="idx">
                   <v-list-item class="px-0" style="min-height: 35px;">
                     <v-list-item-title class="text-body-1 font-weight-medium">
-                      {{ item.quantity }}x {{ item.name }}
+                      {{ item.quantity }}x {{ item.item_name }}
                     </v-list-item-title>
                   </v-list-item>
                   <v-list-item class="px-0 pt-0" style="min-height: 30px;">
@@ -226,7 +226,7 @@
                 <template v-for="(item, idx) in order.items" :key="idx">
                   <v-list-item class="px-0" style="min-height: 30px;">
                     <v-list-item-title class="text-body-2">
-                      {{ item.quantity }}x {{ item.name }}
+                      {{ item.quantity }}x {{ item.item_name }}
                     </v-list-item-title>
                   </v-list-item>
                   <v-list-item class="px-0 pt-0" style="min-height: 28px;">
@@ -337,17 +337,35 @@ const refreshOrders = async () => {
 
 const updateKotOrderStatus = async (kot, status) => {
   try {
+    // Find the matching KOT order from allKotOrders
+    const matchedOrder = allKotOrders.value.find(order => order.name === kot.name);
+    
+    // Prepare the payload
+    const payload = {
+      pos_profile: pos_profile.value.name,
+      kot_name: kot.name,
+      new_status: status
+    };
+    
+    // Check if matchedOrder exists and has items
+    if (matchedOrder && matchedOrder.items && matchedOrder.items.length > 0) {
+      if (matchedOrder.items.length === 1) {
+        // Single item: add item_id
+        payload.item_id = matchedOrder.items[0].name;
+      } else {
+        // Multiple items: add item_ids array
+        payload.item_ids = matchedOrder.items.map(item => item.name);
+      }
+    }
+    
     const response = await frappe.call({
       method: "tabrah_pos.tabrah_pos.api.posapp.update_kot_status",
-      args: {
-        pos_profile: pos_profile.value.name,
-        kot_name: kot.name,
-        status: status
-      },
+      args: payload,
     });
     
     if (response.message) {
-      kot.status = status;
+      console.log("KOT status updated:", response.message);
+      kot.status = response.message.status;
     }
   } catch (error) {
     console.error("Error updating order status", error);

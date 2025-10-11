@@ -3154,7 +3154,7 @@ def get_pending_kots(company, pos_profile, statuses=None, limit=200):
         # Fetch items for each KOT
         kot_items = frappe.get_all(
             "Kitchen Order Ticket Item",
-            fields=["name", "item_name as name", "qty as quantity", "item_group", "remarks", "item_status"],
+            fields=["name", "item_name", "qty as quantity", "item_group", "remarks", "item_status"],
             filters={"parent": kot.name, "item_status": ["in", statuses]}
         )
 
@@ -3266,7 +3266,7 @@ def update_kot_status(item_id=None, item_ids=None, new_status=None):
 
     frappe.publish_realtime(
         "kot_created",
-        {"kot": kot.as_dict()},
+        {"kot": parent_kot_set.as_dict()},
         after_commit=True
     )
 
