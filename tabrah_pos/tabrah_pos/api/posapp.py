@@ -3266,11 +3266,11 @@ def update_kot_status(item_id=None, item_ids=None, new_status=None):
 
     frappe.publish_realtime(
         "kot_created",
-        {"kot": parent_kot_set.as_dict()},
+        {"kot": 'success'},
         after_commit=True
     )
 
-    return {"name": kot.name, "status": kot.status}
+    return {"name": kot, "status": new_status}
 
 
 # Optional: auto‑KOT from Sales Invoice (if you want that flow)
