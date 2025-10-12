@@ -277,10 +277,15 @@ const categories = ref([]);
 const pos_profile = ref("");
 const allKotOrders = ref([]); // All KOT orders fetched from the server
 const orders = ref([]);
-
-const todoOrders = computed(() => orders.value.filter(o => o.status === 'todo'));
-const inProgressOrders = computed(() => orders.value.filter(o => o.status === 'inprogress'));
-const completedOrders = computed(() => orders.value.filter(o => o.status === 'completed'));
+const todoOrders = computed(() => 
+  orders.value.filter(o => o.status === 'todo').reverse()
+);
+const inProgressOrders = computed(() => 
+  orders.value.filter(o => o.status === 'inprogress').reverse()
+);
+const completedOrders = computed(() => 
+  orders.value.filter(o => o.status === 'completed').reverse()
+);
 
 // Function to filter orders based on selected categories
 const filterOrdersByCategory = () => {
@@ -337,8 +342,9 @@ const refreshOrders = async () => {
 
 const updateKotOrderStatus = async (kot, status) => {
   try {
-    // Find the matching KOT order from allKotOrders
-    const matchedOrder = allKotOrders.value.find(order => order.name === kot.name);
+    // Find all matching KOT orders from allKotOrders
+    const matchedOrders = allKotOrders.value.filter(order => order.name === kot.name);
+    console.log('Matched orders for KOT:', kot.name, matchedOrders.length);
     
     // Prepare the payload
     const payload = {
@@ -347,15 +353,28 @@ const updateKotOrderStatus = async (kot, status) => {
       new_status: status
     };
     
-    // Check if matchedOrder exists and has items
-    if (matchedOrder && matchedOrder.items && matchedOrder.items.length > 0) {
-      if (matchedOrder.items.length === 1) {
-        // Single item: add item_id
-        payload.item_id = matchedOrder.items[0].name;
-      } else {
-        // Multiple items: add item_ids array
-        payload.item_ids = matchedOrder.items.map(item => item.name);
+    // Get all item names from kot
+    const kotItemNames = kot.items ? kot.items.map(item => item.name) : [];
+    
+    // Collect matching item names from all matched orders
+    const matchingItemNames = [];
+    
+    matchedOrders.forEach(order => {
+      if (order.items && order.items.length > 0) {
+        order.items.forEach(orderItem => {
+          // Check if this item's name exists in kot items
+          if (kotItemNames.includes(orderItem.name)) {
+            matchingItemNames.push(orderItem.name);
+          }
+        });
       }
+    });
+    
+    // Add to payload based on matching items count
+    if (matchingItemNames.length === 1) {
+      payload.item_id = matchingItemNames[0];
+    } else if (matchingItemNames.length > 1) {
+      payload.item_ids = matchingItemNames;
     }
     
     const response = await frappe.call({
