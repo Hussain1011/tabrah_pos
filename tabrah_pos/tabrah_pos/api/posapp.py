@@ -3180,7 +3180,7 @@ def get_pending_kots(company, pos_profile, statuses=None, limit=200):
             merged_groups[key].extend(items)
 
         # For each item_group, make a separate payload block
-        for item_group, items in grouped.items():
+        for item_group, items in merged_groups.items():
             # Extract child statuses
             statuses_in_group = {i.get("item_status", "todo").lower() for i in items}
 
@@ -3253,12 +3253,12 @@ def update_kot_status(item_id=None, item_ids=None, new_status=None):
     for kot in parent_kot_set:
         remaining = frappe.db.count(
             "Kitchen Order Ticket Item",
-            {"parent": kot, "item_status": ["!=", "completed"]}
+            {"parent": kot, "item_status": ["!=", "delivered"]}
         )
 
         # auto-update parent only when everything done
         if remaining == 0:
-            frappe.db.set_value("Kitchen Order Ticket", kot, "status", "completed")
+            frappe.db.set_value("Kitchen Order Ticket", kot, "status", "delivered")
         elif remaining > 0 and new_status == "inprogress":
             frappe.db.set_value("Kitchen Order Ticket", kot, "status", "inprogress")
 
