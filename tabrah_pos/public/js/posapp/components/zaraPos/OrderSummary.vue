@@ -851,11 +851,37 @@ function handlePrinterSelect(printer) {
 }
 
 function filterNonJuiceBeverageBundleItems(bundle) {
+  console.log("idr tk to aya hai lekn aage ka pta nh");
   if (!bundle || !Array.isArray(bundle.items)) return [];
-  return bundle.items.filter(sub => {
+  // define your desired order of item groups
+  const groupOrder = ["starter", "main course", "desert"];
+  
+  //////////////Filter out unwanted item groups
+  let filterItems = bundle.items.filter(sub => {
     const subGroup = (sub.custom_item_group || '').toLowerCase();
     return subGroup !== 'juice' && subGroup !== 'beverage';
   });
+
+  ///////////// Sort by custom group order
+  filterItems.sort((a, b) => {
+    const groupA = (a.custom_item_group || '').toLowerCase();
+    const groupB = (b.custom_item_group || '').toLowerCase();
+
+    const indexA = groupOrder.indexOf(groupA);
+    const indexB = groupOrder.indexOf(groupB);
+
+    // items in defined groups come first, ordered by groupOrder
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+
+    // if one of them is not in groupOrder, it goes after the defined groups
+    if (indexA === -1 && indexB !== -1) return 1;
+    if (indexA !== -1 && indexB === -1) return -1;
+
+    // if both are outside groupOrder, keep alphabetical
+    return groupA.localeCompare(groupB);
+  });
+
+return filterItems;
 }
 
 const generateKotPrint = async (printerArg = null) => {
@@ -1004,6 +1030,8 @@ const generateKotPrint = async (printerArg = null) => {
   const now = new Date();
   doc.date = now.toISOString().split('T')[0];
   doc.time = now.toLocaleTimeString('en-US', { hour12: false });
+
+  console.log("idr tk to aya hoga lekn aage ka pta nh")
   doc.kot_items = itemsToPrint.map(item => {
     let finalQty;
     const p = printedItems[item.item_code]?.[printer];
@@ -1014,7 +1042,8 @@ const generateKotPrint = async (printerArg = null) => {
       const printedQty = p.qty;
       finalQty = item.qty - printedQty;
     }
-    let filteredBundle = item.product_bundle
+
+let filteredBundle = item.product_bundle
       ? {
           ...item.product_bundle,
           items: filterNonJuiceBeverageBundleItems(item.product_bundle)
@@ -1027,15 +1056,41 @@ const generateKotPrint = async (printerArg = null) => {
     };
   });
 
-  const printDoc = { 
-    ...doc, 
-    items: doc.kot_items,
-    pos_profile: pos_profile.value
+
+  const groupOrder = ["hot starters", "cold starters", "sides", "breakfast", "main dishes", "deserts"];
+
+
+
+    const groupedItems = [...doc.kot_items].sort((a, b) => {
+    const groupA = (a.item_group || "").trim().toLowerCase();
+    const groupB = (b.item_group || "").trim().toLowerCase();
+
+    const indexA = groupOrder.indexOf(groupA);
+    const indexB = groupOrder.indexOf(groupB);
+
+    // DEBUG: print comparison values
+
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA === -1 && indexB !== -1) return 1;
+    if (indexA !== -1 && indexB === -1) return -1;
+    return groupA.localeCompare(groupB);
+  });
+
+
+  const printDoc = {
+    ...doc,
+    items: groupedItems,
+    pos_profile: pos_profile.value,
   };
+
+  // const printDoc = { 
+  //   ...doc, 
+  //   items: doc.kot_items,
+  //   pos_profile: pos_profile.value
+  // };
   if (tokenNumber) {
     printDoc.custom_token_number = tokenNumber;
   }
-
   // Update printedItems for this printer
   itemsToPrint.forEach(item => {
     if (!printedItems[item.item_code]) printedItems[item.item_code] = {};
@@ -1675,6 +1730,8 @@ const makePayloadForInvoice = () => {
       amount: item.rate,
       complementryItem: item.complementryItem,
       custom_is_complimentary_item: item.custom_is_complimentary_item,
+      complementryLoopyItem: item.complementryLoopyItem,
+      custom_is_loopy_complimentary_item: item.custom_is_loopy_complimentary_item,
       posa_notes:item.comment,
       product_bundle: item.product_bundle,
       original_rate: item.original_rate,
@@ -1851,6 +1908,7 @@ onMounted(() => {
   });
   eventBus.on("exist-item-cart", (data) => {
     data.complementryItem = Boolean(data.complementryItem);
+    data.complementryLoopyItem = Boolean(data.complementryLoopyItem);
     data.netTotal = data.rate * data.qty; // Ensure netTotal is always updated
     if (typeof data.index === 'number' && items.value[data.index]) {
       items.value[data.index] = { ...data };
