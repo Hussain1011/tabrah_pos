@@ -266,7 +266,11 @@ export async function printPreInvoice(offlineData) {
                 
             </tbody>
         </table>
-
+        <div style="text-align: center;max-width: 50%;margin-left: 65px;margin-top: 25px;">
+             <p style="font-size: xx-small;width: 155%;margin-left: -25%;">Your feedback matters – Scan here to share it</p>
+            <img src="https://testing-tabrah-holding.frappe.cloud/files/NH%20-%20qrcode%20(1).jpg">
+        </div>
+        
         <p class="text-center">Thank you for Choosing Us</p>
         <p class="text-center" style="margin-top: -2px;">Prepared by: ${offlineData.total_qty || ''}</p>
         <p class="text-center" style="margin-top: -2px;"><b>Prepared by Tabrah Holding</b></p>
