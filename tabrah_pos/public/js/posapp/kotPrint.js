@@ -50,6 +50,7 @@ async function handleNetworkPrinting(offlineData) {
 async function handleBrowserPrinting(offlineData) {
     try {
         let now = new Date();
+        let lastGroup = null;
         const items = offlineData?.items || [];
         const tableNo = offlineData?.table_no || "N/A";
         const date = offlineData?.date || now.toISOString().split('T')[0]; // Fallback to current date
@@ -58,9 +59,19 @@ async function handleBrowserPrinting(offlineData) {
         // Dynamically generate table rows for the items
         const itemRows = items
             .map(item => {
-                const { item_name, qty, comment, product_bundle } = item;
+                const { item_name, qty, comment, product_bundle, item_group } = item;
                 let bundleRows = "";
-
+                let rows = "";
+                
+                // 1️⃣ Add a group header if this item_group is different from the last one
+                if (item_group && item_group !== lastGroup) {
+                    lastGroup = item_group;
+                    rows += `
+                    <tr style="background: #f2f2f2; font-weight: bold; border-top: 2px solid #000;">
+                        <td colspan="2" style="padding: 5px 0;">${item_group}</td>
+                    </tr>
+                    `;
+                }
                 // If the item has a product bundle, add its items below the main item
                 if (product_bundle?.items?.length > 1) {
                     bundleRows = product_bundle.items
@@ -79,7 +90,7 @@ async function handleBrowserPrinting(offlineData) {
                     ? `<tr><td colspan="2" style="font-style: italic; color: grey;">Note: ${comment}</td></tr>`
                     : "";
 
-                return `
+                rows += `
                     <tr style="border-bottom: 2px solid black;">
                         <td>${item_name || "N/A"}</td>
                         <td class="text-center">${qty || 0}</td>
@@ -87,6 +98,7 @@ async function handleBrowserPrinting(offlineData) {
                     ${bundleRows}
                     ${commentRow}
                 `;
+                return rows;
             })
             .join("");
 
