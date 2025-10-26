@@ -3126,7 +3126,7 @@ def create_kot(order=None, items=None, table_no=None, company=None, warehouse=No
 def get_pending_kots(company, pos_profile, statuses=None, limit=200):
     filters = {}
     # try:
-    statuses = statuses or ["todo", "inprogress", "completed"]
+    statuses = ["todo", "inprogress", "completed"]
     if isinstance(statuses, str):
         statuses = statuses.split(',')
     filters = {"status": ["in", statuses]}
