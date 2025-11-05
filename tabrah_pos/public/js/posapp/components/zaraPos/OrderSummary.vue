@@ -1764,6 +1764,7 @@ const requestDeleteItem = (index) => {
   }
 };
 const deleteItem = (index) => {
+  console.log('Selected Table:',selectedTable.value)
   console.log('Before delete:', items.value.map(i => i.item_name));
   items.value.splice(index, 1);
   console.log('After delete:', items.value.map(i => i.item_name));
@@ -1779,6 +1780,7 @@ const deleteItem = (index) => {
     items.value = [];
     cover.value = 0;
     loadingHold.value = false;
+    updateTableStatus(selectedTable.value, "Available");
     eventBus.emit("open-product-menu");
     eventBus.emit("set-default-value");
   }
