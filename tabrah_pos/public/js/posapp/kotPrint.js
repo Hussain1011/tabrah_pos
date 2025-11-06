@@ -247,9 +247,9 @@ async function handleBrowserPrintingAway(order) {
                         </div>` : 
                         '<div style="text-align: center; margin-bottom: 10px;"><h2>KITCHEN ORDER TICKET</h2></div>'
                     }
-                    <div style="text-align: center; margin-bottom: 10px;"><h2>Table No. ${tableNo}</h2></div>
-                    <div style="text-align: center; margin-bottom: 10px;"><h2>Time : ${time}</h2></div>
-                    <div style="text-align: center; margin-bottom: 10px;"><h2>${awayMsg}</h2></div>
+                    <div style="text-align: center; margin-bottom: 10px;"><h3>Table No. ${tableNo}</h3></div>
+                    <div style="text-align: center; margin-bottom: 10px;"><h3>Time : ${time}</h3></div>
+                    <div style="text-align: center; margin-bottom: 10px;"><h1>${awayMsg}</h1></div>
                 </div>
             </body>
             </html>
