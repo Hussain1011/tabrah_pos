@@ -193,3 +193,87 @@ async function handleBrowserPrinting(offlineData) {
         throw error;
     }
 }
+
+export async function printKotAway(order)    {
+    try {
+        return await handleBrowserPrintingAway(order);
+    } catch (error) {
+        console.error("Error printing KOT:", error);
+        throw error;
+    }
+}
+
+
+async function handleBrowserPrintingAway(order) {
+    try {
+        let now = new Date();
+        const tableNo = order?.table || "N/A";
+        const awayMsg = order?.instruction || "N/A";
+        const time = order?.time || now.toLocaleTimeString('en-US', { hour12: true }); // 
+
+        // Create a new window
+        const newWindow = window.open("", "_blank");
+
+        // Set the HTML content of the new window
+        newWindow.document.write(`
+            <html>
+            <head>
+                <style>
+                    .print-format table, .print-format tr, 
+                    .print-format td, .print-format div, .print-format p {
+                        line-height: 150%;
+                        vertical-align: middle;
+                        margin: 2px 0;
+                    }
+                    
+                    @media screen {
+                        .print-format {
+                            width: 3.6in;
+                            padding: 0.25in;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="print-format">
+        <div style="margin-bottom: 5px;">
+        </div>
+                    ${order.company === "Run of the Mill" && order.custom_token_number ? 
+                        `<div style="text-align: center; margin-bottom: 10px;">
+                            <h1 style="font-size: 48px; font-weight: bold; margin: 0; padding: 10px; border: 3px solid black;">
+                                ${order.custom_token_number}
+                            </h1>
+                            <p style="font-size: 18px; font-weight: bold; margin: 5px 0;">Run of the Mill</p>
+                        </div>` : 
+                        '<div style="text-align: center; margin-bottom: 10px;"><h2>KITCHEN ORDER TICKET</h2></div>'
+                    }
+                    <div style="text-align: center; margin-bottom: 10px;"><h2>Table No. ${tableNo}</h2></div>
+                    <div style="text-align: center; margin-bottom: 10px;"><h2>Time : ${time}</h2></div>
+                    <div style="text-align: center; margin-bottom: 10px;"><h2>${awayMsg}</h2></div>
+                </div>
+            </body>
+            </html>
+        `);
+        newWindow.document.close();
+
+        // Add event listener for after printing
+        newWindow.onafterprint = () => {
+            newWindow.close();
+        };
+
+        // Open the print dialog
+        newWindow.print();
+
+        // Fallback for browsers that don't support onafterprint
+        newWindow.addEventListener("focus", () => {
+            setTimeout(() => {
+                newWindow.close();
+            }, 500); // Adjust delay if necessary
+        });
+
+        return true;
+    } catch (error) {
+        console.error("Error in browser printing:", error);
+        throw error;
+    }
+}

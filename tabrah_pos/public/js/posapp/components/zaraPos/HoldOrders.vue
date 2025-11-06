@@ -1,3 +1,5 @@
+
+
 <template>
   <v-card elevation="1" class="border-16 product-main-card">
     <v-row class="pl-6 pt-6">
@@ -28,7 +30,6 @@
       <v-col v-for="order in orders" :key="order.id" cols="12" sm="6" md="4" lg="4" class="px-8">
         <v-card class="order-card d-flex flex-column" elevation="0" outlined @click="showOrderDetail(order)"
           :class="{ 'selected-card': selectedOrder == order }" style="
-            min-height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -83,16 +84,43 @@
                   <strong>At</strong>
                   <p>{{ order.location }}</p>
                 </div> -->
+        </v-card-text>
+        </v-card>
+        <v-card class="d-flex flex-column" elevation="0" outlined :class="{ 'selected-card': selectedOrder == order }">
+          <v-card-text class="pb-3">
+            <div class="d-flex align-center justify-space-between" style="gap: 12px;">
+              <v-select
+                v-model="order.instruction"
+                :items="instructionOptions"
+                label="Instruction"
+                variant="outlined"
+                hide-details
+                density="comfortable"
+                style="flex: 1;"
+              ></v-select>
+
+              <v-btn
+                color="#21A0A0"
+                variant="flat"
+                class="text-white text-capitalize"
+                style="border-radius: 8px; height: 40px; min-width: 30px;"
+                @click="ordersaway(order)"
+              >Send</v-btn>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
+
+
   </v-card>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
 import eventBus from "../../bus";
+import { printKotAway } from "../../kotPrint.js";
+
 
 const orders = ref([
   // {
@@ -102,6 +130,23 @@ const orders = ref([
   //   location: "ISB - 0012",
   // },
 ]);
+
+// dropdown options
+const instructionOptions = ref([
+  "Starters Away",
+  "Breakfast Away",
+  "Main Course Away",
+  "Desert Away",
+  "Sides Away",
+]);
+
+// Assuming you already have "orders" array somewhere
+// Just make sure each order has its own "instruction" property
+// Example initialization:
+orders.value = orders.value.map(o => ({ ...o, instruction: "" }));
+
+// selected value
+const selectedInstruction = ref("");
 
 const pos_profile = ref("");
 const selectedOrder = ref("");
@@ -182,6 +227,11 @@ const addItem = async () => {
       color: "error",
     });
   }
+};
+
+const ordersaway = (order) => {
+  console.log(order);
+  printKotAway(order)
 };
 
 onMounted(() => {
