@@ -43,7 +43,8 @@
           label="Paid Amount"
           suffix="QAR."
           v-model="amountTake"
-          :disabled="paymentType.mode_type !== 'Cash' || splitPayment"
+          :disabled="!isPaidEditable"
+          @click="handleNumpadClick(button)"
         />
       </v-col>
 
@@ -399,10 +400,21 @@ const punching = ref("completed");
 const employeesList = ref([]);
 const orderBy = ref("");
 const complementaryItem = ref(false);
+// const complementaryLoopy = ref(false);
 const complementaryItemDetails = ref('');
+// const complementaryLoopyItemDetails = ref('');
 const showOffersDialog = ref(false);
 const offers = ref([]);
 const discountSource = ref("manual"); // "manual" or "offer"
+// Credit Card is the ONLY auto-amount (locked) mode.
+// Everything else is editable unless split payment is active.
+const isCardAuto = computed(() =>
+  paymentType.value?.mode_of_payment === "Credit Card" && !splitPayment.value
+);
+
+const isPaidEditable = computed(() =>
+  !isCardAuto.value && !splitPayment.value
+);
 
 const fbrResponse = ref("");
 
@@ -431,6 +443,7 @@ const setDefaultValue = () => {
   splitPayment.value = false;
   confirmSplit.value = false;
   complementaryItem.value = false;
+  // complementaryLoopy.value = false;
   tip.value = "";
   selectedOffer.value = null;
   discountSource.value = "manual";
@@ -580,30 +593,88 @@ const submitSplitPayment = () => {
   confirmSplit.value = true;
   showDialog.value = false;
 };
+
+// const handleNumpadClick = (button) => {
+//     if (button === "+") {
+//       amountTake.value += 1; // Add 1 to the current value
+//     } else if (button === "-") {
+//       amountTake.value -= 1; // Subtract 1 from the current value
+//     } else if (button === "Back") {
+//       amountTake.value = amountTake.value.slice(0, -1);
+//     } else {
+//       // Append the number clicked to the amountTake value
+//       amountTake.value += button.toString();
+//     }
+//     if (amountTake.value >= invoice_doc.value.rounded_total) {
+//       changeAmount.value = amountTake.value - invoice_doc.value.rounded_total;
+//     }
+//     invoice_doc.value.paid_amount = amountTake.value;
+//     // Reset the amounts in payments
+//     invoice_doc.value.payments.forEach((item) => {
+//       item.amount = 0;
+//     });
+//     let updatePaymentAmount = invoice_doc.value.payments.find(
+//       (item) => item.mode_of_payment == paymentType.value.mode_of_payment
+//     );
+//     updatePaymentAmount.amount = amountTake.value;
+// };
+
+////////////////updated////////////
 const handleNumpadClick = (button) => {
-    if (button === "+") {
-      amountTake.value += 1; // Add 1 to the current value
-    } else if (button === "-") {
-      amountTake.value -= 1; // Subtract 1 from the current value
-    } else if (button === "Back") {
-      amountTake.value = amountTake.value.slice(0, -1);
-    } else {
-      // Append the number clicked to the amountTake value
-      amountTake.value += button.toString();
-    }
-    if (amountTake.value >= invoice_doc.value.rounded_total) {
-      changeAmount.value = amountTake.value - invoice_doc.value.rounded_total;
-    }
-    invoice_doc.value.paid_amount = amountTake.value;
-    // Reset the amounts in payments
-    invoice_doc.value.payments.forEach((item) => {
-      item.amount = 0;
+
+  if (!isPaidEditable.value) {
+    eventBus.emit("show_mesage", {
+      text: "Paid amount is fixed for Credit Card (or during split payment).",
+      color: "error",
     });
-    let updatePaymentAmount = invoice_doc.value.payments.find(
-      (item) => item.mode_of_payment == paymentType.value.mode_of_payment
+    return;
+  }
+
+  // ... keep your numpad logic that updates amountTake, active mode, and then:
+  recalcBalances();
+  // normalize current input to a string to build digits safely
+  let current = (amountTake.value ?? "").toString();
+
+  if (button === "Back") {
+    current = current.slice(0, -1);
+  } else if (button === "+") {
+    current = (Number(current || 0) + 1).toString();
+  } else if (button === "-") {
+    current = Math.max(0, Number(current || 0) - 1).toString();
+  } else {
+    // digits or 0
+    current += button.toString();
+  }
+
+  // commit to reactive amount as NUMBER
+  amountTake.value = Number(current) || 0;
+
+  // figure out what is actually due (discounted grand_total + tip)
+  const due = dueAmountWithTip();
+
+  // Update the active payment mode amount (single-mode flow)
+  const activeMode = paymentModes.value.find((m) => m.selected);
+  if (activeMode) {
+    activeMode.amount = amountTake.value;
+  }
+
+  // Also sync invoice_doc payments list (your original logic)
+  if (Array.isArray(invoice_doc.value?.payments)) {
+    invoice_doc.value.payments.forEach((p) => (p.amount = 0));
+    const upd = invoice_doc.value.payments.find(
+      (p) => p.mode_of_payment === paymentType.value?.mode_of_payment
     );
-    updatePaymentAmount.amount = amountTake.value;
+    if (upd) upd.amount = amountTake.value;
+  }
+
+  // set paid_amount for your invoice log
+  invoice_doc.value.paid_amount = amountTake.value;
+
+  // ✅ recompute remaining & change vs (grand_total + tip)
+  recalcBalances();
 };
+///////////////////////////////////
+
 const updateDocPayment = (flag) => {
   let selectedPaymentMode = pos_profile.value.payments.find(
     (item) => item.mode_of_payment === paymentType.value.mode_of_payment
@@ -668,35 +739,27 @@ const changePaymentType = (type) => {
     if (!splitPayment.value) {
       amountTake.value = 0;
       // Iterate through payment modes and update their states
-      pos_profile.value.payments.forEach((payment) => {
+      pos_profile.value.payments.forEach((payment) => { 
         if (payment === type) {
-          // Select the clicked payment mode
           payment.selected = true;
 
-          if (payment.mode_type !== "Cash") {
-            // Set full amount for non-cash modes
-            payment.amount = parseInt(invoice_doc.value.grand_total, 10);
-            amountTake.value = payment.amount; // Reflect the selected mode's amount in the input
-            if (!type.custom_expense_chrages) {
-              amountTake.value = amountTake.value;
-              invoice_doc.value.grand_total = invoice_doc.value.grand_total;
-            }
+          if (type.mode_of_payment === "Credit Card") {
+            // Lock to due for Credit Card
+            const due = dueAmountWithTip();
+            payment.amount = due;
+            amountTake.value = due;
           } else {
-            // Clear the amount for cash mode (can be user-inputted later)
-            const originalGrandTotal =
-              Number(invoice_doc.value.original_grand_total) || 0;
-            payment.amount = "";
-            changeAmount.value = 0;
-            amountTake.value = payment.amount;
-            invoice_doc.value.grand_total = originalGrandTotal;
+            // Editable for all other modes (keep whatever the cashier set or blank)
+            payment.amount = Number(amountTake.value) || 0;
+            // If you want to clear on switch to editable modes, you can:
+            // amountTake.value = "";
           }
         } else {
-          // Deselect and reset amounts for other modes
           payment.selected = false;
           payment.amount = 0;
         }
       });
-
+      recalcBalances();
       // Log the selected payment type for debugging
       // Update the selected payment type
       paymentType.value = type;
@@ -1502,108 +1565,169 @@ const submitSaleInvoice = async (
   }
 };
 
+function syncPaidAmountWithTip() {
+  const base = Number(invoice_doc.value.grand_total) || 0;
+  const tipAmt = Number(invoice_doc.value.tip_amount) || 0;
+
+  amountTake.value = base + tipAmt;
+
+  const active = paymentModes.value.find(m => m.selected);
+  if (active) active.amount = amountTake.value;
+
+  // keep “remaining/change” coherent
+  updateDocPayment();
+}
+function dueAmountWithTip() {
+  const base = Number(invoice_doc.value?.grand_total) || 0;
+  const tipAmt = Number(invoice_doc.value?.tip_amount) || 0;
+  return base + tipAmt;
+}
+
+function recalcBalances() {
+  const totalPaid = (paymentModes.value || []).reduce(
+    (sum, m) => sum + (Number(m.amount) || 0),
+    0
+  );
+  const due = dueAmountWithTip();
+
+  invoice_doc.value.remaining_amount = Math.max(0, +(due - totalPaid).toFixed(2));
+  changeAmount.value = Math.max(0, +(totalPaid - due).toFixed(2));
+}
+
+// watch(
+//   paymentModes,
+//   (newModes) => {
+//     console.log("Filtered paymentModes", newModes);
+//     if (!invoice_doc.value.exchangeItem) {
+
+//       totalPaidAmount.value = newModes.reduce(
+//         (total, mode) => total + Number(mode.amount || 0),
+//         0
+//       );
+//       if (totalPaidAmount.value < invoice_doc.value.grand_total) {
+//         let remaining_amount = 0;
+//         remaining_amount = invoice_doc.value.grand_total - totalPaidAmount.value;
+//         invoice_doc.value.remaining_amount = remaining_amount;
+//       } else {
+//         invoice_doc.value.remaining_amount = 0;
+//       }
+//       if (totalPaidAmount.value > invoice_doc.value.grand_total) {
+//         changeAmount.value = 0;
+//         changeAmount.value =
+//           totalPaidAmount.value - invoice_doc.value.grand_total;
+//       }
+//       const hasDefaultPayment = paymentModes.value.some(
+//         (mode) => mode.default === 1 || mode.selected
+//       );
+
+//       if (!hasDefaultPayment && paymentModes.value.length > 0) {
+//         // If no default payment mode is found, set the first mode as default
+//         console.log("Default Mode....");
+//         paymentModes.value[0].default = 1;
+//         paymentModes.value[0].selected = true;
+//         paymentType.value = paymentModes.value[0];
+//         // if (invoice_doc.value.length > 0) {
+//         console.log("enter for default cahnge Paymen type.....");
+//         // changePaymentType(paymentModes.value[0]);
+//         // }
+
+//         // Log the update for debugging
+//         console.log(
+//           "No default payment mode found. Setting the first mode as default:",
+//           paymentModes.value[0]
+//         );
+//       }
+//       if (discount.value) {
+//         const { net_total, grand_total, total_taxes_and_charges } =
+//           invoice_doc.value.original_values;
+//         const discountValue = Number(discount.value);
+//         const maxAllowedDiscount =
+//           Number(pos_profile.value.posa_max_discount_allowed) || 0;
+
+//         if (discountValue <= maxAllowedDiscount) {
+//           // Calculate discount percentage
+//           const discountPercentage = discountValue / 100;
+
+//           // Apply discount to all values
+//           const discountAmountNet = net_total * discountPercentage;
+//           const discountAmountGrand = grand_total * discountPercentage;
+//           const discountAmountTaxes =
+//             total_taxes_and_charges * discountPercentage;
+
+//           invoice_doc.value.net_total =
+//             Number(net_total) - Number(discountAmountNet);
+//           invoice_doc.value.grand_total =
+//             Number(grand_total) - Number(discountAmountGrand);
+//           invoice_doc.value.total_taxes_and_charges =
+//             Number(total_taxes_and_charges) - Number(discountAmountTaxes);
+//           console.log("checking...invoice_doc.value", invoice_doc.value);
+//           // Store the total discount amount for reference
+//           invoice_doc.value.discount_amount = discountAmountGrand;
+
+//           // Update amountTake based on new grand_total
+//           // amountTake.value = invoice_doc.value.grand_total;
+//           syncPaidAmountWithTip();
+//         }
+//         // const discountValue = Number(discount.value) || 0;
+//         // const maxAllowedDiscount =
+//         //   Number(pos_profile.value.posa_max_discount_allowed) || 0;
+//         // const originalNetTotal =
+//         //   Number(invoice_doc.value.original_net_total) || 0;
+//         // const originalGrandTotal =
+//         //   Number(invoice_doc.value.original_grand_total) || 0;
+
+//         // if (discountValue <= maxAllowedDiscount) {
+//         //   const discountAmount = (originalNetTotal * discountValue) / 100;
+//         //   invoice_doc.value.discount_amount = discountAmount;
+
+//         //   invoice_doc.value.net_total = originalNetTotal - discountAmount;
+
+//         //   invoice_doc.value.grand_total = originalGrandTotal - discountAmount;
+//         //   invoice_doc.value.grand_total = Math.ceil(
+//         //     invoice_doc.value.grand_total
+//         //   );
+
+//         //   amountTake.value = invoice_doc.value.grand_total;
+//         // }
+//       }
+//     }
+//     else {
+//       invoice_doc.value.payments = newModes
+//     }
+//   },
+//   { deep: true }
+// );
 watch(
   paymentModes,
   (newModes) => {
-    console.log("Filtered paymentModes", newModes);
     if (!invoice_doc.value.exchangeItem) {
-
       totalPaidAmount.value = newModes.reduce(
-        (total, mode) => total + Number(mode.amount || 0),
-        0
-      );
-      if (totalPaidAmount.value < invoice_doc.value.grand_total) {
-        let remaining_amount = 0;
-        remaining_amount = invoice_doc.value.grand_total - totalPaidAmount.value;
-        invoice_doc.value.remaining_amount = remaining_amount;
-      } else {
-        invoice_doc.value.remaining_amount = 0;
-      }
-      if (totalPaidAmount.value > invoice_doc.value.grand_total) {
-        changeAmount.value = 0;
-        changeAmount.value =
-          totalPaidAmount.value - invoice_doc.value.grand_total;
-      }
-      const hasDefaultPayment = paymentModes.value.some(
-        (mode) => mode.default === 1 || mode.selected
+        (t, m) => t + Number(m.amount || 0), 0
       );
 
+      // Optional: if Credit Card is active, ensure due-with-tip is respected
+      if (isCardAuto.value) {
+        const due = dueAmountWithTip();
+        amountTake.value = due;
+        const active = paymentModes.value.find(m => m.selected);
+        if (active) active.amount = due;
+      }
+
+      recalcBalances();
+
+      const hasDefaultPayment = paymentModes.value.some(m => m.default === 1 || m.selected);
       if (!hasDefaultPayment && paymentModes.value.length > 0) {
-        // If no default payment mode is found, set the first mode as default
-        console.log("Default Mode....");
         paymentModes.value[0].default = 1;
         paymentModes.value[0].selected = true;
         paymentType.value = paymentModes.value[0];
-        // if (invoice_doc.value.length > 0) {
-        console.log("enter for default cahnge Paymen type.....");
-        // changePaymentType(paymentModes.value[0]);
-        // }
-
-        // Log the update for debugging
-        console.log(
-          "No default payment mode found. Setting the first mode as default:",
-          paymentModes.value[0]
-        );
       }
-      if (discount.value) {
-        const { net_total, grand_total, total_taxes_and_charges } =
-          invoice_doc.value.original_values;
-        const discountValue = Number(discount.value);
-        const maxAllowedDiscount =
-          Number(pos_profile.value.posa_max_discount_allowed) || 0;
-
-        if (discountValue <= maxAllowedDiscount) {
-          // Calculate discount percentage
-          const discountPercentage = discountValue / 100;
-
-          // Apply discount to all values
-          const discountAmountNet = net_total * discountPercentage;
-          const discountAmountGrand = grand_total * discountPercentage;
-          const discountAmountTaxes =
-            total_taxes_and_charges * discountPercentage;
-
-          invoice_doc.value.net_total =
-            Number(net_total) - Number(discountAmountNet);
-          invoice_doc.value.grand_total =
-            Number(grand_total) - Number(discountAmountGrand);
-          invoice_doc.value.total_taxes_and_charges =
-            Number(total_taxes_and_charges) - Number(discountAmountTaxes);
-          console.log("checking...invoice_doc.value", invoice_doc.value);
-          // Store the total discount amount for reference
-          invoice_doc.value.discount_amount = discountAmountGrand;
-
-          // Update amountTake based on new grand_total
-          amountTake.value = invoice_doc.value.grand_total;
-        }
-        // const discountValue = Number(discount.value) || 0;
-        // const maxAllowedDiscount =
-        //   Number(pos_profile.value.posa_max_discount_allowed) || 0;
-        // const originalNetTotal =
-        //   Number(invoice_doc.value.original_net_total) || 0;
-        // const originalGrandTotal =
-        //   Number(invoice_doc.value.original_grand_total) || 0;
-
-        // if (discountValue <= maxAllowedDiscount) {
-        //   const discountAmount = (originalNetTotal * discountValue) / 100;
-        //   invoice_doc.value.discount_amount = discountAmount;
-
-        //   invoice_doc.value.net_total = originalNetTotal - discountAmount;
-
-        //   invoice_doc.value.grand_total = originalGrandTotal - discountAmount;
-        //   invoice_doc.value.grand_total = Math.ceil(
-        //     invoice_doc.value.grand_total
-        //   );
-
-        //   amountTake.value = invoice_doc.value.grand_total;
-        // }
-      }
-    }
-    else {
-      invoice_doc.value.payments = newModes
+    } else {
+      invoice_doc.value.payments = newModes;
     }
   },
   { deep: true }
 );
+
 watch(
   confirmSplit,
   (newVal) => {
@@ -1786,6 +1910,26 @@ watch(discount, (newVal) => {
   }
 });
 
+watch(tip, (newVal) => {
+  invoice_doc.value.tip_amount = Number(newVal) || 0;
+
+  if (!splitPayment.value) {
+    if (isCardAuto.value) {
+      // Credit Card: auto sync paid amount = grand_total + tip
+      const due = dueAmountWithTip();
+      amountTake.value = due;
+      const active = paymentModes.value.find(m => m.selected);
+      if (active) active.amount = due;
+    } else {
+      // Cash/others: do NOT override cashier’s amount; just keep mode in sync
+      const active = paymentModes.value.find(m => m.selected);
+      if (active) active.amount = Number(amountTake.value) || 0;
+    }
+  }
+
+  recalcBalances();
+});
+
 // watch(discount, (newVal) => {
 //   // Parse the original net total and grand total (ensure they're stored once)
 //   if (!invoice_doc.value.original_net_total) {
@@ -1900,6 +2044,17 @@ watch(
     } else {
       complementaryItem.value = false;
     }
+    // if (newItems && newItems.some(item => item.complementryLoopyItem === true)) {
+    //   complementaryLoopy.value = true;
+    //   newItems.forEach(item => {
+    //     if (item.complementryLoopyItem === true) {
+    //       item.rate = item.original_rate;
+    //       complementaryLoopyItemDetails.value = item;
+    //     }
+    //   });
+    // } else {
+    //   complementaryLoopy.value = false;
+    // }
   },
   { deep: true, immediate: true } // Watch deeply & trigger on mount
 );
@@ -1925,38 +2080,104 @@ const openOffersDialog = async () => {
   }
 };
 
-const applyDiscount = () => {
+// const applyDiscount = () => {
+//   if (!invoice_doc.value.original_values) {
+//     invoice_doc.value.original_values = {
+//       net_total: invoice_doc.value.net_total,
+//       grand_total: invoice_doc.value.grand_total,
+//       total_taxes_and_charges: invoice_doc.value.total_taxes_and_charges,
+//     };
+//   }
+//   const { net_total, grand_total, total_taxes_and_charges } = invoice_doc.value.original_values;
+
+//   // Cap manual discount only
+//   const maxAllowedDiscount = Number(pos_profile.value.posa_max_discount_allowed) || 0;
+//   let manualPercent = discount.value ? Number(discount.value) : 0;
+//   if (manualPercent > maxAllowedDiscount) manualPercent = maxAllowedDiscount;
+
+//   const offerPercent = selectedOffer.value ? Number(selectedOffer.value.discount_percentage) : 0;
+//   const totalDiscountPercent = manualPercent + offerPercent;
+
+//   const discountPercentage = totalDiscountPercent / 100;
+//   const discountAmountNet = net_total * discountPercentage;
+//   const discountAmountGrand = grand_total * discountPercentage;
+//   const discountAmountTaxes = total_taxes_and_charges * discountPercentage;
+
+//   invoice_doc.value.net_total = Number(net_total) - Number(discountAmountNet);
+//   invoice_doc.value.grand_total = Number(grand_total) - Number(discountAmountGrand);
+//   invoice_doc.value.total_taxes_and_charges = Number(total_taxes_and_charges) - Number(discountAmountTaxes);
+//   invoice_doc.value.discount_amount = discountAmountGrand;
+//   amountTake.value = invoice_doc.value.grand_total;
+
+//   invoice_doc.value.addition_discount = offerPercent;
+//   invoice_doc.value.manual_discount = manualPercent;
+// };
+
+function applyDiscount() {
+  // Ensure we have a baseline
   if (!invoice_doc.value.original_values) {
     invoice_doc.value.original_values = {
-      net_total: invoice_doc.value.net_total,
-      grand_total: invoice_doc.value.grand_total,
-      total_taxes_and_charges: invoice_doc.value.total_taxes_and_charges,
+      net_total: Number(invoice_doc.value.net_total) || 0,
+      grand_total: Number(invoice_doc.value.grand_total) || 0,
+      total_taxes_and_charges: Number(invoice_doc.value.total_taxes_and_charges) || 0,
     };
   }
+
   const { net_total, grand_total, total_taxes_and_charges } = invoice_doc.value.original_values;
 
-  // Cap manual discount only
-  const maxAllowedDiscount = Number(pos_profile.value.posa_max_discount_allowed) || 0;
-  let manualPercent = discount.value ? Number(discount.value) : 0;
-  if (manualPercent > maxAllowedDiscount) manualPercent = maxAllowedDiscount;
+  // Manual discount capped by POS profile
+  const maxAllowed = Number(pos_profile.value.posa_max_discount_allowed) || 0;
+  const manual = Math.min(Number(discount.value) || 0, maxAllowed);
 
-  const offerPercent = selectedOffer.value ? Number(selectedOffer.value.discount_percentage) : 0;
-  const totalDiscountPercent = manualPercent + offerPercent;
+  // Offer discount (may be 0)
+  const offer = selectedOffer.value ? Number(selectedOffer.value.discount_percentage) || 0 : 0;
 
-  const discountPercentage = totalDiscountPercent / 100;
-  const discountAmountNet = net_total * discountPercentage;
-  const discountAmountGrand = grand_total * discountPercentage;
-  const discountAmountTaxes = total_taxes_and_charges * discountPercentage;
+  // Total discount %
+  const pct = (manual + offer) / 100;
 
-  invoice_doc.value.net_total = Number(net_total) - Number(discountAmountNet);
-  invoice_doc.value.grand_total = Number(grand_total) - Number(discountAmountGrand);
-  invoice_doc.value.total_taxes_and_charges = Number(total_taxes_and_charges) - Number(discountAmountTaxes);
-  invoice_doc.value.discount_amount = discountAmountGrand;
-  amountTake.value = invoice_doc.value.grand_total;
+  // Recompute totals from the baseline
+  const newNet     = +(net_total * (1 - pct)).toFixed(2);
+  const newTaxes   = +(total_taxes_and_charges * (1 - pct)).toFixed(2);
+  const newGrand   = +(grand_total * (1 - pct)).toFixed(2);
+  const discAmount = +(grand_total * pct).toFixed(2);
 
-  invoice_doc.value.addition_discount = offerPercent;
-  invoice_doc.value.manual_discount = manualPercent;
-};
+  invoice_doc.value.net_total = newNet;
+  invoice_doc.value.total_taxes_and_charges = newTaxes;
+  invoice_doc.value.grand_total = newGrand;
+  invoice_doc.value.discount_amount = discAmount;
+
+  // track what was applied
+  invoice_doc.value.addition_discount = offer || null;     // offer %
+  invoice_doc.value.manual_discount   = manual || 0;       // manual %
+
+  // ✅ Preserve & reapply tip on top of *current* (discounted) grand total
+  const tipAmt = Number(invoice_doc.value.tip_amount) || 0;
+
+  if (!splitPayment.value) {
+    amountTake.value = newGrand + tipAmt;
+
+    // keep the active payment mode in sync
+    const activeMode = paymentModes.value.find(m => m.selected);
+    if (activeMode) activeMode.amount = amountTake.value;
+
+    // recompute remaining/change
+    updateDocPayment();
+  }
+  if (!splitPayment.value) {
+    if (isCardAuto.value) {
+      // Credit Card: lock to grand_total + tip
+      const due = dueAmountWithTip();
+      amountTake.value = due;
+      const active = paymentModes.value.find(m => m.selected);
+      if (active) active.amount = due;
+    } else {
+      // All others: keep manual amount
+      const active = paymentModes.value.find(m => m.selected);
+      if (active) active.amount = Number(amountTake.value) || 0;
+    }
+  }
+  recalcBalances();
+}
 
 watch([discount, selectedOffer], () => {
   applyDiscount();
@@ -2008,6 +2229,13 @@ onMounted(() => {
     console.log("received-invoice", data);
 
     invoice_doc.value = data;
+    if (!invoice_doc.value.original_values) {
+      invoice_doc.value.original_values = {
+        net_total: Number(invoice_doc.value.net_total) || 0,
+        grand_total: Number(invoice_doc.value.grand_total) || 0,
+        total_taxes_and_charges: Number(invoice_doc.value.total_taxes_and_charges) || 0,
+      };
+    }
     invoice_doc.value.custom_invoice_status = "On Hold";
     if (!invoice_doc.value.original_grand_total) {
       invoice_doc.value.original_grand_total = invoice_doc.value.grand_total;
