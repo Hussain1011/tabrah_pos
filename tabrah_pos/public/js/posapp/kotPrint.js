@@ -87,7 +87,7 @@ async function handleBrowserPrinting(offlineData) {
 
                 // If the item has a comment, show it below the item
                 let commentRow = comment
-                    ? `<tr><td colspan="2" style="font-style: italic; color: grey;">Note: ${comment}</td></tr>`
+                    ? `<tr><td colspan="2" style="font-style: italic; color: black;">Note: ${comment}</td></tr>`
                     : "";
 
                 rows += `
