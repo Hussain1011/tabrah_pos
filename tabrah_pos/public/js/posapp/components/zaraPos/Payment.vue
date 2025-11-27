@@ -726,49 +726,40 @@ const updateDocPayment = (flag) => {
 };
 
 const changePaymentType = (type) => {
-  if (!invoice_doc.value.original_grand_total) {
-    invoice_doc.value.original_grand_total = invoice_doc.value.grand_total;
-  }
+  // if (!invoice_doc.value.original_grand_total) {
+  //   invoice_doc.value.original_grand_total = invoice_doc.value.grand_total;
+  // }
   if (!invoice_doc.value.exchangeItem) {
-    if (!invoice_doc.value.original_grand_total) {
-      invoice_doc.value.original_grand_total = invoice_doc.value.grand_total;
-    } else {
-      // console.log("enter in else", invoice_doc.value.original_grand_total);
-      invoice_doc.value.grand_total = invoice_doc.value.original_grand_total;
-    }
-    if (!splitPayment.value) {
-      amountTake.value = 0;
-      // Iterate through payment modes and update their states
-      pos_profile.value.payments.forEach((payment) => { 
-        if (payment === type) {
-          payment.selected = true;
+    // Split payment: do not allow switching until cancelled
+  if (splitPayment.value) {
+    eventBus.emit("show_mesage", { text: `Cancel split payment first`, color: "error" });
+    return;
+  }
 
-          if (type.mode_of_payment === "Credit Card") {
-            // Lock to due for Credit Card
-            const due = dueAmountWithTip();
-            payment.amount = due;
-            amountTake.value = due;
-          } else {
-            // Editable for all other modes (keep whatever the cashier set or blank)
-            payment.amount = Number(amountTake.value) || 0;
-            // If you want to clear on switch to editable modes, you can:
-            // amountTake.value = "";
-          }
-        } else {
-          payment.selected = false;
-          payment.amount = 0;
-        }
-      });
-      recalcBalances();
-      // Log the selected payment type for debugging
-      // Update the selected payment type
-      paymentType.value = type;
-    } else {
-      eventBus.emit("show_mesage", {
-        text: `Cancel split payment first`,
-        color: "error",
-      });
-    }
+  // ✅ Always recompute discounted totals before using them
+  //    (applyDiscount() must exist and should recompute invoice_doc.value.grand_total
+  //     from invoice_doc.value.original_values + current discount/offer)
+  applyDiscount();
+
+  // Clear selection/amounts for all modes, mark the selected one
+  pos_profile.value.payments.forEach((p) => {
+    p.selected = (p === type);
+    p.amount   = 0;
+  });
+
+  // Credit Card: lock to discounted grand_total + tip
+  if (type.mode_of_payment === "Credit Card") {
+    const due = dueAmountWithTip();   // uses discounted base + tip
+    type.amount     = due;
+    amountTake.value = due;
+  } else {
+    // Editable methods keep whatever cashier typed (or zero if empty)
+    type.amount      = Number(amountTake.value) || 0;
+  }
+
+  // Commit selection and recompute remaining/change
+  paymentType.value = type;
+  recalcBalances();
   }
   else {
 
@@ -1577,11 +1568,32 @@ function syncPaidAmountWithTip() {
   // keep “remaining/change” coherent
   updateDocPayment();
 }
-function dueAmountWithTip() {
-  const base = Number(invoice_doc.value?.grand_total) || 0;
-  const tipAmt = Number(invoice_doc.value?.tip_amount) || 0;
-  return base + tipAmt;
+function effectiveDiscountPercent() {
+  const maxAllowed = Number(pos_profile.value?.posa_max_discount_allowed) || 0;
+  const manual = Math.min(Number(discount.value) || 0, maxAllowed);
+  const offer  = selectedOffer.value ? Number(selectedOffer.value.discount_percentage) || 0 : 0;
+  return (manual + offer) / 100;
 }
+
+function discountedGrandTotalNow() {
+  const base = Number(
+    invoice_doc.value?.original_values?.grand_total ??
+    invoice_doc.value?.grand_total ?? 0
+  );
+  const pct = effectiveDiscountPercent();
+  return +(base * (1 - pct)).toFixed(2);
+}
+
+function dueAmountWithTip() {
+  const discounted = discountedGrandTotalNow();
+  const tipAmt     = Number(invoice_doc.value?.tip_amount) || 0;
+  return +(discounted + tipAmt).toFixed(2);
+}
+// function dueAmountWithTip() {
+//   const base = Number(invoice_doc.value?.grand_total) || 0;
+//   const tipAmt = Number(invoice_doc.value?.tip_amount) || 0;
+//   return base + tipAmt;
+// }
 
 function recalcBalances() {
   const totalPaid = (paymentModes.value || []).reduce(
@@ -1855,60 +1867,60 @@ watch(
   { deep: true }
 );
 
-watch(discount, (newVal) => {
-  // Store the original values once
-  if (!invoice_doc.value.original_values) {
-    invoice_doc.value.original_values = {
-      net_total: invoice_doc.value.net_total,
-      grand_total: invoice_doc.value.grand_total,
-      total_taxes_and_charges: invoice_doc.value.total_taxes_and_charges,
-    };
-  }
+// watch(discount, (newVal) => {
+//   // Store the original values once
+//   if (!invoice_doc.value.original_values) {
+//     invoice_doc.value.original_values = {
+//       net_total: invoice_doc.value.net_total,
+//       grand_total: invoice_doc.value.grand_total,
+//       total_taxes_and_charges: invoice_doc.value.total_taxes_and_charges,
+//     };
+//   }
 
-  const { net_total, grand_total, total_taxes_and_charges } =
-    invoice_doc.value.original_values;
+//   const { net_total, grand_total, total_taxes_and_charges } =
+//     invoice_doc.value.original_values;
 
-  // Reset values if discount is invalid or zero
-  if (!newVal || Number(newVal) === 0) {
-    invoice_doc.value.net_total = net_total;
-    invoice_doc.value.grand_total = grand_total;
-    invoice_doc.value.total_taxes_and_charges = total_taxes_and_charges;
-    invoice_doc.value.discount_amount = 0; // Reset discount amount
-    amountTake.value = grand_total; // Reset amountTake
-    return;
-  }
+//   // Reset values if discount is invalid or zero
+//   if (!newVal || Number(newVal) === 0) {
+//     invoice_doc.value.net_total = net_total;
+//     invoice_doc.value.grand_total = grand_total;
+//     invoice_doc.value.total_taxes_and_charges = total_taxes_and_charges;
+//     invoice_doc.value.discount_amount = 0; // Reset discount amount
+//     amountTake.value = grand_total; // Reset amountTake
+//     return;
+//   }
 
-  // Ensure `discount` is a valid number
-  const discountValue = Number(newVal);
-  const maxAllowedDiscount =
-    Number(pos_profile.value.posa_max_discount_allowed) || 0;
+//   // Ensure `discount` is a valid number
+//   const discountValue = Number(newVal);
+//   const maxAllowedDiscount =
+//     Number(pos_profile.value.posa_max_discount_allowed) || 0;
 
-  if (discountValue <= maxAllowedDiscount) {
-    // Calculate discount percentage
-    const discountPercentage = discountValue / 100;
+//   if (discountValue <= maxAllowedDiscount) {
+//     // Calculate discount percentage
+//     const discountPercentage = discountValue / 100;
 
-    // Apply discount to all values
-    const discountAmountNet = net_total * discountPercentage;
-    const discountAmountGrand = grand_total * discountPercentage;
-    const discountAmountTaxes = total_taxes_and_charges * discountPercentage;
+//     // Apply discount to all values
+//     const discountAmountNet = net_total * discountPercentage;
+//     const discountAmountGrand = grand_total * discountPercentage;
+//     const discountAmountTaxes = total_taxes_and_charges * discountPercentage;
 
-    invoice_doc.value.net_total = Number(net_total) - Number(discountAmountNet);
-    invoice_doc.value.grand_total =
-      Number(grand_total) - Number(discountAmountGrand);
-    invoice_doc.value.total_taxes_and_charges =
-      Number(total_taxes_and_charges) - Number(discountAmountTaxes);
-    console.log("checking...invoice_doc.value", invoice_doc.value);
-    // Store the total discount amount for reference
-    invoice_doc.value.discount_amount = discountAmountGrand;
+//     invoice_doc.value.net_total = Number(net_total) - Number(discountAmountNet);
+//     invoice_doc.value.grand_total =
+//       Number(grand_total) - Number(discountAmountGrand);
+//     invoice_doc.value.total_taxes_and_charges =
+//       Number(total_taxes_and_charges) - Number(discountAmountTaxes);
+//     console.log("checking...invoice_doc.value", invoice_doc.value);
+//     // Store the total discount amount for reference
+//     invoice_doc.value.discount_amount = discountAmountGrand;
 
-    // Update amountTake based on new grand_total
-    amountTake.value = invoice_doc.value.grand_total;
-  } else {
-    console.warn(
-      `Discount exceeds the allowed limit of ${maxAllowedDiscount}%`
-    );
-  }
-});
+//     // Update amountTake based on new grand_total
+//     amountTake.value = invoice_doc.value.grand_total;
+//   } else {
+//     console.warn(
+//       `Discount exceeds the allowed limit of ${maxAllowedDiscount}%`
+//     );
+//   }
+// });
 
 watch(tip, (newVal) => {
   invoice_doc.value.tip_amount = Number(newVal) || 0;
