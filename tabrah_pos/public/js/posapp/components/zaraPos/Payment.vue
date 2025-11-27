@@ -1718,12 +1718,12 @@ watch(
       );
 
       // Optional: if Credit Card is active, ensure due-with-tip is respected
-      if (isCardAuto.value) {
-        const due = dueAmountWithTip();
-        amountTake.value = due;
-        const active = paymentModes.value.find(m => m.selected);
-        if (active) active.amount = due;
-      }
+      // if (isCardAuto.value) {
+      //   const due = dueAmountWithTip();
+      //   amountTake.value = due;
+      //   const active = paymentModes.value.find(m => m.selected);
+      //   if (active) active.amount = due;
+      // }
 
       recalcBalances();
 
@@ -2125,8 +2125,9 @@ const openOffersDialog = async () => {
 //   invoice_doc.value.manual_discount = manualPercent;
 // };
 
+
 function applyDiscount() {
-  // Ensure we have a baseline
+  // baseline (once per invoice)
   if (!invoice_doc.value.original_values) {
     invoice_doc.value.original_values = {
       net_total: Number(invoice_doc.value.net_total) || 0,
@@ -2134,60 +2135,47 @@ function applyDiscount() {
       total_taxes_and_charges: Number(invoice_doc.value.total_taxes_and_charges) || 0,
     };
   }
-
   const { net_total, grand_total, total_taxes_and_charges } = invoice_doc.value.original_values;
 
-  // Manual discount capped by POS profile
+  // choose ONE source: offer > manual (manual capped)
   const maxAllowed = Number(pos_profile.value.posa_max_discount_allowed) || 0;
-  const manual = Math.min(Number(discount.value) || 0, maxAllowed);
+  const manualPct = Math.min(Number(discount.value) || 0, maxAllowed);
+  const offerPct  = selectedOffer.value ? Number(selectedOffer.value.discount_percentage) || 0 : 0;
 
-  // Offer discount (may be 0)
-  const offer = selectedOffer.value ? Number(selectedOffer.value.discount_percentage) || 0 : 0;
+  // effective % = offer if present, else manual
+  const pct = offerPct > 0 ? offerPct : manualPct;
 
-  // Total discount %
-  const pct = (manual + offer) / 100;
-
-  // Recompute totals from the baseline
-  const newNet     = +(net_total * (1 - pct)).toFixed(2);
-  const newTaxes   = +(total_taxes_and_charges * (1 - pct)).toFixed(2);
-  const newGrand   = +(grand_total * (1 - pct)).toFixed(2);
-  const discAmount = +(grand_total * pct).toFixed(2);
+  // recompute
+  const newNet   = +(net_total * (1 - pct / 100)).toFixed(2);
+  const newTaxes = +(total_taxes_and_charges * (1 - pct / 100)).toFixed(2);
+  const newGrand = +(grand_total * (1 - pct / 100)).toFixed(2);
+  const discAmt  = +(grand_total * (pct / 100)).toFixed(2);
 
   invoice_doc.value.net_total = newNet;
   invoice_doc.value.total_taxes_and_charges = newTaxes;
   invoice_doc.value.grand_total = newGrand;
-  invoice_doc.value.discount_amount = discAmount;
+  invoice_doc.value.discount_amount = discAmt;
 
-  // track what was applied
-  invoice_doc.value.addition_discount = offer || null;     // offer %
-  invoice_doc.value.manual_discount   = manual || 0;       // manual %
+  // annotate (for debugging/audits)
+  invoice_doc.value.addition_discount = offerPct || null; // store offer % if any
+  invoice_doc.value.manual_discount   = offerPct ? 0 : manualPct; // zero if offer is used
 
-  // ✅ Preserve & reapply tip on top of *current* (discounted) grand total
+  // keep paid input in sync
   const tipAmt = Number(invoice_doc.value.tip_amount) || 0;
-
   if (!splitPayment.value) {
-    amountTake.value = newGrand + tipAmt;
-
-    // keep the active payment mode in sync
-    const activeMode = paymentModes.value.find(m => m.selected);
-    if (activeMode) activeMode.amount = amountTake.value;
-
-    // recompute remaining/change
-    updateDocPayment();
-  }
-  if (!splitPayment.value) {
-    if (isCardAuto.value) {
-      // Credit Card: lock to grand_total + tip
-      const due = dueAmountWithTip();
+    // if card is selected, lock to due (grand + tip); else keep current manual amount
+    if (paymentType.value?.mode_of_payment === "Credit Card") {
+      const due = Number(newGrand) + tipAmt;
       amountTake.value = due;
       const active = paymentModes.value.find(m => m.selected);
       if (active) active.amount = due;
     } else {
-      // All others: keep manual amount
       const active = paymentModes.value.find(m => m.selected);
       if (active) active.amount = Number(amountTake.value) || 0;
     }
   }
+
+  // recompute remaining/change
   recalcBalances();
 }
 
@@ -2202,7 +2190,7 @@ const applyOffer = (offer) => {
   invoice_doc.value.addition_discount = offer.discount_percentage;
   invoice_doc.value.custom_discount_offer = offer.name;
   showOffersDialog.value = false;
-  applyDiscount(offer.discount_percentage);
+  // applyDiscount(offer.discount_percentage);
 };
 
 const removeOffer = () => {
@@ -2222,8 +2210,9 @@ const onManualDiscountInput = (value) => {
       color: "error",
     });
   }
+
   discount.value = capped;
-  applyDiscount();
+  // applyDiscount();
 };
 
 onMounted(() => {
