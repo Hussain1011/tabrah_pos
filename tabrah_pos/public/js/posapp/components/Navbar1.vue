@@ -4,11 +4,16 @@
   <div>
     <v-app-bar app color="white" height="55" class="elevation-0">
       <!-- <v-app-bar-nav-icon @click="drawer = !drawer" /> -->
-      <p style="margin-left: 24px;
-    margin-top: 11px;
-    font-size: 18px;
-    font-weight: 600;
-    text-transform: uppercase;color: #21A0A0;" @click="go_desk">{{ pos_profile.company }}</p>
+      <p style="
+          margin-left: 24px;
+          margin-top: 11px;
+          font-size: 18px;
+          font-weight: 600;
+          text-transform: uppercase;
+          color: #21a0a0;
+        " @click="go_desk">
+        A-One Electronics
+      </p>
 
       <!-- <v-toolbar-title
         style="cursor: pointer"

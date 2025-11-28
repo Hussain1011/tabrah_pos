@@ -10,34 +10,27 @@
 
       <v-card-text class="px-8" style="overflow-y: auto; flex: 1 1 auto;">
         <v-row>
-          <!-- Left side: Image and product details -->
+          <!-- Left side -->
           <v-col cols="5">
-            <v-img :src="selectedProduct.image" alt="Product Image" height="580 " aspect-ratio="1" cover
+            <v-img :src="selectedProduct.image ? selectedProduct.image : defaultImg"  alt="Product Image" height="480" aspect-ratio="1" cover
               class="mb-4 product-img py-0"></v-img>
+
             <div class="py-0 item-content">
               <div class="item-name">
-                {{ selectedProduct.item_name ? selectedProduct.item_name : "" }}
+                {{ selectedProduct.item_name || "" }}
               </div>
-              <div class="item-price" v-if="selectedProduct.custom_discounted_rate > 0"
-                style=" text-decoration: line-through!important;color: grey;font-size: 0.9em;margin-right: 5px;">
-                QAR.{{
-                  selectedProduct.rate ? formatNumber(selectedProduct.rate) : ""
-                }}
+
+              <div class="item-price">
+                Rs.{{ selectedProduct.original_rate ? formatNumber(selectedProduct.original_rate) : "" }}
               </div>
-              <div class="item-price" v-else>
-                QAR.{{
-                  selectedProduct.rate ? formatNumber(selectedProduct.rate) : ""
-                }}
-              </div>
-              <div class="item-price" v-show="selectedProduct.custom_discounted_rate > 0">
-                QAR.{{
-                  selectedProduct.rate ? formatNumber(selectedProduct.custom_discounted_rate) : ""
-                }}
+
+              <div class="" v-if="selectedProduct.rate < selectedProduct.original_rate">
+                <strong>Total After Discount: Rs:<span class="item-price">{{ formatNumber(selectedProduct.rate) }}</span></strong>
               </div>
             </div>
           </v-col>
 
-          <!-- Right side: Product specifications and actions -->
+          <!-- Right side -->
           <v-col cols="7">
             <div class="d-flex justify-between">
               <div class="black--text item-title">Item Number</div>
@@ -48,108 +41,55 @@
               <div class="black--text item-title">Item Detail</div>
               <div>{{ selectedProduct.item_name }}</div>
             </div>
+
             <div class="mt-4 d-flex justify-between">
               <div class="black--text item-title">Inventory</div>
               <div>{{ selectedProduct.actual_qty }}</div>
             </div>
 
-            <div class="mt-3 d-flex justify-between"></div>
-
-            <div class="d-flex justify-between">
-              <!-- <div class="black--text item-title">Embroidery Lawn Dupatta</div>
-              <div>2.50 m</div> -->
-            </div>
-
-            <div class="d-flex justify-between">
-              <!-- <div class="black--text item-title">Died Cambric Trouser</div>
-              <div>2.50 m</div> -->
-            </div>
-
             <v-divider class="mt-2 border-opacity-75 mx-6" :thickness="1" style="background-color: grey"></v-divider>
 
-            <!-- Quantity selection and Add to Cart button -->
+            <!-- Quantity -->
             <v-row class="my-4 align-center">
               <v-col cols="4" class="text-right">
                 <v-btn variant="outlined" size="x-large" class="text-capitalize" color="#21A0A0"
-                  style="background-color: #d3ecec; border-radius: 8px" @click="decreaseQuantity">-</v-btn>
+                  style="background-color: #d3ecec; border-radius: 8px" @click="decreaseQuantity">
+                  -
+                </v-btn>
               </v-col>
+
               <v-col cols="4" class="text-center">
                 <div class="text-quantity black--text">{{ quantity }}</div>
                 <v-divider class="mx-7 border-opacity-75" :thickness="2" style="background-color: black"></v-divider>
               </v-col>
+
               <v-col cols="4" class="text-left">
                 <v-btn variant="outlined" size="x-large" class="text-capitalize" color="#21A0A0"
-                  style="background-color: #d3ecec; border-radius: 8px" @click="increaseQuantity">+</v-btn>
+                  style="background-color: #d3ecec; border-radius: 8px" @click="increaseQuantity">
+                  +
+                </v-btn>
               </v-col>
             </v-row>
+
+            <!-- Discount (Rs Input → Percentage Output) -->
             <v-row class="my-4 align-center">
               <v-col cols="12" class="text-right">
-                <v-text-field
-                  class="b-radius-8"
-                  variant="outlined"
-                  :label="`Discount (max ${pos_profile.posa_max_discount_allowed} %)`"
-                  v-model="discount"
-                  type="number"
-                  :min="0"
-                  :max="pos_profile.posa_max_discount_allowed"
-                  @input="validateDiscount"
-                  :disabled="!pos_profile.posa_max_discount_allowed"
-                />
+                <v-text-field class="b-radius-8" variant="outlined" label="Discount (Rs)" v-model="discountRs"
+                  type="number" min="0" @input="calculateDiscountPercentage" />
               </v-col>
-              <v-col cols="12" class="text-right" v-if="pos_profile.custom_enable_edit_rate_by_group && selectedProduct.item_group === pos_profile.custom_select_item_group_to_edit_rate">
-                <v-text-field class="b-radius-8" variant="outlined"
-                  label="Rate"
-                  v-model="selectedProduct.rate"
-                  type="number"
-                  :min="0"
-                  :disabled="false"
-                />
-              </v-col>
-              <v-col cols="12" class="text-right">
-                <v-text-field class="b-radius-8" variant="outlined"
-                  :label="`Additional Comment`" v-model="itemComment" 
-                  
-                   />
-              </v-col>
-              <v-col cols="12" md="12" class="my-0">
-                <v-checkbox v-model="complementaryItem" color="red" label="Complementary Item" @change="handleComplementaryToggle"
-                  hide-details></v-checkbox>
-              </v-col>
-              <!-- <v-col cols="4" class="text-center">
-                <div class="text-quantity black--text">{{ quantity }}</div>
-                <v-divider
-                  class="mx-7 border-opacity-75"
-                  :thickness="2"
-                  style="background-color: black"
-                ></v-divider>
-              </v-col>
-              <v-col cols="4" class="text-left">
-                <v-btn
-                  variant="outlined"
-                  size="x-large"
-                  class="text-capitalize"
-                  color="#21A0A0"
-                  style="background-color: #d3ecec; border-radius: 8px"
-                  @click="increaseQuantity"
-                  >+</v-btn
-                >
-              </v-col> -->
             </v-row>
 
             <v-row>
               <v-col cols="12">
-                <div class="font-weight-bold" style="margin-top: 24px !important">
-                  Description
-                </div>
-                <div class="grey--text">
-                  {{ selectedProduct.description }}
-                </div>
+                <div class="font-weight-bold">Description</div>
+                <div class="grey--text">{{ selectedProduct.description }}</div>
               </v-col>
             </v-row>
           </v-col>
         </v-row>
       </v-card-text>
-      <div style="padding: 24px 32px 24px 32px; background: #fff; box-shadow: 0 -2px 8px rgba(0,0,0,0.03); z-index: 2;">
+
+      <div style="padding: 24px 32px; background: #fff; box-shadow: 0 -2px 8px rgba(0,0,0,0.03); z-index: 2;">
         <v-btn block size="x-large" color="#21A0A0" style="border-radius: 8px" @click="addToCart">
           ADD
         </v-btn>
@@ -159,205 +99,101 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch,computed } from "vue";
 import eventBus from "../../bus";
 
-    const dialog = ref(false);
-    const quantity = ref(1); // Initial quantity
-    const selectedProduct = ref("");
-    const updateQty = ref(false);
-    const discount = ref("");
-    const pos_profile = ref("");
-    const complementaryItem = ref(false);
-    const itemComment = ref('')
-    const editingIndex = ref(null);
+const dialog = ref(false);
+const quantity = ref(1);
+const selectedProduct = ref({});
+const discountRs = ref(""); // user enters discount in RS
+const editingIndex = ref(null);
+const updateQty = ref(false);
+const defaultImg = computed(() => `/assets/tabrah_pos/js/posapp/components/pos/defaultProduct.png`);
 
-    const increaseQuantity = () => {
-      quantity.value++;
-      selectedProduct.value.qty = quantity.value;
-    };
 
-    const decreaseQuantity = () => {
-      if (quantity.value > 1) {
-        quantity.value--;
-        selectedProduct.value.qty = quantity.value;
-      }
-    };
-    const formatNumber = (num) => {
-      return new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(num);
-    };
+/* Increase / Decrease Quantity */
+const increaseQuantity = () => {
+  quantity.value++;
+  selectedProduct.value.qty = quantity.value;
+};
 
-    const addToCart = () => {
-      if (discount.value <= pos_profile.value.posa_max_discount_allowed) {
-        // Always sync complementary state before emitting
-        selectedProduct.value.complementryItem = Boolean(complementaryItem.value);
-        selectedProduct.value.custom_is_complimentary_item = Boolean(complementaryItem.value);
-        if (complementaryItem.value) {
-          selectedProduct.value.rate = 0;
-        }
-        // Do NOT reset rate to original_rate if not complementary; preserve manual edits
-        if (!updateQty.value) {
-          eventBus.emit("add-to-cart", selectedProduct.value);
-        } else {
-          selectedProduct.value.index = editingIndex.value;
-          eventBus.emit("exist-item-cart", selectedProduct.value);
-        }
-        complementaryItem.value = false;
-        dialog.value = false;
-        discount.value = "";
-        // Only reset rate if complementary is checked, otherwise preserve manual edits
-        if (complementaryItem.value) {
-          // selectedProduct.value.rate = selectedProduct.value.original_rate;
-        }
-      }
-    };
-    const closeDialog = () => {
-      dialog.value = false;
-      if (updateQty.value) {
-        eventBus.emit("exist-item-cart", selectedProduct.value);
-      }
-    };
-    const validateDiscount = () => {
-      if (discount.value === "" || discount.value === null) {
-        selectedProduct.value.rate = selectedProduct.value.original_rate;
-        return;
-      }
-      if (discount.value < 0) {
-        eventBus.emit("show_mesage", {
-          text: `Negative discount is not allowed.`,
-          color: "error",
-        });
-        discount.value = 0;
-        selectedProduct.value.rate = selectedProduct.value.original_rate;
-        return;
-      }
-      if (discount.value > pos_profile.value.posa_max_discount_allowed) {
-        eventBus.emit("show_mesage", {
-          text: `Discount cannot exceed ${pos_profile.value.posa_max_discount_allowed}%`,
-          color: "error",
-        });
-        discount.value = pos_profile.value.posa_max_discount_allowed;
-      }
-      // Calculate and set the new rate
-      const discountAmount =
-        (selectedProduct.value.original_rate * discount.value) / 100;
-      selectedProduct.value.rate =
-        selectedProduct.value.original_rate - discountAmount;
-    };
-
-    // Function triggered when checkbox is clicked
-const handleComplementaryToggle = () => {
-  if (complementaryItem.value) {
-    // Save original rate if not already saved and not zero
-    if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
-      if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
-        selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
-      } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
-        selectedProduct.value.original_rate = selectedProduct.value.rate;
-      }
-    }
-    selectedProduct.value.rate = 0;
-    selectedProduct.value.complementryItem = true;
-    selectedProduct.value.custom_is_complimentary_item = true;
-  } else {
-    // Only restore rate if original_rate is not zero
-    if (selectedProduct.value.original_rate && selectedProduct.value.original_rate > 0) {
-      selectedProduct.value.rate = selectedProduct.value.original_rate;
-    }
-    selectedProduct.value.complementryItem = false;
-    selectedProduct.value.custom_is_complimentary_item = false;
+const decreaseQuantity = () => {
+  if (quantity.value > 1) {
+    quantity.value--;
+    selectedProduct.value.qty = quantity.value;
   }
 };
 
-    watch(itemComment, (newVal) => {
-      if(newVal){
-        selectedProduct.value.comment=newVal
-      }
-    })
-    // watch(complementaryItem, (newValue) => {
-    //   if (newValue) {
-    //     selectedProduct.value.rate = 0;
-    //     selectedProduct.value.complementryItem = true;
+/* Format */
+const formatNumber = (num) => {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
 
-    //     console.log("pos_profile", pos_profile.value);
-    //     // Filter complementary mode
-    //     const complementryMode = pos_profile.value.payments
-    //       .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
-    //       .map(profile => ({
-    //         ...profile,
-    //         amount: selectedProduct.value.original_rate // Add original amount
-    //       }));
+/* Convert Rs Discount → Percentage + Update Rate */
+const calculateDiscountPercentage = () => {
+  if (!discountRs.value || discountRs.value <= 0) {
+    selectedProduct.value.rate = selectedProduct.value.original_rate;
+    selectedProduct.value.discount_percentage = 0;
+    return;
+  }
 
-    //     console.log("complementryMode", complementryMode);
-    //   } else {
-    //     selectedProduct.value.rate = selectedProduct.value.original_rate;
-    //     selectedProduct.value.complementryItem = false;
+  const rate = selectedProduct.value.original_rate;
 
-    //     // Reset the filtered complementary mode with zero amount
-    //     const complementryMode = pos_profile.value.payments
-    //       .filter(profile => profile.custom_is_complementary_mode_of_payment == 1)
-    //       .map(profile => ({
-    //         ...profile,
-    //         amount: 0 // Set amount to zero
-    //       }));
+  const percentage = (discountRs.value / rate) * 100;
 
-    //     console.log("complementryMode", complementryMode);
-    //   }
-    // });
+  selectedProduct.value.discount_percentage = Number(percentage.toFixed(2));
 
-    onMounted(() => {
-      eventBus.on("open-product-dialog", (data) => {
-        editingIndex.value = data.index ?? null;
-        updateQty.value = data.flag;
-        quantity.value = data.product.qty ? data.product.qty : 1;
-        data.product.qty = quantity.value;
-        selectedProduct.value = JSON.parse(JSON.stringify(data.product));
-        itemComment.value = data.product.comment || '';
-        complementaryItem.value = Boolean(data.product.complementryItem);
+  selectedProduct.value.rate = rate - Number(discountRs.value);
+};
 
-        // If not complementary, and original_rate is missing or zero, but rate is also zero, try to recover
-        if (!complementaryItem.value) {
-          if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
-            // Try to recover from custom_discounted_rate if available and > 0
-            if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
-              selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
-              if (selectedProduct.value.rate === 0) {
-                selectedProduct.value.rate = selectedProduct.value.custom_discounted_rate;
-              }
-            } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
-              selectedProduct.value.original_rate = selectedProduct.value.rate;
-            }
-          }
-        }
+/* Add to Cart */
+const addToCart = () => {
+  selectedProduct.value.discount_amount = Number(discountRs.value || 0);
+  selectedProduct.value.discount_percentage =
+    selectedProduct.value.discount_percentage || 0;
 
-        // If complementary, always set rate to 0, but do not overwrite original_rate if already set and not zero
-        if (complementaryItem.value) {
-          if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
-            // Try to recover original_rate from custom_discounted_rate or previous rate
-            if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
-              selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
-            } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
-              selectedProduct.value.original_rate = selectedProduct.value.rate;
-            }
-          }
-          selectedProduct.value.rate = 0;
-        }
-        if (selectedProduct.value) {
-          dialog.value = true;
-        }
-      });
+  if (!updateQty.value) {
+    eventBus.emit("add-to-cart", selectedProduct.value);
+  } else {
+    selectedProduct.value.index = editingIndex.value;
+    eventBus.emit("exist-item-cart", selectedProduct.value);
+  }
 
-      eventBus.on("send_pos_profile", async (profile) => {
-        console.log("pos-profile", profile);
-        pos_profile.value = profile;
-      });
-    });
+  dialog.value = false;
+  discountRs.value = "";
+};
 
+/* Close */
+const closeDialog = () => {
+  dialog.value = false;
+};
 
+/* Open Dialog Listener */
+onMounted(() => {
+  eventBus.on("open-product-dialog", (data) => {
+    console.log("data received in product dialog ..", data);
+    editingIndex.value = data.index ?? null;
+    updateQty.value = data.flag;
+    if(data.product.discount_amount>0){
+      discountRs.value = data.product.discount_amount;
+    } else {
+      discountRs.value = "";
+    }
+
+    quantity.value = data.product.qty || 1;
+    selectedProduct.value = JSON.parse(JSON.stringify(data.product));
+
+    if (!selectedProduct.value.original_rate) {
+      selectedProduct.value.original_rate = selectedProduct.value.rate;
+    }
+    dialog.value = true;
+  });
+});
 </script>
+
 
 <style scoped>
 .text-h5 {
@@ -389,7 +225,7 @@ const handleComplementaryToggle = () => {
 }
 
 .item-price {
-  font-size: 14px;
+  font-size: 30px;
   font-weight: 700;
   color: #f69e7b;
 }

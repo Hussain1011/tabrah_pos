@@ -14,13 +14,13 @@
               style="border-radius: 8px" @click="changePaymentType(category)">
               <v-icon class="pr-2">{{
                 category.mode_type == "Cash" ? "mdi-cash" : "mdi-credit-card"
-                }}</v-icon>
+              }}</v-icon>
               <p class="mt-2 category-p">{{ category.mode_of_payment }}</p>
             </v-btn>
           </div>
         </v-col>
-        <v-col cols="12" md="5" class="text-right d-flex align-center justify-end">
-          
+        <v-col cols="12" md="5" class="text-right py-0 d-flex align-center justify-end">
+
           <v-divider vertical class="mx-2" style="height: 40px; background: #000; min-width: 2px;"></v-divider>
           <v-btn class="mr-2 b-radius-8" color="#21A0A0" size="large" variant="outlined"
             style="background-color: #d3ecec" @click="backToProductMenu()">
@@ -35,92 +35,25 @@
       <v-divider></v-divider>
 
       <v-row class="mt-2 pb-0 align-center" dense>
-      <!-- Paid Amount -->
-      <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
-        <v-text-field
-          class="b-radius-8"
-          variant="outlined"
-          label="Paid Amount"
-          suffix="QAR."
-          v-model="amountTake"
-          :disabled="!isPaidEditable"
-          @click="handleNumpadClick(button)"
-        />
-      </v-col>
+        <!-- Paid Amount -->
+        <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
+          <v-text-field class="b-radius-8" variant="outlined" label="Paid Amount" suffix="Rs." v-model="amountTake"
+            :disabled="!isPaidEditable" @click="handleNumpadClick(button)" />
+        </v-col>
 
-      <!-- Discount -->
-      <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
-        <v-text-field
-          class="b-radius-8"
-          variant="outlined"
-          :label="`Discount (max ${pos_profile.posa_max_discount_allowed} %)`"
-          v-model="discount"
-          type="number"
-          :min="0"
-          :max="pos_profile.posa_max_discount_allowed"
-          @input="onManualDiscountInput($event.target.value)"
-          :disabled="pos_profile.posa_max_discount_allowed == 0 || !!selectedOffer"
-        />
-        <div v-if="pos_profile.posa_max_discount_allowed == 0" class="text-error text-caption">
+        <!-- Discount -->
+        <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
+          <v-text-field class="b-radius-8" variant="outlined"
+            :label="`Discount`" v-model="discount" type="number"
+            :min="0" :max="pos_profile.posa_max_discount_allowed" @input="onManualDiscountInput($event.target.value)"
+             />
+          <!-- <div v-if="pos_profile.posa_max_discount_allowed == 0" class="text-error text-caption">
           Discounts are not allowed for this POS profile.
-        </div>
-      </v-col>
+        </div> -->
+        </v-col>
 
-      <!-- Select Offer / Selected Offer Chip -->
-      <v-col 
-        v-if="pos_profile.custom_enable_discount_offers == 1"
-        class="flex-grow-1" 
-        style="min-width: 200px; max-width: 100%"
-      >
-        <div class="d-flex align-center" style="height: 100%">
-          <v-btn
-            v-if="!selectedOffer"
-            class="b-radius-8 offer-btn-style"
-            color="#21A0A0"
-            @click="openOffersDialog"
-            style="
-              height: 56px; 
-              width: 100%;
-              text-transform: none;
-              letter-spacing: normal;
-            "
-          >
-            <v-icon left>mdi-tag</v-icon>
-            Discount Offers
-          </v-btn>
-
-          <v-chip
-            v-else
-            class="offer-chip-style"
-            closable
-            @click:close="removeOffer"
-            style="
-              height: 56px; 
-              width: 100%;
-              border-radius: 8px;
-              justify-content: start;
-            "
-          >
-            <v-icon left>mdi-tag</v-icon>
-            {{ selectedOffer.name }} ({{ selectedOffer.discount_percentage }}%)
-          </v-chip>
-        </div>
-      </v-col>
-
-      <!-- Tip -->
-      <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
-        <v-text-field
-          class="b-radius-8"
-          variant="outlined"
-          label="Tip"
-          v-model="tip"
-          type="number"
-          :min="0"
-        />
-      </v-col>
-
-      <!-- Split Payment Button -->
-      <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
+        <!-- Split Payment Button -->
+        <!-- <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
         <v-btn 
           class="b-radius-8 split-btn-style" 
           :color="splitPayment ? '#F05D23' : '#21A0A0'" 
@@ -136,8 +69,8 @@
           <v-icon left>mdi-cash-multiple</v-icon>
           Split Payment
         </v-btn>
-      </v-col>
-    </v-row>
+      </v-col> -->
+      </v-row>
 
       <!-- Paid Amount, To Be Paid, and Change Details -->
       <v-row class="pt-0 mt-0">
@@ -145,7 +78,7 @@
           <div class="amount-div paid-div">
             <p class="py-0 amount-title mb-2">Paid Amount</p>
             <p class="amount-pay">
-              QAR. {{ formatNumber(totalPaidAmount) || 0.0 }}
+              Rs. {{ formatNumber(totalPaidAmount) || 0.0 }}
             </p>
           </div>
         </v-col>
@@ -153,7 +86,7 @@
           <div class="amount-div to-paid-div">
             <p class="py-0 amount-title mb-2">To Be Paid</p>
             <p class="amount-pay">
-              QAR. {{ formatNumber(invoice_doc.grand_total) }}
+              Rs. {{ formatNumber(invoice_doc.grand_total) }}
             </p>
           </div>
         </v-col>
@@ -161,20 +94,20 @@
           <div class="amount-div to-paid-div">
             <p class="py-0 amount-title mb-2">Remaining paid amount</p>
             <p class="amount-pay">
-              QAR. {{ formatNumber(invoice_doc.remaining_amount) || 0 }}
+              Rs. {{ formatNumber(invoice_doc.remaining_amount) || 0 }}
             </p>
           </div>
         </v-col>
         <v-col cols="2" class="pt-0">
           <div class="amount-div change-div">
             <p class="py-0 amount-title mb-2">Change</p>
-            <p class="amount-pay">QAR. -{{ formatNumber(changeAmount) }}</p>
+            <p class="amount-pay">Rs. -{{ formatNumber(changeAmount) }}</p>
           </div>
         </v-col>
         <v-col cols="3" class="pt-0" v-if="invoice_doc.exchangeItem">
           <div class="amount-div change-div">
             <p class="py-0 amount-title mb-2">Advance Amount</p>
-            <p class="amount-pay">QAR. {{ formatNumber(invoice_doc.advanceAmount) }}</p>
+            <p class="amount-pay">RS. {{ formatNumber(invoice_doc.advanceAmount) }}</p>
           </div>
         </v-col>
       </v-row>
@@ -184,7 +117,7 @@
         <v-col cols="2">
           <div class="amount-title">Total Amount</div>
           <div class="grey--text amount-pay pt-2">
-            QAR. {{ invoice_doc.total ? formatNumber(invoice_doc.total) : 0 }}
+            Rs. {{ invoice_doc.total ? formatNumber(invoice_doc.total) : 0 }}
           </div>
           <v-divider :thickness="2" class="border-opacity-75" style="background-color: #21a0a0"></v-divider>
         </v-col>
@@ -193,7 +126,7 @@
             Tax (GST {{ paymentType.tax_rate }}%)
           </div>
           <div class="black--text amount-pay-one pt-2">
-            QAR.
+            Rs.
             {{
               invoice_doc.total_taxes_and_charges
                 ? formatNumber(invoice_doc.total_taxes_and_charges)
@@ -205,21 +138,21 @@
         <v-col cols="2">
           <div class="grey--text amount-title">Net Total</div>
           <div class="grey--text amount-pay pt-2">
-            QAR. {{ formatNumber(invoice_doc.net_total) }}
+            Rs. {{ formatNumber(invoice_doc.net_total) }}
           </div>
           <v-divider :thickness="2" class="border-opacity-75" style="background-color: #21a0a0"></v-divider>
         </v-col>
         <v-col cols="2">
           <div class="grey--text amount-title">Discount</div>
           <div class="grey--text amount-pay pt-2">
-            QAR.{{ formatNumber(invoice_doc.discount_amount) }}
+            Rs.{{ formatNumber(invoice_doc.discount_amount) }}
           </div>
           <v-divider :thickness="2" class="border-opacity-75" style="background-color: #21a0a0"></v-divider>
         </v-col>
         <v-col cols="2">
           <div class="grey--text amount-title">Gross Total</div>
           <div class="black--text amount-pay-one pt-2">
-            QAR. {{ formatNumber(invoice_doc.grand_total) }}
+            RS. {{ formatNumber(invoice_doc.grand_total) }}
           </div>
           <v-divider :thickness="2" class="border-opacity-75" style="background-color: #f05d23"></v-divider>
         </v-col>
@@ -301,56 +234,11 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-     <v-dialog v-model="showOffersDialog" max-width="600px">
-    <v-card>
-      <v-card-title>Select an Offer</v-card-title>
-      <v-card-text>
-        <v-row justify="center">
-          <v-col
-            v-for="offer in offers"
-            :key="offer.name"
-            cols="4"
-            class="d-flex justify-center"
-          >
-            <v-btn
-              class="offer-btn"
-              @click="applyOffer(offer)"
-              color="white"
-              elevation="2"
-              variant="outlined"
-            >
-              <div class="offer-text">
-                <div
-                  v-for="(word, index) in offer.name.split(' ').filter(w => w)"
-                  :key="index"
-                  class="offer-line"
-                >
-                  {{ word }}
-                </div>
-                <div class="offer-percent">
-                  {{ offer.discount_percentage }}%
-                </div>
-              </div>
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-card-text>
 
-      <v-card-actions>
-        <v-spacer />
-        <v-btn variant="text" @click="showOffersDialog = false">Close</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
 
-  <v-alert
-    v-if="discountSource.value === 'offer'"
-    type="info"
-    class="mt-2"
-    variant="tonal"
-  >
-    Offer applied: {{ discount }}%
-  </v-alert>
+    <!-- <v-alert v-if="discountSource.value === 'offer'" type="info" class="mt-2" variant="tonal">
+      Offer applied: {{ discount }}%
+    </v-alert> -->
   </div>
 </template>
 
@@ -739,7 +627,7 @@ const changePaymentType = (type) => {
     if (!splitPayment.value) {
       amountTake.value = 0;
       // Iterate through payment modes and update their states
-      pos_profile.value.payments.forEach((payment) => { 
+      pos_profile.value.payments.forEach((payment) => {
         if (payment === type) {
           payment.selected = true;
 
@@ -973,7 +861,7 @@ const load_print_page = async (invoice) => {
     // Check if network printing is enabled
     if (pos_profile.value?.custom_enable_payment_network_prints) {
       console.log("Using network printing for payment receipt");
-      
+
       // Get the full invoice document for network printing
       const invoiceDoc = await frappe.call({
         method: "frappe.client.get",
@@ -982,20 +870,20 @@ const load_print_page = async (invoice) => {
           name: invoice
         }
       });
-      
+
       if (invoiceDoc && invoiceDoc.message) {
         const success = await handlePaymentNetworkPrinting(invoiceDoc.message, pos_profile.value);
         if (success) {
           console.log("Network printing successful");
           // After payment print, optionally print KOT (no hold order)
           await printKotOnPayment(invoice);
-           return;
+          return;
         } else {
           console.log("Network printing failed, falling back to browser printing");
         }
       }
     }
-    
+
     // Original browser printing logic (fallback or when network printing is disabled)
     const print_format =
       pos_profile.value.print_format_for_online || pos_profile.value.print_format;
@@ -1024,7 +912,7 @@ const load_print_page = async (invoice) => {
     };
   } catch (error) {
     console.error("Error in load_print_page:", error);
-    
+
     // Fallback to original printing method in case of any error
     const print_format =
       pos_profile.value.print_format_for_online || pos_profile.value.print_format;
@@ -1288,17 +1176,17 @@ const submitSaleInvoice = async (
         console.log("enter in checkout ")
 
       }
-
+      console.log("invoice_doc.value before submit...", invoice_doc.value);
       invoice_doc.value.payments = invoice_doc.value.payments.map((payment) => {
         const matchedPayment = paymentModes.value.find(
           (mode) => mode.mode_of_payment === payment.mode_of_payment
         );
-          let finalAmount = matchedPayment ? matchedPayment.amount : payment.amount;
+        let finalAmount = matchedPayment ? matchedPayment.amount : payment.amount;
 
-          // If mode is Credit, force the amount to 0 (debt to customer)
-          if (payment.mode_of_payment === "Credit") {
-              finalAmount = 0;
-          }
+        // If mode is Credit, force the amount to 0 (debt to customer)
+        if (payment.mode_of_payment === "Credit") {
+          finalAmount = 0;
+        }
         return {
           ...payment,
           amount: finalAmount, // Use the existing amount if no match
@@ -2136,9 +2024,9 @@ function applyDiscount() {
   const pct = (manual + offer) / 100;
 
   // Recompute totals from the baseline
-  const newNet     = +(net_total * (1 - pct)).toFixed(2);
-  const newTaxes   = +(total_taxes_and_charges * (1 - pct)).toFixed(2);
-  const newGrand   = +(grand_total * (1 - pct)).toFixed(2);
+  const newNet = +(net_total * (1 - pct)).toFixed(2);
+  const newTaxes = +(total_taxes_and_charges * (1 - pct)).toFixed(2);
+  const newGrand = +(grand_total * (1 - pct)).toFixed(2);
   const discAmount = +(grand_total * pct).toFixed(2);
 
   invoice_doc.value.net_total = newNet;
@@ -2148,7 +2036,7 @@ function applyDiscount() {
 
   // track what was applied
   invoice_doc.value.addition_discount = offer || null;     // offer %
-  invoice_doc.value.manual_discount   = manual || 0;       // manual %
+  invoice_doc.value.manual_discount = manual || 0;       // manual %
 
   // ✅ Preserve & reapply tip on top of *current* (discounted) grand total
   const tipAmt = Number(invoice_doc.value.tip_amount) || 0;
@@ -2284,7 +2172,7 @@ onMounted(() => {
     discount.value = "";
     selectedOffer.value = null;
     discountSource.value = "manual";
-    invoice_doc.value.addition_discount = null;
+    invoice_doc.value.addition_discount = 5;
     invoice_doc.value.custom_discount_offer = null;
     amountTake.value = "";
     // console.log("offline=pos prfile",pos_profile.value)
@@ -2492,6 +2380,7 @@ onUnmounted(() => {
   padding: 8px !important;
   overflow: hidden !important;
 }
+
 .offer-btn:hover {
   background: #21a0a0 !important;
   color: #fff !important;
@@ -2508,6 +2397,7 @@ onUnmounted(() => {
   word-break: break-word;
   margin-bottom: 4px;
 }
+
 .offer-btn-percent {
   width: 100%;
   text-align: center;
@@ -2538,12 +2428,14 @@ onUnmounted(() => {
   box-shadow: none !important;
   padding: 0 24px !important;
 }
+
 .offer-chip-style .v-chip__content {
   padding: 0 !important;
   height: 56px !important;
   display: flex !important;
   align-items: center !important;
 }
+
 .offer-chip-style .v-chip__close {
   color: #21a0a0 !important;
   font-size: 20px !important;

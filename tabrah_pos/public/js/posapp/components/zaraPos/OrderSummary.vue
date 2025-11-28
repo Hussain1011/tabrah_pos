@@ -3,48 +3,47 @@
     <v-card class="pa-6 m-3 order-card" style="background: #f4f4f4" elevation="0">
       <!-- Table Heading -->
       <v-row class="table-header">
-        <v-col cols="5">
+        <v-col cols="4">
           <strong>ITEM</strong>
         </v-col>
-        <v-col cols="3" class="mr-0">
+
+        <v-col cols="2" class="text-center">
           <strong>QTY.</strong>
         </v-col>
-        <v-col cols="3">
-          <strong>PRICE </strong>
+
+        <v-col cols="3" class="text-right">
+          <strong>DISCOUNT</strong>
+        </v-col>
+
+        <v-col cols="3" class="text-right">
+          <strong>PRICE</strong>
         </v-col>
       </v-row>
 
-      <!-- Image to show when items are empty -->
-      <!-- <div v-else class="image-container">
-        <img
-          src="/assets/tabrah_pos/js/posapp/components/pos"
-          alt="No items"
-          class="animated-image"
-          style=""
-        />
-      </div> -->
+      <v-divider></v-divider>
 
       <!-- Items List -->
-      <v-divider></v-divider>
-      <v-row v-for="(item, index) in items" :key="item.sku" class="py-0 align-center mr-0"
+      <v-row v-for="(item, index) in items" :key="item.sku" class="py-0 align-center"
         @click="openDialog(item, true, index)">
-        <v-col cols="5" class="pr-0 pb-0">
+        <!-- ITEM NAME -->
+        <v-col cols="4" class="pr-0 pb-0">
           <div>{{ item.item_name }}</div>
-          <!-- <div class="text-caption grey--text">{{ item.sku }}</div> -->
           <div class="text-caption grey--text">{{ item.rate }}</div>
         </v-col>
 
+        <!-- QTY -->
         <v-col cols="2" class="text-center px-0 pb-0">
           {{ item.qty }}
         </v-col>
 
-        <v-col cols="4" class="text-right teal--text text--accent-4 pb-0">
-          <strong>QAR.{{ formatNumber(item.rate * item.qty) }}</strong>
+        <!-- DISCOUNT -->
+        <v-col cols="3" class="text-right red--text text--accent-4 pb-0">
+          <strong>Rs. {{ formatNumber(item.discount_amount || 0) }}</strong>
         </v-col>
 
-        <v-col cols="1" class="text-right pb-0" v-show="screen == 0">
-          <!-- Delete icon -->
-          <v-icon @click.stop="requestDeleteItem(index)" color="red">mdi-delete</v-icon>
+        <!-- PRICE -->
+        <v-col cols="3" class="text-right teal--text text--accent-4 pb-0">
+          <strong>Rs. {{ formatNumber(item.rate * item.qty) }}</strong>
         </v-col>
 
         <v-col cols="12" class="py-0">
@@ -52,14 +51,9 @@
         </v-col>
       </v-row>
     </v-card>
-    <!-- Persons field above customer select -->
-    <v-row class="px-4" v-if="pos_profile.allow_table_no">
-      <v-col cols="12" class="mb-0">
-        <v-text-field v-model="cover" label="Persons" type="number" min="1" max="99" variant="outlined" class="mr-2 mb-2"></v-text-field>
-      </v-col>
-    </v-row>
+
     <!-- Customer select row -->
-    <v-row class="px-4">
+    <!-- <v-row class="px-4">
       <v-col cols="8" class="" style="  height: 64px;">
         <v-autocomplete
           ref="customerSelectRef"
@@ -81,7 +75,7 @@
           <p class="mt-2 payment-p">New</p>
         </v-btn>
       </v-col>
-    </v-row>
+    </v-row> -->
 
     <v-row justify="center" class="pb-0">
       <v-col cols="12" md="12">
@@ -97,18 +91,7 @@
           </v-row>
 
           <v-divider class="mb-3"></v-divider>
-
-          <!-- Order Details -->
-          <!-- 
-          <v-row justify="space-between" class="px-6 py-0">
-            <v-col cols="4" class="py-0 payment-text-color">Total items:</v-col>
-            <v-col cols="4">
-              <v-divider class="dotted-divider"></v-divider>
-            </v-col>
-            <v-col cols="4" class="text-right py-0 payment-text-color">
-              {{ totalItems }}
-            </v-col>
-          </v-row> -->
+          <!-- Total Quantity -->
           <v-row justify="space-between" class="px-6 pb-0">
             <v-col cols="4" class="py-0 payment-text-color">Total Quantity:</v-col>
             <v-col cols="4">
@@ -118,44 +101,39 @@
               {{ totalQuantity }}
             </v-col>
           </v-row>
+
+          <!-- Net Total -->
           <v-row justify="space-between" class="px-6 py-0">
             <v-col cols="4" class="pb-0 payment-text-color">Net Total:</v-col>
             <v-col cols="4">
               <v-divider class="mt-3 dotted-divider" :thickness="3"></v-divider>
             </v-col>
             <v-col cols="4" class="text-right pb-0 payment-text-color">
-              QAR. {{ formatNumber(netTotal) }}
+              Rs. {{ formatNumber(netTotal) }}
             </v-col>
           </v-row>
 
+          <!-- GST -->
           <v-row justify="space-between" class="px-6 py-0">
             <v-col cols="4" class="py-0 payment-text-color">GST {{ selectedPaymentMode.tax_rate }}%:</v-col>
             <v-col cols="4">
               <v-divider class="dotted-divider" :thickness="3"></v-divider>
             </v-col>
             <v-col cols="4" class="text-right py-0 payment-text-color">
-              QAR. {{ formatNumber(gstAmount) }}
+              Rs. {{ formatNumber(gstAmount) }}
             </v-col>
           </v-row>
-          <v-row justify="space-between" class="px-6 py-0" v-if="returnType">
-            <v-col cols="4" class="py-0 payment-text-color">Advance Paid:</v-col>
-            <v-col cols="4">
-              <v-divider class="dotted-divider" :thickness="3"></v-divider>
-            </v-col>
-            <v-col cols="4" class="text-right py-0 payment-text-color">
-              QAR. {{ advanceAmount }}
-            </v-col>
-          </v-row>
-          <v-row justify="space-between" class="px-6 py-0" v-else>
+
+          <!-- Discount Total -->
+          <v-row justify="space-between" class="px-6 py-0">
             <v-col cols="4" class="py-0 payment-text-color">Discounts:</v-col>
             <v-col cols="4">
               <v-divider class="dotted-divider" :thickness="3"></v-divider>
             </v-col>
-            <v-col cols="4" class="text-right py-0 payment-text-color">
-              QAR.0.00
+            <v-col cols="4" class="text-right py-0 " style="color: black;  font-weight: 700;">
+              Rs. {{ formatNumber(totalDiscount) }}
             </v-col>
           </v-row>
-
 
           <!-- Grand Total -->
           <v-row justify="space-between" class="mt-4 px-6 pb-0">
@@ -163,61 +141,41 @@
               <p class="font-20">Grand Total:</p>
             </v-col>
             <v-col cols="6" class="text-right total-amount">
-              <p class="total-p">QAR. {{ formatNumber(grandTotal) }}</p>
+              <p class="total-p">Rs. {{ formatNumber(grandTotal) }}</p>
             </v-col>
           </v-row>
+
 
           <!-- Payment Button -->
           <v-row class="mt-3 px-6 pb-1">
             <v-col cols="12">
-              <v-btn
-                block
-                class="white--text font-weight-bold payment-button"
-                height="48"
-                color="#21A0A0"
-                @click="goForPayment"
-                :loading="loadingBtn"
-              >
+              <v-btn block class="white--text font-weight-bold payment-button" height="48" color="#21A0A0"
+                @click="goForPayment" :loading="loadingBtn">
                 <p class="mt-2 payment-p">PAYMENT</p>
               </v-btn>
             </v-col>
           </v-row>
           <v-row class="mt-3 px-6 pb-1">
-            <v-col :cols="
-              (!pos_profile.custom_allow_pre_invoice_print && !pos_profile.custom_allow_kot_print) ? 12 :
+            <v-col :cols="(!pos_profile.custom_allow_pre_invoice_print && !pos_profile.custom_allow_kot_print) ? 12 :
               (pos_profile.custom_allow_pre_invoice_print !== pos_profile.custom_allow_kot_print) ? 6 : 4
-            ">
-              <v-btn
-                block
-                class="white--text font-weight-bold payment-button"
-                height="48"
-                color="#21A0A0"
-                @click="holdOrder()"
-                :loading="loadingBtn"
-              >
+              ">
+              <v-btn block class="white--text font-weight-bold payment-button" height="48" color="#21A0A0"
+                @click="holdOrder()" :loading="loadingBtn">
                 <p class="mt-2 payment-p">Hold</p>
               </v-btn>
             </v-col>
-            <v-col v-if="pos_profile.custom_allow_pre_invoice_print" :cols="(pos_profile.custom_allow_kot_print) ? 4 : 6">
-              <v-btn
-                block
-                class="white--text font-weight-bold payment-button"
-                height="48"
-                color="#F05D23"
-                @click="createPreInvoice()"
-                :disabled="screen != 0"
-              >
+            <v-col v-if="pos_profile.custom_allow_pre_invoice_print"
+              :cols="(pos_profile.custom_allow_kot_print) ? 4 : 6">
+              <v-btn block class="white--text font-weight-bold payment-button" height="48" color="#F05D23"
+                @click="createPreInvoice()" :disabled="screen != 0">
                 <p class="mt-2 print-p">Pre Invoice</p>
               </v-btn>
             </v-col>
-            <v-col v-if="pos_profile.custom_allow_kot_print" :cols="(pos_profile.custom_allow_pre_invoice_print) ? 4 : 6">
-              <v-btn
-                block
-                :class="{ 'printer-btn-disabled': printerDisabled[printer] }"
-                color="#F05D23"
+            <v-col v-if="pos_profile.custom_allow_kot_print"
+              :cols="(pos_profile.custom_allow_pre_invoice_print) ? 4 : 6">
+              <v-btn block :class="{ 'printer-btn-disabled': printerDisabled[printer] }" color="#F05D23"
                 @click="pos_profile.custom_allow_kot_multiple_prints == 1 ? openPrinterDialog() : generateKotPrint()"
-                :disabled="screen != 0"
-              >
+                :disabled="screen != 0">
                 <p class="mt-2 print-p">KOT Print</p>
               </v-btn>
             </v-col>
@@ -472,12 +430,8 @@
         <v-card-text>
           <v-row>
             <v-col cols="6" v-for="printer in availablePrinters" :key="printer">
-              <v-btn
-                block
-                :class="{ 'printer-btn-disabled': printerDisabled[printer] }"
-                color="#21A0A0"
-                @click="printerDisabled[printer] ? showAlreadyPrintedMessage() : handlePrinterSelect(printer)"
-              >
+              <v-btn block :class="{ 'printer-btn-disabled': printerDisabled[printer] }" color="#21A0A0"
+                @click="printerDisabled[printer] ? showAlreadyPrintedMessage() : handlePrinterSelect(printer)">
                 {{ printerLabels[printer] }}
               </v-btn>
             </v-col>
@@ -537,8 +491,6 @@ const selectedCustomer = ref('');
 const customers = ref([
   // Example customer list
   // { text: "John Doe", value: 1 },
-  // { text: "Jane Smith", value: 2 },
-  // { text: "Alice Johnson", value: 3 },
 ]);
 const showDialog = ref(false); // Control the dialog visibility
 const isFormValid = ref(false); // Form validation state
@@ -634,6 +586,9 @@ const returnitems = ref([
 
 const totalQuantity = computed(() => {
   return items.value.reduce((acc, item) => acc + item.qty, 0);
+});
+const totalDiscount = computed(() => {
+  return items.value.reduce((acc, item) => acc + (item.discount_amount || 0), 0);
 });
 const totalItems = computed(() => items.value.length);
 
@@ -855,7 +810,7 @@ function filterNonJuiceBeverageBundleItems(bundle) {
   if (!bundle || !Array.isArray(bundle.items)) return [];
   // define your desired order of item groups
   const groupOrder = ["starter", "main course", "desert"];
-  
+
   //////////////Filter out unwanted item groups
   let filterItems = bundle.items.filter(sub => {
     const subGroup = (sub.custom_item_group || '').toLowerCase();
@@ -881,7 +836,7 @@ function filterNonJuiceBeverageBundleItems(bundle) {
     return groupA.localeCompare(groupB);
   });
 
-return filterItems;
+  return filterItems;
 }
 
 const generateKotPrint = async (printerArg = null) => {
@@ -1043,11 +998,11 @@ const generateKotPrint = async (printerArg = null) => {
       finalQty = item.qty - printedQty;
     }
 
-let filteredBundle = item.product_bundle
+    let filteredBundle = item.product_bundle
       ? {
-          ...item.product_bundle,
-          items: filterNonJuiceBeverageBundleItems(item.product_bundle)
-        }
+        ...item.product_bundle,
+        items: filterNonJuiceBeverageBundleItems(item.product_bundle)
+      }
       : undefined;
     return {
       ...item,
@@ -1061,7 +1016,7 @@ let filteredBundle = item.product_bundle
 
 
 
-    const groupedItems = [...doc.kot_items].sort((a, b) => {
+  const groupedItems = [...doc.kot_items].sort((a, b) => {
     const groupA = (a.item_group || "").trim().toLowerCase();
     const groupB = (b.item_group || "").trim().toLowerCase();
 
@@ -1118,20 +1073,20 @@ const createPreInvoice = async () => {
 
   // Constructing cart items
   doc.cart_items = items.value.map(item => ({
-    item_name:!item.bundle_doc ? item.item_name
-    : !item.bundle_doc.items
-      ? item.bundle_doc.item_name
-      : item.bundle_doc.items.length === 0
-        ? item.item_name
-        : item.bundle_doc.custom_parent_item_name,
+    item_name: !item.bundle_doc ? item.item_name
+      : !item.bundle_doc.items
+        ? item.bundle_doc.item_name
+        : item.bundle_doc.items.length === 0
+          ? item.item_name
+          : item.bundle_doc.custom_parent_item_name,
     qty: item.qty,
     rate: item.rate,
     item_group: !item.bundle_doc ? item.item_group
-    : !item.bundle_doc.items
-      ? item.bundle_doc.item_group
+      : !item.bundle_doc.items
+        ? item.bundle_doc.item_group
         : item.bundle_doc.items.length === 0
           ? item.item_group
-            : item.bundle_doc.items[0]?.custom_item_group || item.item_group || item.custom_item_group,
+          : item.bundle_doc.items[0]?.custom_item_group || item.item_group || item.custom_item_group,
     amount: item.rate * item.qty,
     bundle_items: (item.bundle_doc?.items || []).map(bundleItem => ({
       item_name: bundleItem.custom_item_name,
@@ -1521,12 +1476,12 @@ const get_invoice_doc = () => {
   doc.exchangeItem = exchangeItem.value
   doc.returnDoc = returnDoc.value
   doc.cover = cover.value; // Add cover to invoice_doc
-  
+
   // Add token number if it was generated during KOT printing
   if (invoice_doc.value?.custom_token_number) {
     doc.custom_token_number = invoice_doc.value.custom_token_number;
   }
-  
+
   return doc;
 };
 const get_payments = () => {
@@ -1646,64 +1601,6 @@ const update_invoice = (doc, key, print) => {
       });
   }
 };
-const checkInternetSpeed = async (threshold = 2) => {
-  const imageAddr =
-    "https://upload.wikimedia.org/wikipedia/commons/a/a6/Brandenburger_Tor_abends.jpg"; // Test image URL
-  const downloadSize = 2707459; // File size in bytes
-
-  try {
-    const download = new Image();
-    const startTime = new Date().getTime();
-
-    // Start downloading the test image
-    const cacheBuster = `?cacheBuster=${startTime}`;
-    download.src = imageAddr + cacheBuster;
-
-    return new Promise((resolve, reject) => {
-      download.onload = () => {
-        const endTime = new Date().getTime();
-        const duration = (endTime - startTime) / 1000; // Duration in seconds
-
-        const bitsLoaded = downloadSize * 8; // Convert to bits
-        const calculatedSpeedMbps = (
-          bitsLoaded /
-          duration /
-          1024 /
-          1024
-        ).toFixed(2); // Mbps
-
-        speedMbps.value = calculatedSpeedMbps;
-        getSpeedRes.value = false;
-        // if (speedMbps.value > 1) {
-        //   eventBus.emit("sync-offline-invoice");
-        // }
-
-        // Update online status based on threshold
-        // isInternet.value = parseFloat(calculatedSpeedMbps) >= threshold;
-        // if (calculatedSpeedMbps > 2) {
-        //   isInternet.value = true;
-        // } else {
-        //   console.log("offline mode on");
-        //     isInternet.value = false;
-        // }
-
-        console.log(`Internet speed: ${calculatedSpeedMbps} Mbps.`);
-        resolve({
-          speedMbps: calculatedSpeedMbps,
-        });
-      };
-
-      download.onerror = () => {
-        speedMbps.value = null;
-        console.error("Error measuring internet speed.");
-        reject(new Error("Error measuring internet speed."));
-      };
-    });
-  } catch (error) {
-    console.error("Error checking internet speed:", error);
-    throw error;
-  }
-};
 const makePayloadForInvoice = () => {
   invoiceItems.value = [];
 
@@ -1732,7 +1629,7 @@ const makePayloadForInvoice = () => {
       custom_is_complimentary_item: item.custom_is_complimentary_item,
       complementryLoopyItem: item.complementryLoopyItem,
       custom_is_loopy_complimentary_item: item.custom_is_loopy_complimentary_item,
-      posa_notes:item.comment,
+      posa_notes: item.comment,
       product_bundle: item.product_bundle,
       original_rate: item.original_rate,
       // net_amount: taxIncludeNetamount,
@@ -1764,7 +1661,7 @@ const requestDeleteItem = (index) => {
   }
 };
 const deleteItem = (index) => {
-  console.log('Selected Table:',selectedTable.value)
+  console.log('Selected Table:', selectedTable.value)
   console.log('Before delete:', items.value.map(i => i.item_name));
   items.value.splice(index, 1);
   console.log('After delete:', items.value.map(i => i.item_name));
@@ -1889,13 +1786,7 @@ const createSaleOrder = async (order) => {
   // }
 };
 onMounted(() => {
-  // checkInternetSpeed();
-  // // intervalId = setInterval(() => {
-  // //   if (navigator.onLine && !getSpeedRes.value) {
-  // //     getSpeedRes.value = true;
-  // //     checkInternetSpeed();
-  // //   }
-  // // }, 8000);
+
 
   if (!navigator.onLine) {
     offlineProfileData();
@@ -1934,6 +1825,7 @@ onMounted(() => {
   });
 
   eventBus.on("add-to-cart", (data) => {
+    console.log("Adding to cart:", data);
     data.rate = data.custom_discounted_rate > 0 ? data.custom_discounted_rate : data.rate
     data.netTotal = 0;
     data.netTotal = data.rate * data.qty;
@@ -2073,46 +1965,9 @@ function showAlreadyPrintedMessage() {
     color: 'error',
   });
 }
-// Add a display function for customer name/number
-const customerDisplay = (item) => {
-  if (!item) return '';
-  let name = item.customer_name || '';
-  let number = item.mobile_no || '';
-  if (name && number) return `${name} / ${number}`;
-  if (name) return name;
-  if (number) return number;
-  return '';
-};
-// Custom filter for searching by name or number
-const customerFilter = (item, queryText, itemText) => {
-  const search = (queryText || '').toLowerCase();
-  // Vuetify 3: itemText is an object with a 'title' property
-  let displayText = '';
-  if (typeof itemText === 'string') {
-    displayText = itemText;
-  } else if (itemText && typeof itemText === 'object' && 'title' in itemText) {
-    displayText = itemText.title;
-  }
-  if ((displayText || '').toLowerCase().includes(search)) {
-    return true;
-  }
-  // Also match against raw fields
-  const name = (item.customer_name || '').toLowerCase();
-  const number = (item.mobile_no || '').toLowerCase();
-  const id = (item.name || '').toLowerCase();
-  const result = name.includes(search) || number.includes(search) || id.includes(search);
-  return result;
-};
-// Add logic to auto-select by phone number
-const onCustomerSearchInput = (search) => {
-  if (!search) return;
-  const match = customers.value.find(
-    c => c.mobile_no && c.mobile_no.toLowerCase() === search.toLowerCase()
-  );
-  if (match) {
-    selectedCustomer.value = match.name;
-  }
-};
+
+
+
 </script>
 
 <style scoped>

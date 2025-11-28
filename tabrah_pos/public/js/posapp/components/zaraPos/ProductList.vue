@@ -47,7 +47,7 @@
               <div style="width: 180px; word-wrap: break-word;">
                 <v-card-title class="item-name py-0 mt-3" style="white-space: normal; word-break: break-word;">
                   {{
-                  product.item_name
+                    product.item_name
                   }}</v-card-title>
                 <v-tooltip activator="parent" location="top">{{
                   product.item_name
@@ -56,8 +56,8 @@
                 <v-card-subtitle v-if="product.custom_discounted_rate > 0" class="actual-item-price mb-2"
                   style=" text-decoration: line-through!important;color: grey;font-size: 0.9em;margin-right: 5px;">Rs.{{
                     formatNumber(product.rate) }}</v-card-subtitle>
-                <v-card-subtitle class="item-price mb-2" v-else>QAR.{{ formatNumber(product.rate) }}</v-card-subtitle>
-                <v-card-subtitle class="item-price mb-2" v-show="product.custom_discounted_rate > 0">QAR.{{
+                <v-card-subtitle class="item-price mb-2" v-else>Rs.{{ formatNumber(product.rate) }}</v-card-subtitle>
+                <v-card-subtitle class="item-price mb-2" v-show="product.custom_discounted_rate > 0">Rs.{{
                   formatNumber(product.custom_discounted_rate) }}</v-card-subtitle>
 
               </div>
@@ -153,7 +153,7 @@ const categories = ref([]);
 const pos_profile = ref("");
 const selectedCategory = ref("");
 const searchValue = ref("");
-const defaultImg = computed(() => `/assets/tabrah_pos/js/posapp/components/pos/${pos_profile.value.company}.png`);
+const defaultImg = computed(() => `/assets/tabrah_pos/js/posapp/components/pos/defaultProduct.png`);
 const orderType = ref("");
 const searchItemCode = ref("");
 
@@ -1194,7 +1194,7 @@ onUnmounted(() => {
   border-top-left-radius: 13px !important;
   border-top-right-radius: 13px !important;
   width: 350px;
-  height: 140px;
+  height: 170px;
 }
 
 .item-name {

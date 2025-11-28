@@ -1,29 +1,49 @@
 <template>
   <v-row class="pt-0 px-2">
     <v-col cols="12" md="8">
-      <v-card elevation="1" class="border-16 title-card d-flex">
-        <img :src="`/assets/tabrah_pos/js/posapp/components/pos/${pos_profile.company}.png`" alt="" class="ml-5"
-          style="max-width: 235px;height: 75px;" />
-        <v-spacer></v-spacer>
-        <v-spacer></v-spacer>
-        <div class="">
-          <v-select v-model="selectedOrderType" :items="orderTypes" label="Order Type" class="order-type-select mr-3"
-            density="compact" variant="outlined" item-title="order_type" :disabled="currentScreen !== 0" />
-        </div>
-        <div class="">
-          <v-select v-model="orderBy" :items="employeesList" label="Order By" class="order-type-select mr-3"
-            density="compact" variant="outlined" item-title="employee_name" item-value="employee" />
-        </div>
-        <div class="">
-          <v-select v-if="pos_profile.allow_table_no" v-model="selectedTable" :items="tableOptions" label="Select table" class="order-type-select mr-3"
-            density="compact" variant="outlined" item-title="table_no" item-value="table_no" />
-        </div>
-        <div class="search-div ">
-          <v-text-field variant="outlined" append-inner-icon="mdi-magnify" placeholder="Find your item"
-            class="mt-1 mr-4" density="compact" style="height: 83px; border-radius: 6px" v-model="searchItem"
-            clearable />
-        </div>
+      <v-card elevation="1" class="d-flex align-center px-4"
+        style="max-height: 88px; height: 88px; border-radius: 10px;">
+        <!-- Left: Logo -->
+        <v-img :src="`/assets/tabrah_pos/js/posapp/components/pos/newaone.png`" max-height="270" contain class="mr-6"
+          style="position: relative; right: 110px; 
+
+" />
+
+        <v-spacer />
+
+        <!-- Right: Search Input -->
+        <v-text-field v-model="searchItem" variant="outlined" density="comfortable" placeholder="Search items..."
+          append-inner-icon="mdi-magnify" hide-details style="max-width: 320px;" />
       </v-card>
+
+      <!-- <v-card elevation="1" class="border-16 title-card d-flex">
+        <img :src="`/assets/tabrah_pos/js/posapp/components/pos/Aone.png`" alt="" class="ml-5"
+          style="max-width: 235px" height="175px"/>
+        <v-spacer></v-spacer>
+        <div class="search-div">
+          <v-select
+            v-model="selectedOrderType"
+            :items="orderTypes"
+            label="Order Type"
+            class="order-type-select"
+            density="compact"
+            variant="outlined"
+            item-title="order_type"
+            :disabled="currentScreen !== 0"
+          />
+        </div>
+        <div class="search-div">
+          <v-text-field
+            variant="outlined"
+            append-inner-icon="mdi-magnify"
+            placeholder="Find Your Item"
+            class="mt-1 mr-4"
+            density="compact"
+            style="height: 83px; border-radius: 6px"
+            v-model="searchValue"
+          />
+        </div>
+      </v-card> -->
     </v-col>
 
     <v-col cols="12" md="4" class="p-4">
@@ -228,6 +248,7 @@ onBeforeUnmount(() => {
   padding: 9px 0px 9px 0px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
   border-radius: 12px;
+  height: 88px;
 }
 
 .search-div {
