@@ -2127,7 +2127,7 @@ const openOffersDialog = async () => {
 
 
 function applyDiscount() {
-  // baseline (once per invoice)
+  // 1) Ensure baseline snapshot (pre-discount totals)
   if (!invoice_doc.value.original_values) {
     invoice_doc.value.original_values = {
       net_total: Number(invoice_doc.value.net_total) || 0,
@@ -2137,45 +2137,35 @@ function applyDiscount() {
   }
   const { net_total, grand_total, total_taxes_and_charges } = invoice_doc.value.original_values;
 
-  // choose ONE source: offer > manual (manual capped)
-  const maxAllowed = Number(pos_profile.value.posa_max_discount_allowed) || 0;
-  const manualPct = Math.min(Number(discount.value) || 0, maxAllowed);
+  // 2) Effective discount = offer OR manual (not both)
   const offerPct  = selectedOffer.value ? Number(selectedOffer.value.discount_percentage) || 0 : 0;
+  const manualCap = Number(pos_profile.value.posa_max_discount_allowed) || 0;
+  const manualPct = Math.min(Number(discount.value) || 0, manualCap);
+  const pct       = offerPct || manualPct;
 
-  // effective % = offer if present, else manual
-  const pct = offerPct > 0 ? offerPct : manualPct;
+  const factor   = 1 - pct / 100;
+  const newNet   = +(net_total * factor).toFixed(2);
+  const newTaxes = +(total_taxes_and_charges * factor).toFixed(2);
+  const newGrand = +(grand_total * factor).toFixed(2);
 
-  // recompute
-  const newNet   = +(net_total * (1 - pct / 100)).toFixed(2);
-  const newTaxes = +(total_taxes_and_charges * (1 - pct / 100)).toFixed(2);
-  const newGrand = +(grand_total * (1 - pct / 100)).toFixed(2);
-  const discAmt  = +(grand_total * (pct / 100)).toFixed(2);
-
-  invoice_doc.value.net_total = newNet;
+  invoice_doc.value.net_total               = newNet;
   invoice_doc.value.total_taxes_and_charges = newTaxes;
-  invoice_doc.value.grand_total = newGrand;
-  invoice_doc.value.discount_amount = discAmt;
+  invoice_doc.value.grand_total             = newGrand;
+  invoice_doc.value.discount_amount         = +(grand_total - newGrand).toFixed(2);
+  invoice_doc.value.addition_discount       = offerPct || null; // store offer %
+  invoice_doc.value.manual_discount         = offerPct ? 0 : manualPct; // store manual %
 
-  // annotate (for debugging/audits)
-  invoice_doc.value.addition_discount = offerPct || null; // store offer % if any
-  invoice_doc.value.manual_discount   = offerPct ? 0 : manualPct; // zero if offer is used
-
-  // keep paid input in sync
-  const tipAmt = Number(invoice_doc.value.tip_amount) || 0;
+  // 3) Always sync Paid Amount to the **new due** (grand_total + tip) for ALL methods
   if (!splitPayment.value) {
-    // if card is selected, lock to due (grand + tip); else keep current manual amount
-    if (paymentType.value?.mode_of_payment === "Credit Card") {
-      const due = Number(newGrand) + tipAmt;
-      amountTake.value = due;
-      const active = paymentModes.value.find(m => m.selected);
-      if (active) active.amount = due;
-    } else {
-      const active = paymentModes.value.find(m => m.selected);
-      if (active) active.amount = Number(amountTake.value) || 0;
-    }
+    const newDue = dueAmountWithTip(); // grand_total already discounted; this adds tip
+    amountTake.value = newDue;
+
+    // Set the selected payment mode's amount
+    const active = paymentModes.value.find(m => m.selected);
+    if (active) active.amount = newDue;
   }
 
-  // recompute remaining/change
+  // 4) Recompute remaining/change against the new totals
   recalcBalances();
 }
 
