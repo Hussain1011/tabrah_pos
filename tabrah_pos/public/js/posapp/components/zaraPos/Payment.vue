@@ -2176,7 +2176,7 @@ watch([discount, selectedOffer], () => {
 const applyOffer = (offer) => {
   selectedOffer.value = offer;
   discountSource.value = "offer";
-  discount.value = offer.discount_percentage;
+  // discount.value = offer.discount_percentage;
   invoice_doc.value.addition_discount = offer.discount_percentage;
   invoice_doc.value.custom_discount_offer = offer.name;
   showOffersDialog.value = false;
