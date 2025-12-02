@@ -108,6 +108,9 @@ function formatKotForEscPos(kotData) {
     const BOLD_OFF = ESC + 'E' + '\x00';
     const SIZE_NORMAL = GS + '!' + '\x00';
     const SIZE_2X = GS + '!' + '\x11'; // 2x width, 2x height
+
+    const COLS_NORMAL = 32; //58mm typical
+    const COLS_BIG = 16; //2x width halves columns
     const SIZE_4X = GS + '!' + '\x33'; // 4x width, 4x height (if supported)
     const ESC_DOUBLE_WH = ESC + '!' + '\x38'; // ESC ! with double width & height
     const NORMAL = ESC + '!' + '\x00';
@@ -122,6 +125,15 @@ function formatKotForEscPos(kotData) {
 
     let commands = [];
     commands.push(INIT);
+
+    // force standard mode + no left margin + no extra char spacing
+    const STD_MODE          = ESC + 'S';
+    const LEFT_MARGIN_ZERO  = GS + 'L' + '\x00' + '\x00';  // GS L nL nH
+    const CHAR_SPACING_0    = ESC + ' ' + '\x00';          // ESC SP n
+
+    commands.push(STD_MODE);
+    commands.push(LEFT_MARGIN_ZERO);
+    commands.push(CHAR_SPACING_0);
 
     // Removed device-specific width command which can affect centering
     // commands.push(ESC + 'C' + '\x24');
@@ -186,38 +198,41 @@ function formatKotForEscPos(kotData) {
 
     // Items
     kotData.items.forEach(item => {
-        let itemName = item.item_name || 'N/A';
-        let qty = item.qty || 0;
-
-        const nameWidth = isBigCompany ? 16 : 30;
-        const qtyWidth = 3;
-        
-        itemName = itemName.padEnd(nameWidth).substring(0, nameWidth);
-        let qtyStr = String(qty).padStart(qtyWidth);
-        
-        if(isBigCompany) {
-        commands.push(SIZE_2X, itemName + LF, SIZE_NORMAL);
-        commands.push(' '.repeat(Math.max(0, nameWidth - qtyWidth)) + qtyStr + LF);
-        }   else{
-            commands.push(itemName + qtyStr + LF);
+        const name = item.item_name || 'N/A';
+        const qty  = item.qty || 0;
+      
+        if (kotData.company === "Neighborhood") {
+          // BIG item name – wrap to 16 cols
+          const lines = wrapWords(name, COLS_BIG);
+          commands.push(SIZE_2X);
+          lines.forEach(l => commands.push(l + LF));
+          commands.push(SIZE_NORMAL);
+      
+          // QTY on its own right-aligned normal line
+          const q = String(qty);
+          const pad = Math.max(0, COLS_NORMAL - q.length);
+          commands.push(' '.repeat(pad) + q + LF);
+        } else {
+          // Normal single line: 30 + 2/3 cols
+          const itemName = name.padEnd(30).substring(0, 30);
+          const qtyStr   = String(qty).padStart(3);
+          commands.push(itemName + qtyStr + LF);
         }
-
-        // Bundle items
+      
+        // Bundle items (normal size)
         if (item.product_bundle?.items?.length > 0) {
-            item.product_bundle.items.forEach(bundleItem => {
-                let bundleName = '  - ' + (bundleItem.custom_item_name || 'N/A');
-                bundleName = bundleName.padEnd(30).substring(0, 30);
-                commands.push(bundleName + '  1' + LF);
-            });
+          item.product_bundle.items.forEach(bi => {
+            let bname = '  - ' + (bi.custom_item_name || 'N/A');
+            bname = bname.padEnd(30).substring(0, 30);
+            commands.push(bname + '  1' + LF);
+          });
         }
-
-        // Item comment
-        if (item.comment) {
-            commands.push('Note: ' + item.comment + LF);
-        }
-
+      
+        // Item note (normal size)
+        if (item.comment) commands.push('Note: ' + item.comment + LF);
+      
         commands.push('--------------------------------' + LF);
-    });
+      });
 
     // Footer
     commands.push(CENTER);
@@ -232,6 +247,19 @@ function formatKotForEscPos(kotData) {
     return commands;
 }
 
+function wrapWords(str, width) {
+    const words = String(str || '').split(/\s+/).filter(Boolean);
+    const out = [];
+    let line = '';
+    for (const w of words) {
+      const candidate = line ? line + ' ' + w : w;
+      if (candidate.length <= width) line = candidate;
+      else { if (line) out.push(line); line = w; }
+    }
+    if (line) out.push(line);
+    return out;
+  }
+  
 function formatPaymentReceiptForEscPos(doc) {
     // ESC/POS Commands
     const ESC = '\x1B';
