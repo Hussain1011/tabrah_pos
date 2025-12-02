@@ -284,19 +284,64 @@ export async function printPreInvoice(offlineData) {
         newWindow.document.close();
 
         // Add event listener for after printing
-        newWindow.onafterprint = () => {
-            newWindow.close();
+        // newWindow.onafterprint = () => {
+        //     newWindow.close();
+        // };
+
+        // // Open the print dialog
+        // newWindow.print();
+
+        // // Fallback for browsers that don't support onafterprint
+        // newWindow.addEventListener("focus", () => {
+        //     setTimeout(() => {
+        //         newWindow.close();
+        //     }, 500); // Adjust delay if necessary
+        // });
+
+        // Wait for all images in the new window to load, then print
+    function waitForImages(win, timeout = 4000) {
+        return new Promise((resolve) => {
+        const imgs = Array.from(win.document.images || []);
+        const pending = imgs.filter(img => !img.complete);
+    
+        if (pending.length === 0) {
+            // ensure layout has settled
+            win.requestAnimationFrame ? win.requestAnimationFrame(() => resolve()) : resolve();
+            return;
+        }
+    
+        let done = 0;
+        const onDone = () => {
+            done += 1;
+            if (done >= pending.length) resolve();
         };
-
-        // Open the print dialog
-        newWindow.print();
-
-        // Fallback for browsers that don't support onafterprint
-        newWindow.addEventListener("focus", () => {
-            setTimeout(() => {
-                newWindow.close();
-            }, 500); // Adjust delay if necessary
+    
+        pending.forEach(img => {
+            img.addEventListener('load', onDone, { once: true });
+            img.addEventListener('error', onDone, { once: true });
         });
+    
+        // safety net: don't wait forever
+        setTimeout(resolve, timeout);
+        });
+    }
+    
+    newWindow.onafterprint = () => { try { newWindow.close(); } catch(e){} };
+    
+    function triggerPrint(win){
+        setTimeout(() => {
+        try { win.focus(); } catch(e){}
+        try { win.print(); } catch(e){}
+        }, 150); // small delay to settle layout
+    }
+    
+    await waitForImages(newWindow, 4000);
+    triggerPrint(newWindow);
+    
+    // Fallback close if onafterprint doesn't fire (some browsers)
+    newWindow.addEventListener("focus", () => {
+        setTimeout(() => { try { newWindow.close(); } catch(e){} }, 600);
+    });
     } catch (error) {
         console.error("Error printing invoice:", error);
     }
