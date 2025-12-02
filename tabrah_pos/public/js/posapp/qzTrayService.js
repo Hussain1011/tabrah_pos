@@ -106,8 +106,6 @@ function formatKotForEscPos(kotData) {
     const LEFT = ESC + 'a' + '\x00';
     const BOLD_ON = ESC + 'E' + '\x01';
     const BOLD_OFF = ESC + 'E' + '\x00';
-    const SIZE_NORMAL = GS + '!' + '\x00';
-    const SIZE_2X = GS + '!' + '\x11'; // 2x width, 2x height
 
     const COLS_NORMAL = 32; //58mm typical
     const COLS_BIG = 16; //2x width halves columns
@@ -117,6 +115,11 @@ function formatKotForEscPos(kotData) {
     const INIT = ESC + '@';
     const CUT = ESC + 'm';
     const FEED = ESC + 'd' + '\x03';
+    const SIZE_NORMAL = GS + '!' + '\x00';
+    const SIZE_TALL   = GS + '!' + '\x01';   // 2x height, normal width  (← “a bit big”)
+    const SIZE_2X     = GS + '!' + '\x11';   // 2x width+height (keep for token if you want)
+
+    const CUT_PARTIAL = GS + 'V' + '\x01';
 
     const isBigCompany = (kotData.company === "Neighborhood");
 
@@ -128,12 +131,10 @@ function formatKotForEscPos(kotData) {
 
     // force standard mode + no left margin + no extra char spacing
     const STD_MODE          = ESC + 'S';
-    const LEFT_MARGIN_ZERO  = GS + 'L' + '\x00' + '\x00';  // GS L nL nH
-    const CHAR_SPACING_0    = ESC + ' ' + '\x00';          // ESC SP n
+    const LEFT_MARGIN_ZERO  = GS + 'L' + '\x00' + '\x00';      // GS L nL nH
+    const CHAR_SPACING_0    = ESC + ' ' + '\x00';              // ESC SP n
+    const PRINT_AREA_FULL   = GS + 'W' + '\x80' + '\x01';      // 384 dots (58mm)
 
-    commands.push(STD_MODE);
-    commands.push(LEFT_MARGIN_ZERO);
-    commands.push(CHAR_SPACING_0);
 
     // Removed device-specific width command which can affect centering
     // commands.push(ESC + 'C' + '\x24');
@@ -201,38 +202,46 @@ function formatKotForEscPos(kotData) {
         const name = item.item_name || 'N/A';
         const qty  = item.qty || 0;
       
-        if (kotData.company === "Neighborhood") {
-          // BIG item name – wrap to 16 cols
-          const lines = wrapWords(name, COLS_BIG);
-          commands.push(SIZE_2X);
-          lines.forEach(l => commands.push(l + LF));
-          commands.push(SIZE_NORMAL);
+        const isBigCompany = kotData.company === "Run of the Mill";
       
-          // QTY on its own right-aligned normal line
-          const q = String(qty);
-          const pad = Math.max(0, COLS_NORMAL - q.length);
-          commands.push(' '.repeat(pad) + q + LF);
+        if (isBigCompany) {
+          // Double-height only → width stays 32 cols, so we can keep QTY on the same line.
+          const NAME_COLS = 28;              // leave space for 3-digit qty + 1 space
+          const lines = wrapWords(name, NAME_COLS);
+      
+          commands.push(SIZE_TALL, BOLD_ON);
+          lines.forEach((ln, idx) => {
+            const last = idx === lines.length - 1;
+            if (last) {
+              const left  = padRight(ln, NAME_COLS);
+              const right = padLeft(qty, 3);
+              commands.push(left + ' ' + right + LF);
+            } else {
+              commands.push(ln + LF);
+            }
+          });
+          commands.push(BOLD_OFF, SIZE_NORMAL);
         } else {
-          // Normal single line: 30 + 2/3 cols
-          const itemName = name.padEnd(30).substring(0, 30);
-          const qtyStr   = String(qty).padStart(3);
-          commands.push(itemName + qtyStr + LF);
+          // Normal size, single line: 30 + 2/3 cols for qty
+          const nm = padRight(name, 30);
+          const q  = padLeft(qty, 3);
+          commands.push(nm + q + LF);
         }
       
         // Bundle items (normal size)
         if (item.product_bundle?.items?.length > 0) {
           item.product_bundle.items.forEach(bi => {
-            let bname = '  - ' + (bi.custom_item_name || 'N/A');
-            bname = bname.padEnd(30).substring(0, 30);
-            commands.push(bname + '  1' + LF);
+            const bn = padRight('  - ' + (bi.custom_item_name || 'N/A'), 30);
+            commands.push(bn + '  1' + LF);
           });
         }
       
-        // Item note (normal size)
+        // Note
         if (item.comment) commands.push('Note: ' + item.comment + LF);
       
         commands.push('--------------------------------' + LF);
       });
+      
 
     // Footer
     commands.push(CENTER);
@@ -247,18 +256,21 @@ function formatKotForEscPos(kotData) {
     return commands;
 }
 
+const COLS_NORMAL = 32;     // 58mm typical
 function wrapWords(str, width) {
-    const words = String(str || '').split(/\s+/).filter(Boolean);
-    const out = [];
-    let line = '';
-    for (const w of words) {
-      const candidate = line ? line + ' ' + w : w;
-      if (candidate.length <= width) line = candidate;
-      else { if (line) out.push(line); line = w; }
-    }
-    if (line) out.push(line);
-    return out;
+  const words = String(str || '').split(/\s+/).filter(Boolean);
+  const out = []; let line = '';
+  for (const w of words) {
+    const cand = line ? line + ' ' + w : w;
+    if (cand.length <= width) line = cand;
+    else { if (line) out.push(line); line = w; }
   }
+  if (line) out.push(line);
+  return out;
+}
+function padRight(s, w){ s=String(s); return s.length>=w? s.slice(0,w) : s+' '.repeat(w-s.length); }
+function padLeft(s, w){ s=String(s); return s.length>=w? s.slice(-w) : ' '.repeat(w-s.length)+s; }
+
   
 function formatPaymentReceiptForEscPos(doc) {
     // ESC/POS Commands

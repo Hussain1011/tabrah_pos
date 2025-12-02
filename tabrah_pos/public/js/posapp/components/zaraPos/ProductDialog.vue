@@ -199,9 +199,9 @@ import eventBus from "../../bus";
         // Always sync complementary state before emitting
         selectedProduct.value.complementryItem = Boolean(complementaryItem.value);
         selectedProduct.value.custom_is_complimentary_item = Boolean(complementaryItem.value);
-        
+        if(complementaryItem.value)  {
         selectedProduct.value.rate = 0;
-
+        }
         // Do NOT reset rate to original_rate if not complementary; preserve manual edits
         if (!updateQty.value) {
           eventBus.emit("add-to-cart", selectedProduct.value);
