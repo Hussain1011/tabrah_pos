@@ -25,7 +25,7 @@ def validate(doc, method):
 
 def before_submit(doc, method):
     for d in doc.items:
-        if d.custom_is_complimentary_item == 1 or d.custom_is_loopy_complimentary_item == 1:
+        if d.custom_is_complimentary_item == 1:
            
             # prevent pricing rules from reapplying rates
             doc.flags.ignore_pricing_rule = True

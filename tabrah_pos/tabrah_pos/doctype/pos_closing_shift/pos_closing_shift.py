@@ -51,10 +51,10 @@ class POSClosingShift(Document):
         self.cost_center = frappe.db.get_value("POS Profile", self.pos_profile, "write_off_cost_center")
         self.update_payment_reconciliation()
 
-        opening_entry = frappe.get_doc("POS Opening Shift", self.pos_opening_shift)
-        opening_entry.pos_closing_shift = self.name
-        opening_entry.set_status()
-        opening_entry.save()
+        # opening_entry = frappe.get_doc("POS Opening Shift", self.pos_opening_shift)
+        # opening_entry.pos_closing_shift = self.name
+        # opening_entry.set_status()
+        # opening_entry.save()
 
     def validate_difference(self):
         self.difference = 0
@@ -99,7 +99,12 @@ class POSClosingShift(Document):
 
     def on_submit(self):
         self.post_difference_entry()
+
+        opening_entry = frappe.get_doc("POS Opening Shift", self.pos_opening_shift)
+        opening_entry.pos_closing_shift = self.name
+        opening_entry.set_status()
         self.delete_draft_invoices()
+        opening_entry.save()
 
     def post_difference_entry(self):
             if self.difference: 
@@ -346,7 +351,7 @@ def submit_closing_shift(closing_shift):
     closing_shift_doc = frappe.get_doc(closing_shift)
     closing_shift_doc.flags.ignore_permissions = True
     closing_shift_doc.save()
-    # closing_shift_doc.submit()
+    closing_shift_doc.submit()
     return closing_shift_doc.name
 
 

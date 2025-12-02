@@ -988,7 +988,7 @@ const generateKotPrint = async (printerArg = null) => {
         timestamp: new Date().toISOString(),
       };
     });
-
+    
     holdOrder(printedItems);
     printKot(printDoc);
     return;

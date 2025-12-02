@@ -56,7 +56,7 @@ export async function printKotWithQZTray(printerConfig, kotContent) {
         });
 
         // Format content for ESC/POS printing
-        console.log('kotContent', kotContent);
+
         const content = formatKotForEscPos(kotContent);
 
         // Send print job
@@ -115,6 +115,11 @@ function formatKotForEscPos(kotData) {
     const CUT = ESC + 'm';
     const FEED = ESC + 'd' + '\x03';
 
+    const isBigCompany = (kotData.company === "Neighborhood");
+
+    // helper to wrap a line with size change (auto resets)
+    const bigLine = (text) => [SIZE_2X, text + LF, SIZE_NORMAL];
+
     let commands = [];
     commands.push(INIT);
 
@@ -145,9 +150,9 @@ function formatKotForEscPos(kotData) {
         commands.push(NORMAL);
         commands.push('KITCHEN ORDER TICKET' + LF + LF);
     } else {
-        commands.push('KITCHEN ORDER TICKET' + LF + LF);
+        commands.push(BOLD_ON, 'KITCHEN ORDER TICKET' + LF + LF);
     }
-    commands.push(NORMAL);
+    commands.push(BOLD_OFF, SIZE_NORMAL);
 
     // Order Info Section
     commands.push(LEFT);
@@ -183,11 +188,19 @@ function formatKotForEscPos(kotData) {
     kotData.items.forEach(item => {
         let itemName = item.item_name || 'N/A';
         let qty = item.qty || 0;
+
+        const nameWidth = isBigCompany ? 16 : 30;
+        const qtyWidth = 3;
         
-        itemName = itemName.padEnd(30).substring(0, 30);
-        let qtyStr = String(qty).padStart(3);
+        itemName = itemName.padEnd(nameWidth).substring(0, nameWidth);
+        let qtyStr = String(qty).padStart(qtyWidth);
         
-        commands.push(itemName + qtyStr + LF);
+        if(isBigCompany) {
+        commands.push(SIZE_2X, itemName + LF, SIZE_NORMAL);
+        commands.push(' '.repeat(Math.max(0, nameWidth - qtyWidth)) + qtyStr + LF);
+        }   else{
+            commands.push(itemName + qtyStr + LF);
+        }
 
         // Bundle items
         if (item.product_bundle?.items?.length > 0) {
