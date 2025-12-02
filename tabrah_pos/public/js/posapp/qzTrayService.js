@@ -202,7 +202,7 @@ function formatKotForEscPos(kotData) {
         const name = item.item_name || 'N/A';
         const qty  = item.qty || 0;
       
-        const isBigCompany = kotData.company === "Run of the Mill";
+        const isBigCompany = kotData.company === "Neighborhood";
       
         if (isBigCompany) {
           // Double-height only → width stays 32 cols, so we can keep QTY on the same line.
