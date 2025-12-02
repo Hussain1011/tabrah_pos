@@ -56,6 +56,7 @@ export async function printKotWithQZTray(printerConfig, kotContent) {
         });
 
         // Format content for ESC/POS printing
+        console.log('kotContent', kotContent);
         const content = formatKotForEscPos(kotContent);
 
         // Send print job

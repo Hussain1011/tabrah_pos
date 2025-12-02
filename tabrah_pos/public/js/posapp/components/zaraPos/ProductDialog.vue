@@ -115,6 +115,10 @@
                 <v-checkbox v-model="complementaryItem" color="red" label="Complementary Item" @change="handleComplementaryToggle"
                   hide-details></v-checkbox>
               </v-col>
+              <!-- <v-col cols="12" md="12" class="my-0">
+                <v-checkbox v-model="complementaryLoopy" color="red" label="Loyalty Complementary Item" @change="handleLoopyToggle"
+                  hide-details></v-checkbox>
+              </v-col> -->
               <!-- <v-col cols="4" class="text-center">
                 <div class="text-quantity black--text">{{ quantity }}</div>
                 <v-divider
@@ -169,6 +173,7 @@ import eventBus from "../../bus";
     const discount = ref("");
     const pos_profile = ref("");
     const complementaryItem = ref(false);
+    const complementaryLoopy = ref(false);
     const itemComment = ref('')
     const editingIndex = ref(null);
 
@@ -195,7 +200,9 @@ import eventBus from "../../bus";
         // Always sync complementary state before emitting
         selectedProduct.value.complementryItem = Boolean(complementaryItem.value);
         selectedProduct.value.custom_is_complimentary_item = Boolean(complementaryItem.value);
-        if (complementaryItem.value) {
+        selectedProduct.value.complementryLoopyItem = Boolean(complementaryLoopy.value);
+        selectedProduct.value.custom_is_loopy_complimentary_item = Boolean(complementaryLoopy.value);
+        if ((complementaryItem.value) || (complementaryLoopy.value)) {
           selectedProduct.value.rate = 0;
         }
         // Do NOT reset rate to original_rate if not complementary; preserve manual edits
@@ -206,6 +213,7 @@ import eventBus from "../../bus";
           eventBus.emit("exist-item-cart", selectedProduct.value);
         }
         complementaryItem.value = false;
+        complementaryLoopy.value = false;
         dialog.value = false;
         discount.value = "";
         // Only reset rate if complementary is checked, otherwise preserve manual edits
@@ -248,7 +256,7 @@ import eventBus from "../../bus";
         selectedProduct.value.original_rate - discountAmount;
     };
 
-    // Function triggered when checkbox is clicked
+    // Function triggered when checkbox is clicked 
 const handleComplementaryToggle = () => {
   if (complementaryItem.value) {
     // Save original rate if not already saved and not zero
@@ -269,6 +277,29 @@ const handleComplementaryToggle = () => {
     }
     selectedProduct.value.complementryItem = false;
     selectedProduct.value.custom_is_complimentary_item = false;
+  }
+};
+
+const handleLoopyToggle = () => {
+  if (complementaryLoopy.value) {
+    // Save original rate if not already saved and not zero
+    if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
+      if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
+        selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
+      } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
+        selectedProduct.value.original_rate = selectedProduct.value.rate;
+      }
+    }
+    selectedProduct.value.rate = 0;
+    selectedProduct.value.complementryLoopyItem = true;
+    selectedProduct.value.custom_is_loopy_complimentary_item = true;
+  } else {
+    // Only restore rate if original_rate is not zero
+    if (selectedProduct.value.original_rate && selectedProduct.value.original_rate > 0) {
+      selectedProduct.value.rate = selectedProduct.value.original_rate;
+    }
+    selectedProduct.value.complementryLoopyItem = false;
+    selectedProduct.value.custom_is_loopy_complimentary_item = false;
   }
 };
 
@@ -317,6 +348,7 @@ const handleComplementaryToggle = () => {
         selectedProduct.value = JSON.parse(JSON.stringify(data.product));
         itemComment.value = data.product.comment || '';
         complementaryItem.value = Boolean(data.product.complementryItem);
+        complementaryLoopy.value = Boolean(data.product.complementryLoopyItem);
 
         // If not complementary, and original_rate is missing or zero, but rate is also zero, try to recover
         if (!complementaryItem.value) {
@@ -335,6 +367,37 @@ const handleComplementaryToggle = () => {
 
         // If complementary, always set rate to 0, but do not overwrite original_rate if already set and not zero
         if (complementaryItem.value) {
+          if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
+            // Try to recover original_rate from custom_discounted_rate or previous rate
+            if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
+              selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
+            } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
+              selectedProduct.value.original_rate = selectedProduct.value.rate;
+            }
+          }
+          selectedProduct.value.rate = 0;
+        }
+        if (selectedProduct.value) {
+          dialog.value = true;
+        }
+
+/////////////////////Same for Loopy////////////////////////
+        if (!complementaryLoopy.value) {
+          if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
+            // Try to recover from custom_discounted_rate if available and > 0
+            if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {
+              selectedProduct.value.original_rate = selectedProduct.value.custom_discounted_rate;
+              if (selectedProduct.value.rate === 0) {
+                selectedProduct.value.rate = selectedProduct.value.custom_discounted_rate;
+              }
+            } else if (selectedProduct.value.rate && selectedProduct.value.rate > 0) {
+              selectedProduct.value.original_rate = selectedProduct.value.rate;
+            }
+          }
+        }
+
+        // If complementary, always set rate to 0, but do not overwrite original_rate if already set and not zero
+        if (complementaryLoopy.value) {
           if (!selectedProduct.value.original_rate || selectedProduct.value.original_rate === 0) {
             // Try to recover original_rate from custom_discounted_rate or previous rate
             if (selectedProduct.value.custom_discounted_rate && selectedProduct.value.custom_discounted_rate > 0) {

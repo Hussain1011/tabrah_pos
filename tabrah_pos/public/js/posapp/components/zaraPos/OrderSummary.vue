@@ -953,6 +953,33 @@ const generateKotPrint = async (printerArg = null) => {
       doc.custom_token_number = tokenNumber;
     }
 
+
+  const groupOrder = ["hot starters", "cold starters", "sides", "breakfast", "main dishes", "deserts"];
+
+
+
+    const groupedItems = [...doc.items].sort((a, b) => {
+    const groupA = (a.item_group || "").trim().toLowerCase();
+    const groupB = (b.item_group || "").trim().toLowerCase();
+
+    const indexA = groupOrder.indexOf(groupA);
+    const indexB = groupOrder.indexOf(groupB);
+
+    // DEBUG: print comparison values
+
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA === -1 && indexB !== -1) return 1;
+    if (indexA !== -1 && indexB === -1) return -1;
+    return groupA.localeCompare(groupB);
+  });
+
+
+  const printDoc = {
+    ...doc,
+    items: groupedItems,
+    pos_profile: pos_profile.value,
+  };
+
     // Update printed map for network
     itemsToPrint.forEach(item => {
       if (!printedItems[item.item_code]) printedItems[item.item_code] = {};
@@ -963,7 +990,7 @@ const generateKotPrint = async (printerArg = null) => {
     });
 
     holdOrder(printedItems);
-    printKot(doc);
+    printKot(printDoc);
     return;
   }
 

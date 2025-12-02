@@ -133,11 +133,11 @@ const orders = ref([
 
 // dropdown options
 const instructionOptions = ref([
-  "Starters Away",
-  "Breakfast Away",
-  "Main Course Away",
-  "Desert Away",
-  "Sides Away",
+  "Fire Starters",
+  "Fire Breakfast",
+  "Fire Main Course",
+  "Fire Desert",
+  "Fire Sides",
 ]);
 
 // Assuming you already have "orders" array somewhere
