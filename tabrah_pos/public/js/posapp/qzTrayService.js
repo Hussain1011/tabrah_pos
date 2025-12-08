@@ -44,14 +44,19 @@ export async function printKotWithQZTray(printerConfig, kotContent) {
             const connected = await initQZTray();
             if (!connected) throw new Error('QZ Tray not connected');
         }
-
+        
+        let copes = 1;
         // Create printer config
+        if (printerConfig.name == 'GRILL') {
+            copes = 2;
+        }
+
         const config = qz.configs.create({
             ...printerConfig,
             encoding: 'UTF-8',
             rasterize: false,
             altPrinting: false,
-            copies: 1,
+            copies: copes,
             margins: { top: 0, right: 0, bottom: 0, left: 0 }
         });
 
@@ -182,7 +187,7 @@ function formatKotForEscPos(kotData) {
     commands.push(CENTER);
     commands.push(BOLD_ON);
     commands.push('--------------------------------' + LF);
-    commands.push('Dine In' + LF);
+    commands.push(kotData.resturent_type + LF);
     commands.push('--------------------------------' + LF);
     commands.push(BOLD_OFF);
 

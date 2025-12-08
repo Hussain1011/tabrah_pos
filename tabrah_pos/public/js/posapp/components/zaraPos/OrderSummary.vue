@@ -1354,6 +1354,7 @@ const holdOrder = (printedItems = {}) => {
         items: items.value.map(item => ({ ...item, item_group: item.item_group || '' })),
         grand_total: grandTotal.value,
         table: selectedTable.value,
+        orderType: selectedOrderType.value,
         orderBy: orderBy.value,
         orderByName: employee.employee_name || "",
         timestamp: new Date().toISOString(),
