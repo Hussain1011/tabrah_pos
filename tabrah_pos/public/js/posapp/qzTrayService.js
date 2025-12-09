@@ -65,6 +65,9 @@ export async function printKotWithQZTray(printerConfig, kotContent) {
         const content = formatKotForEscPos(kotContent);
 
         // Send print job
+        if (printerConfig.name == 'GRILL') {
+            await qz.print(config, content);
+        }
         await qz.print(config, content);
         return true;
     } catch (err) {
