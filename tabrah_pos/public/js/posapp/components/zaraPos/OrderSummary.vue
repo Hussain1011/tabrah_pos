@@ -851,16 +851,15 @@ function handlePrinterSelect(printer) {
 }
 
 function filterNonJuiceBeverageBundleItems(bundle) {
-  console.log("idr tk to aya hai lekn aage ka pta nh");
   if (!bundle || !Array.isArray(bundle.items)) return [];
   // define your desired order of item groups
   const groupOrder = ["starter", "main course", "desert"];
   
   //////////////Filter out unwanted item groups
-  let filterItems = bundle.items.filter(sub => {
-    const subGroup = (sub.custom_item_group || '').toLowerCase();
-    return subGroup !== 'juice' && subGroup !== 'beverage';
-  });
+  // let filterItems = bundle.items.filter(sub => {
+  //   const subGroup = (sub.custom_item_group || '').toLowerCase();
+  //   return subGroup !== 'juice' && subGroup !== 'beverage';
+  // });
 
   ///////////// Sort by custom group order
   filterItems.sort((a, b) => {
@@ -953,12 +952,36 @@ const generateKotPrint = async (printerArg = null) => {
       doc.custom_token_number = tokenNumber;
     }
 
+    doc.kot_items = itemsToPrint.map(item => {
+    let finalQty;
+    const p = printedItems[item.item_code]?.[printer];
+    const hasBeenPrinted = !!p;
+    if (!hasBeenPrinted) {
+      finalQty = item.qty;
+    } else {
+      const printedQty = p.qty;
+      finalQty = item.qty - printedQty;
+    }
+
+let filteredBundle = item.product_bundle
+      ? {
+          ...item.product_bundle,
+          items: filterNonJuiceBeverageBundleItems(item.product_bundle)
+        }
+      : undefined;
+    return {
+      ...item,
+      qty: finalQty,
+      product_bundle: filteredBundle,
+    };
+  });
+
 
   const groupOrder = ["hot starters", "cold starters", "sides", "breakfast", "main dishes", "deserts"];
 
 
 
-    const groupedItems = [...doc.items].sort((a, b) => {
+    const groupedItems = [...doc.doc.kot_items].sort((a, b) => {
     const groupA = (a.item_group || "").trim().toLowerCase();
     const groupB = (b.item_group || "").trim().toLowerCase();
 
@@ -1058,7 +1081,6 @@ const generateKotPrint = async (printerArg = null) => {
   doc.date = now.toISOString().split('T')[0];
   doc.time = now.toLocaleTimeString('en-US', { hour12: false });
 
-  console.log("idr tk to aya hoga lekn aage ka pta nh")
   doc.kot_items = itemsToPrint.map(item => {
     let finalQty;
     const p = printedItems[item.item_code]?.[printer];
