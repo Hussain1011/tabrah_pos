@@ -952,9 +952,10 @@ const generateKotPrint = async (printerArg = null) => {
       doc.custom_token_number = tokenNumber;
     }
 
+
     doc.kot_items = itemsToPrint.map(item => {
     let finalQty;
-    const p = printedItems[item.item_code]?.[printer];
+    const p = printedItems[item.item_code]?.network;
     const hasBeenPrinted = !!p;
     if (!hasBeenPrinted) {
       finalQty = item.qty;
@@ -976,12 +977,11 @@ let filteredBundle = item.product_bundle
     };
   });
 
-
   const groupOrder = ["hot starters", "cold starters", "sides", "breakfast", "main dishes", "deserts"];
 
 
 
-    const groupedItems = [...doc.doc.kot_items].sort((a, b) => {
+    const groupedItems = [...doc.kot_items].sort((a, b) => {
     const groupA = (a.item_group || "").trim().toLowerCase();
     const groupB = (b.item_group || "").trim().toLowerCase();
 
@@ -1011,7 +1011,7 @@ let filteredBundle = item.product_bundle
         timestamp: new Date().toISOString(),
       };
     });
-    
+
     holdOrder(printedItems);
     printKot(printDoc);
     return;
