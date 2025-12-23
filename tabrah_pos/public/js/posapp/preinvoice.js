@@ -184,6 +184,11 @@ export async function printPreInvoice(offlineData) {
                 <p>Order #: ${offlineData.name || 'PRE-INVOICE'}</p>
             </div>
         </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <p>Customer #: ${offlineData.customer}</p>
+            </div>
+        </div>
 
         <div class="row" style="font-size: 10px;">
             <div class="col-xs-6">

@@ -67,6 +67,7 @@ export async function printKotWithQZTray(printerConfig, kotContent) {
         // Send print job
         if (printerConfig.name == 'GRILL') {
             await qz.print(config, content);
+            await qz.print(config, content);
         }
         await qz.print(config, content);
         return true;
@@ -178,6 +179,9 @@ function formatKotForEscPos(kotData) {
     // Order Info Section
     commands.push(LEFT);
     commands.push(BOLD_ON);
+    if (kotData.company === "Neighborhood") {
+    commands.push('Customer: ' + (kotData.customer || 'N/A') + LF);
+    }
     commands.push('Server: ' + (kotData.server || 'N/A') + LF);
     commands.push('No of Pax: ' + (kotData.cover || 'N/A') + LF);
     commands.push('Order No: 12345' + LF);
