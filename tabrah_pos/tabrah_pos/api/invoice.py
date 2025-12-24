@@ -17,6 +17,9 @@ from tabrah_pos.tabrah_pos.doctype.delivery_charges.delivery_charges import (
 
 
 def validate(doc, method):
+
+    doc.disable_rounded_total = 1
+
     validate_shift(doc)
     set_patient(doc)
     auto_set_delivery_charges(doc)
