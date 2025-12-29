@@ -1324,6 +1324,7 @@ const holdOrder = (printedItems = {}) => {
     loadingHold.value = true;
 
     const heldOrders = JSON.parse(localStorage.getItem("heldOrders")) || [];
+    const newTable = selectedTable.value || null; // <-- current selection (may be null)
 
     if (holdOrderId.value) {
       const existingOrderIndex = heldOrders.findIndex(
@@ -1331,8 +1332,21 @@ const holdOrder = (printedItems = {}) => {
       );
 
       if (existingOrderIndex !== -1) {
+        const prevOrder = heldOrders[existingOrderIndex];
         const prevPrinted = heldOrders[existingOrderIndex].printed_items || {};
         const mergedPrinted = { ...prevPrinted, ...printedItems };
+
+        // --- NEW: handle table transfer ---
+        const prevTable = prevOrder.table || null;
+        const tableChanged = prevTable !== newTable;
+
+        if (tableChanged) {
+          // free the old table (if any)
+          if (prevTable) updateTableStatus(prevTable, "Available");
+          // reserve the new table (if any)
+          if (newTable) updateTableStatus(newTable, "Reserved");
+        }
+
         heldOrders[existingOrderIndex] = {
           ...heldOrders[existingOrderIndex],
           items: items.value.map(item => ({ ...item, item_group: item.item_group || '' })),
@@ -1341,6 +1355,7 @@ const holdOrder = (printedItems = {}) => {
           printed_items: mergedPrinted,
           cover: cover.value,
           customer: selectedCustomer.value,
+          table: newTable,                     // <-- NEW: persist new table
           custom_token_number: invoice_doc.value?.custom_token_number || heldOrders[existingOrderIndex].custom_token_number || null,
         };
         console.log(
