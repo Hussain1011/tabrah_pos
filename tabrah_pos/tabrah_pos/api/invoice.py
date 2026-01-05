@@ -150,6 +150,9 @@ def before_submit(doc, method):
             auto_bom.reference_name = doc.name
             auto_bom.save()
 
+    if pos_profile.discount_account:
+        doc.additional_discount_account = pos_profile.discount_account
+
 
     add_loyalty_point(doc)
     create_sales_order(doc)
