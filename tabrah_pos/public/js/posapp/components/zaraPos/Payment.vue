@@ -177,6 +177,23 @@
             <p class="amount-pay">QAR. {{ formatNumber(invoice_doc.advanceAmount) }}</p>
           </div>
         </v-col>
+        <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
+        <v-btn 
+          class="b-radius-8" 
+          color="#21A0A0" 
+          size="large" 
+          variant="outlined"
+          :style="{ 
+            backgroundColor: '#d3ecec',
+            height: '56px',
+            width: '100%'
+          }" 
+          @click="roundFloorCash()"
+        >
+          <v-icon left>mdi-calculator</v-icon>
+          Round Off
+        </v-btn>
+      </v-col>
       </v-row>
 
       <!-- Total, Tax, Net Total, Discount, Gross Total -->
@@ -1555,6 +1572,64 @@ const submitSaleInvoice = async (
     return;
   }
 };
+// Manually round DOWN the discounted grand_total for CASH only.
+// The fractional difference is added to discount_amount.
+function roundFloorCash() {
+  if (splitPayment.value) {
+    eventBus.emit("show_mesage", {
+      text: "Disable split payment to use Cash round floor.",
+      color: "error",
+    });
+    return;
+  }
+  if (paymentType.value?.mode_type !== "Cash") {
+    eventBus.emit("show_mesage", {
+      text: "Round floor applies only to Cash.",
+      color: "error",
+    });
+    return;
+  }
+
+  // Current (already discounted) totals
+  const base = Number(invoice_doc.value?.grand_total) || 0;
+  const tipAmt = Number(invoice_doc.value?.tip_amount) || 0;
+
+  const flooredBase = Math.floor(base);
+  const delta = +(base - flooredBase).toFixed(2); // e.g. 15.8 -> 0.80
+
+  if (delta <= 0) {
+    eventBus.emit("show_mesage", {
+      text: "Nothing to round—already an integer amount.",
+      color: "info",
+    });
+    return;
+  }
+
+  // 1) Add the fractional part to the total discount
+  const prevDisc = Number(invoice_doc.value.discount_amount || 0);
+  invoice_doc.value.discount_amount = +(prevDisc + delta).toFixed(2);
+
+  // (optional) keep a separate marker for reporting/printing
+  invoice_doc.value.round_floor_delta = delta; // purely informational
+
+  // 2) Floor the grand_total
+  invoice_doc.value.grand_total = flooredBase;
+
+  // 3) For Cash, update the paid amount to flooredBase + tip (still editable)
+  amountTake.value = flooredBase + tipAmt;
+
+  // 4) Sync the selected payment mode with the new paid amount
+  const active = paymentModes.value.find(m => m.selected);
+  if (active) active.amount = amountTake.value;
+
+  // 5) Recalculate remaining/change vs (grand_total + tip)
+  recalcBalances();
+
+  eventBus.emit("show_mesage", {
+    text: `Rounded down to ${flooredBase}. Added ${delta} to discount.`,
+    color: "success",
+  });
+}
 
 function syncPaidAmountWithTip() {
   const base = Number(invoice_doc.value.grand_total) || 0;
