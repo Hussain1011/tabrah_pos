@@ -1309,6 +1309,14 @@ def sales_invoice(data, invoice=None, taxvalue=None):
                 invoice_doc, data, is_payment_entry, total_cash, cash_account, payments
             )
 
+            if invoice_doc.get("pos_profile"):
+                pp = frappe.get_doc("POS Profile", invoice_doc.get("pos_profile"))
+                if pp.get("enable_sunmi_print") and pp.get("sunmi_printer") and pp.get("sunmi_print_format"):
+                    # sp = frappe.get_doc("SUNMI Printer", pp.get("sunmi_printer"))
+                    from tabrah_pos.tabrah_pos.doctype.sunmi_printer.sunmi_printer import print_receipt_to_sunmi
+                    print_receipt_to_sunmi(invoice_doc.doctype, invoice_doc.name, pp.get("sunmi_printer"), pp.get("sunmi_print_format"))
+
+
     return {"name": invoice_doc.name, "status": invoice_doc.docstatus}
 
 
