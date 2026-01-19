@@ -1347,6 +1347,7 @@ const holdOrder = (printedItems = {}) => {
           if (newTable) updateTableStatus(newTable, "Reserved");
         }
 
+
         heldOrders[existingOrderIndex] = {
           ...heldOrders[existingOrderIndex],
           items: items.value.map(item => ({ ...item, item_group: item.item_group || '' })),
@@ -1358,6 +1359,10 @@ const holdOrder = (printedItems = {}) => {
           table: newTable,                     // <-- NEW: persist new table
           custom_token_number: invoice_doc.value?.custom_token_number || heldOrders[existingOrderIndex].custom_token_number || null,
         };
+
+
+        // syncHeldOrderToServer(heldOrders[existingOrderIndex]);
+
         console.log(
           `Order updated successfully: ${heldOrders[existingOrderIndex].id}`
         );
@@ -1401,6 +1406,9 @@ const holdOrder = (printedItems = {}) => {
         custom_token_number: invoice_doc.value?.custom_token_number || null,
       };
 
+
+      // syncHeldOrderToServer(currentOrder);
+
       heldOrders.push(currentOrder);
       console.log("Order held successfully:", currentOrder);
 
@@ -1439,7 +1447,83 @@ const updateTableStatus = async (table, status) => {
   }
 
 };
+// Safe UUID (works even if window.crypto.randomUUID is unavailable)
+function makeRowId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  // fallback
+  return 'r-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
 
+async function syncHeldOrderToServer(rawHeldOrder) {
+
+  // 1) Guard clauses
+  if (!rawHeldOrder || typeof rawHeldOrder !== 'object') {
+    console.warn('[syncHeldOrderToServer] no held order object provided');
+    return { status: 'skipped', reason: 'no_held_order' };
+  }
+
+  // Normalize structure
+  const heldOrder = {
+    id: rawHeldOrder.id || null,
+    table: rawHeldOrder.table || null,
+    orderType: rawHeldOrder.orderType || null,
+    cover: Number(rawHeldOrder.cover || 0),
+    customer: rawHeldOrder.customer || null,
+    custom_token_number: rawHeldOrder.custom_token_number || null,
+    // ensure array
+    items: Array.isArray(rawHeldOrder.items) ? rawHeldOrder.items : [],
+    grand_total: Number(rawHeldOrder.grand_total || 0),
+  };
+
+  // If there are no items yet, don’t crash—still upsert header if you want, or skip:
+  if (!heldOrder.items.length) {
+    console.warn('[syncHeldOrderToServer] held order has no items; sending header only');
+  }
+
+  // 2) Ensure each item has a stable row_key
+  heldOrder.items = heldOrder.items.map(it => ({
+    ...it,
+    row_key: it?.row_key || makeRowId(),
+  }));
+
+  // 3) Build payload
+  const payload = {
+    held_id: heldOrder.id,
+    table: heldOrder.table,
+    orderType: heldOrder.orderType,
+    cover: heldOrder.cover,
+    customer: heldOrder.customer,
+    custom_token_number: heldOrder.custom_token_number,
+    items: heldOrder.items.map(it => ({
+      row_key: it.row_key,
+      item_code: it.item_code || it.item_name,
+      item_name: it.item_name,
+      qty: Number(it.qty || 0),
+      rate: Number(it.rate || 0),
+    })),
+    grand_total: heldOrder.grand_total,
+  };
+  try {
+  // 4) Call your ERPNext method
+  const res = await frappe.call({
+    method: 'tabrah_pos.tabrah_pos.api.posapp.upsert_held_order',
+    args: { 
+    payload: payload,
+    },
+  });
+  if (response && response.message) {
+        eventBus.emit("reserved-table", selectedTable.value);
+      }
+    } catch (error) {
+      console.error("Error updating invoice from order:", error);
+    }
+
+  // 5) Store linkage back if server returned SO name
+  if (res?.message?.sales_order) {
+    rawHeldOrder.sales_order = res.message.sales_order;
+  }
+  return res;
+}
 
 const goForPayment = async () => {
   // eventBus.emit("go-for-payment");

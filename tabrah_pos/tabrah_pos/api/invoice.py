@@ -18,8 +18,56 @@ from tabrah_pos.tabrah_pos.doctype.delivery_charges.delivery_charges import (
 
 def validate(doc, method):
 
+    pos_profile = frappe.get_doc("POS Profile", doc.pos_profile)
+    TIPS_ACCOUNT = pos_profile.custom_tip_account
+
+    # tip = getattr(self, "tip", 0)
+    # --- ensure one taxes row carries the tip ---
+    doc.taxes = [t for t in (doc.taxes or [])
+                 if not (t.account_head == TIPS_ACCOUNT and t.description == "Tip")]
+    if doc.tip > 0:
+        print("tips are coming")
+        # remove any old "Tip" rows we added earlier (idempotent)
+        # new_taxes = []
+        # for t in (self.taxes or []):
+        #     if not (t.account_head == pos_profile.custom_tip_account and t.description == "Tip"):
+        #         new_taxes.append(t)
+        # self.taxes = new_taxes
+
+        # add fresh tip row (Actual/Add) to liability account
+        doc.append("taxes", {
+            "charge_type": "Actual",
+            "account_head": pos_profile.custom_tip_account,
+            "description": "Tip",
+            "rate": doc.tip,
+            "tax_amount": doc.tip,
+            "included_in_print_rate": 0,
+        })
+
+        doc.calculate_taxes_and_totals()
+        print([d.as_dict() for d in (doc.taxes or [])])
+        # frappe.throw("Tip added")
+
+    else:
+        frappe.throw("Tip not added")
+        # remove tip rows if tip is zero
+        doc.taxes = [t for t in (doc.taxes or [])
+                     if not (t.account_head == pos_profile.custom_tip_account and t.description == "Tip")]
+
+    # --- prevent 'tip' from being treated as change ---
+    paid_total = sum(flt(p.amount) for p in (doc.payments or []))
+    non_tip_paid = paid_total - doc.tip
+    due_total = doc.grand_total or 0
+
+    change = non_tip_paid - due_total
+    doc.change_amount = flt(change if change > 0 else 0)
+
+    if doc.tip > paid_total:
+        frappe.throw("Tip cannot exceed total paid amount.")
+
     doc.disable_rounded_total = 1
 
+    tips_validate(doc)
     validate_shift(doc)
     set_patient(doc)
     auto_set_delivery_charges(doc)
@@ -432,3 +480,26 @@ def validate_shift(doc):
                     shift.name
                 )
             )
+
+def tips_validate(doc):
+    tip = flt(getattr(doc, "tip", 0))
+    paid_total = sum(flt(p.amount) for p in (doc.payments or []))
+
+    # what portion of paid is actually for the bill (exclude tip)
+    non_tip_paid = paid_total - tip
+
+    # Bill due total to compare against
+    due_total = doc.grand_total
+
+    # Change = only the excess of the NON-TIP portion
+    change = non_tip_paid - due_total
+    if change < 0:
+        change = 0.0
+
+    # Write back; ERP will use this
+    doc.change_amount = flt(change)
+    doc.base_change_amount = flt(change)
+
+    # Optional guard: tip cannot exceed total paid
+    if tip > paid_total:
+        frappe.throw("Tip cannot exceed total paid amount.")
