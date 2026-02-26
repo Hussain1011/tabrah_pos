@@ -25,8 +25,7 @@ def validate(doc, method):
     # --- ensure one taxes row carries the tip ---
     doc.taxes = [t for t in (doc.taxes or [])
                  if not (t.account_head == TIPS_ACCOUNT and t.description == "Tip")]
-    if doc.tip > 0:
-        print("tips are coming")
+    if doc.tip:
         # remove any old "Tip" rows we added earlier (idempotent)
         # new_taxes = []
         # for t in (self.taxes or []):
@@ -45,24 +44,21 @@ def validate(doc, method):
         })
 
         doc.calculate_taxes_and_totals()
-        print([d.as_dict() for d in (doc.taxes or [])])
-        # frappe.throw("Tip added")
 
     else:
-        frappe.throw("Tip not added")
         # remove tip rows if tip is zero
         doc.taxes = [t for t in (doc.taxes or [])
                      if not (t.account_head == pos_profile.custom_tip_account and t.description == "Tip")]
 
     # --- prevent 'tip' from being treated as change ---
     paid_total = sum(flt(p.amount) for p in (doc.payments or []))
-    non_tip_paid = paid_total - doc.tip
+    non_tip_paid = paid_total - doc.tip if doc.tip else 0
     due_total = doc.grand_total or 0
 
     change = non_tip_paid - due_total
     doc.change_amount = flt(change if change > 0 else 0)
 
-    if doc.tip > paid_total:
+    if doc.tip and doc.tip > paid_total:
         frappe.throw("Tip cannot exceed total paid amount.")
 
     doc.disable_rounded_total = 1
@@ -244,8 +240,22 @@ def make_item_zero(it):
     if hasattr(it, "margin_type"): it.margin_type = ""
 
 def before_cancel(doc, method):
+    # cancel_linked_docs(doc, method)
     update_coupon(doc, "cancelled")
 
+def cancel_linked_docs(doc, method):
+    linked_docs = frappe.get_all(
+        "Automated BOM Manufacturing",
+        filters={
+            "reference_name": doc.name,
+            "docstatus": 1
+        },
+        pluck="name"
+    )
+
+    for d in linked_docs:
+        frappe.msgprint(d)
+        frappe.get_doc("Automated BOM Manufacturing", d).cancel()
 
 def add_loyalty_point(invoice_doc):
     for offer in invoice_doc.posa_offers:
