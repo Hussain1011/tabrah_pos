@@ -52,13 +52,13 @@ def validate(doc, method):
 
     # --- prevent 'tip' from being treated as change ---
     paid_total = sum(flt(p.amount) for p in (doc.payments or []))
-    non_tip_paid = paid_total - doc.tip if doc.tip else 0
+    non_tip_paid = flt(paid_total) - flt(doc.tip) if flt(doc.tip) else 0
     due_total = doc.grand_total or 0
 
     change = non_tip_paid - due_total
     doc.change_amount = flt(change if change > 0 else 0)
 
-    if doc.tip and doc.tip > paid_total:
+    if flt(doc.tip) and flt(doc.tip) > flt(paid_total):
         frappe.throw("Tip cannot exceed total paid amount.")
 
     doc.disable_rounded_total = 1
