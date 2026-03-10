@@ -1163,8 +1163,8 @@ def sales_invoice(data, invoice=None, taxvalue=None):
     invoice_doc.order_summery_for_pos = json.dumps(invoice_doc.order_summery_for_pos)
     
     # Handle tips ledger posting
-    if invoice_doc.get("tip"):
-        create_tip_ledger_entry(invoice_doc)
+    # if invoice_doc.get("tip"):
+    #     create_tip_ledger_entry(invoice_doc)
     # Process submission if invoice data exists
     if invoice:
         invoice = json.loads(invoice)
@@ -1318,6 +1318,205 @@ def sales_invoice(data, invoice=None, taxvalue=None):
 
 
     return {"name": invoice_doc.name, "status": invoice_doc.docstatus}
+
+
+
+from typing import Optional, Union
+
+
+
+def _row_key(item: dict) -> str:
+    # Prefer a stable key from POS row (send it from client).
+    # Fallback: build signature so same item w/ same rate & modifiers match.
+    parts = [
+        item.get("row_key") or "",
+        item.get("item_code") or item.get("item_name") or "",
+        str(item.get("rate") or ""),
+        str(item.get("variant") or ""),
+        str(item.get("modifiers_key") or ""),
+    ]
+    return "|".join(parts)
+
+@frappe.whitelist()
+def upsert_held_order(payload: Optional[Union[str, dict]] = None):
+   # --- Parse payload safely ---
+    if payload is None:
+        payload = frappe.request.get_json(silent=True)
+    if isinstance(payload, str):
+        payload = frappe.parse_json(payload)
+    if not isinstance(payload, dict):
+        frappe.throw("Invalid payload; expected a JSON object.")
+
+    held_id = payload.get("held_id")
+    if not held_id:
+        frappe.throw("held_id is required.")
+
+    # Normalize header values
+    table = payload.get("table")
+    order_type = payload.get("orderType")
+    cover = flt(payload.get("cover") or 0)
+    customer_label = payload.get("customer") or "Retail Customer"
+    token_number = payload.get("custom_token_number")
+
+    # Normalize items to a list
+    incoming_items = payload.get("items") or []
+    if not isinstance(incoming_items, list):
+        incoming_items = []
+
+    # Resolve company & currency
+    company = frappe.db.get_default("company")
+    if not company:
+        frappe.throw("Default Company not set.")
+    currency = frappe.db.get_value("Company", company, "default_currency") or frappe.db.get_default("currency")
+
+    # Load or create Sales Order (by custom_hold_order_id)
+    so_name = frappe.db.get_value("Sales Order", {"custom_hold_order_id": held_id}, "name")
+    if so_name:
+        so = frappe.get_doc("Sales Order", so_name)
+        is_new = False
+    else:
+        # Ensure a valid Customer exists (returns a Customer *name*)
+        customer_name = customer_label
+
+        # Build the new SO with header + items BEFORE insert
+        so = frappe.get_doc({
+            "doctype": "Sales Order",
+            "company": company,
+            "currency": currency,
+            "customer": customer_name,
+            "delivery_date": nowdate(),
+            "transaction_date": nowdate(),
+            "custom_hold_order_id": held_id,
+            "custom_hold_status": "Active",
+            # Avoid payment terms template interference on insert
+            "payment_terms_template": None,
+        })
+        is_new = True
+
+    # --- Sync header custom fields ---
+    so.custom_table = table
+    so.custom_order_type = order_type
+    so.custom_cover = int(cover) if cover else 0
+    so.custom_customer = customer_label
+    so.custom_token_number = token_number
+
+    # Ensure company/currency are set (in case existing SO missed them)
+    so.company = so.company or company
+    so.currency = so.currency or currency
+    so.transaction_date = so.transaction_date or nowdate()
+
+    # --- Index existing lines by custom_row_key ---
+    existing_by_key = {}
+    for line in (so.items or []):
+        existing_by_key[(line.get("custom_row_key") or "")] = line
+
+    # --- Process incoming lines ---
+    incoming_keys = set()
+    for pos_item in incoming_items:
+        key = _row_key(pos_item)
+        incoming_keys.add(key)
+
+        item_code = pos_item.get("item_code") or pos_item.get("item_name")
+        item_name = pos_item.get("item_name") or item_code
+        qty = flt(pos_item.get("qty") or 0)
+        rate = flt(pos_item.get("rate") or 0)
+        uom = pos_item.get("uom") or "Nos"
+        cf = flt(pos_item.get("conversion_factor") or 1)
+
+        if key in existing_by_key:
+            # Update existing line (never delete)
+            row = existing_by_key[key]
+            row.item_code = item_code
+            row.item_name = item_name
+            row.qty = qty
+            row.rate = rate
+            row.uom = uom
+            row.conversion_factor = cf
+            row.custom_hold_status = "Active"
+        else:
+            # Append new line
+            so.append("items", {
+                "item_code": item_code,
+                "item_name": item_name,
+                "qty": qty,
+                "rate": rate,
+                "uom": uom,
+                "conversion_factor": cf,
+                "custom_row_key": key,
+                "custom_hold_status": "Active",
+            })
+
+    # --- Soft-delete lines that disappeared from the payload ---
+    for line in (so.items or []):
+        k = line.get("custom_row_key") or ""
+        if k and k not in incoming_keys:
+            line.custom_hold_status = "Deleted"
+
+        # Totals-safety: guarantee numeric fields exist
+        line.qty = flt(line.qty or 0)
+        line.rate = flt(line.rate or 0)
+        line.uom = line.uom or "Nos"
+        line.conversion_factor = flt(line.conversion_factor or 1)
+
+    # --- PRECOMPUTE totals BEFORE insert/save to avoid None math in hooks ---
+    so.flags.ignore_permissions = True
+    so.set_missing_values()
+    if hasattr(so, "calculate_taxes_and_totals"):
+        so.calculate_taxes_and_totals()
+
+    # Final guards so validate math never sees None
+    so.grand_total = flt(getattr(so, "grand_total", 0))
+    so.base_grand_total = flt(getattr(so, "base_grand_total", so.grand_total))
+
+    # Some environments auto-attach a Payment Terms Template in validate().
+    # Keeping payment_terms_template = None on first insert avoids grand_total None usage.
+    # You can set a template later when the order is finalized.
+    # --- Persist ---
+    if is_new:
+        so.insert(ignore_permissions=True)
+    else:
+        so.save(ignore_permissions=True)
+
+    row_key_map = []
+    for line in (so.items or []):
+        row_key_map.append({
+            "so_item_name": line.name,                             # Sales Order Item rowname
+            "server_row_key": line.get("custom_row_key") or "",    # what server stored
+            "item_code": line.item_code,
+            "item_name": line.item_name,
+        })
+
+    return {
+        "status": "success",
+        "sales_order": so.name,
+        "held_id": held_id,
+        "totals": {
+            "grand_total": so.grand_total,
+            "base_grand_total": so.base_grand_total,
+            "total_qty": sum(flt(x.qty) for x in so.items or []),
+        },
+        "row_kep_map": row_key_map, 
+    }
+
+@frappe.whitelist()
+def mark_held_order_deleted(held_id: str):
+    """
+    Called when a held order is removed from localStorage.
+    Soft-cancel the Sales Order.
+    """
+    so_name = frappe.db.get_value("Sales Order", {"custom_hold_order_id": held_id}, "name")
+    if not so_name:
+        return {"status": "success", "message": "No SO found for held order."}
+
+    so = frappe.get_doc("Sales Order", so_name)
+    so.custom_hold_status = "Cancelled"
+    for it in so.items:
+        if it.custom_hold_status != "Deleted":
+            it.custom_hold_status = "Deleted"
+    so.save(ignore_permissions=True)
+
+    return {"status":"success","sales_order": so.name}
+
 
 
 import frappe
