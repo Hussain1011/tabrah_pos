@@ -1,5 +1,5 @@
 import { createApp, h } from 'vue';
-import Home from './components/zaraPos/KotScreen.vue';
+import Home from './components/tabrahPos/KotScreen.vue';
 
 // import Vuetify from 'vuetify';
 import 'vuetify/styles'; // If using Vuetify 3

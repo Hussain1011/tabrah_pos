@@ -1,16 +1,16 @@
 <template>
-  <v-card elevation="1" class="border-16 summary-main-card">
-    <v-card class="pa-6 m-3 order-card" style="background: #f4f4f4" elevation="0">
+  <v-card elevation="0" class="summary-main-card" style="border: 1px solid #E8E8E8;">
+    <v-card class="pa-4 mx-3 mt-3 order-card" style="background: #FAFAFA; border: 1px solid #EEEEEE;" elevation="0">
       <!-- Table Heading -->
-      <v-row class="table-header">
+      <v-row class="table-header mb-1">
         <v-col cols="5">
-          <strong>ITEM</strong>
+          <span class="text-uppercase" style="font-size: 11px; letter-spacing: 0.8px; color: #9E9E9E; font-weight: 600;">Item</span>
         </v-col>
-        <v-col cols="3" class="mr-0">
-          <strong>QTY.</strong>
+        <v-col cols="2" class="text-center">
+          <span class="text-uppercase" style="font-size: 11px; letter-spacing: 0.8px; color: #9E9E9E; font-weight: 600;">Qty</span>
         </v-col>
-        <v-col cols="3">
-          <strong>PRICE </strong>
+        <v-col cols="4" class="text-right">
+          <span class="text-uppercase" style="font-size: 11px; letter-spacing: 0.8px; color: #9E9E9E; font-weight: 600;">Price</span>
         </v-col>
       </v-row>
 
@@ -25,30 +25,28 @@
       </div> -->
 
       <!-- Items List -->
-      <v-divider></v-divider>
-      <v-row v-for="(item, index) in items" :key="item.sku" class="py-0 align-center mr-0"
+      <v-divider style="border-color: #E0E0E0;"></v-divider>
+      <v-row v-for="(item, index) in items" :key="item.sku" class="py-1 align-center item-row"
         @click="openDialog(item, true, index)">
-        <v-col cols="5" class="pr-0 pb-0">
-          <div>{{ item.item_name }}</div>
-          <!-- <div class="text-caption grey--text">{{ item.sku }}</div> -->
-          <div class="text-caption grey--text">{{ item.rate }}</div>
+        <v-col cols="5" class="pr-0 py-1">
+          <div style="font-size: 13px; font-weight: 500; color: #333;">{{ item.item_name }}</div>
+          <div style="font-size: 11px; color: #999;">@ {{ item.rate }}</div>
         </v-col>
 
-        <v-col cols="2" class="text-center px-0 pb-0">
-          {{ item.qty }}
+        <v-col cols="2" class="text-center px-0 py-1">
+          <v-chip size="x-small" color="primary" variant="tonal" style="font-weight: 600;">{{ item.qty }}</v-chip>
         </v-col>
 
-        <v-col cols="4" class="text-right teal--text text--accent-4 pb-0">
-          <strong>QAR.{{ formatNumber(item.rate * item.qty) }}</strong>
+        <v-col cols="4" class="text-right py-1">
+          <strong style="color: rgb(var(--v-theme-primary)); font-size: 13px;">QAR {{ formatNumber(item.rate * item.qty) }}</strong>
         </v-col>
 
-        <v-col cols="1" class="text-right pb-0" v-show="screen == 0">
-          <!-- Delete icon -->
-          <v-icon @click.stop="requestDeleteItem(index)" color="red">mdi-delete</v-icon>
+        <v-col cols="1" class="text-right py-1" v-show="screen == 0">
+          <v-icon size="18" @click.stop="requestDeleteItem(index)" color="error" class="delete-icon">mdi-close-circle</v-icon>
         </v-col>
 
         <v-col cols="12" class="py-0">
-          <v-divider class="dotted-divider"></v-divider>
+          <v-divider style="border-style: dashed; border-color: #E0E0E0;"></v-divider>
         </v-col>
       </v-row>
     </v-card>
@@ -75,7 +73,7 @@
         ></v-autocomplete>
       </v-col>
       <v-col cols="4" class="" style="  height: 64px;">
-        <v-btn block class="white--text font-weight-bold payment-button" height="52" color="#21A0A0"
+        <v-btn block class="white--text font-weight-bold payment-button" height="52" color="primary"
           @click="addNewCustomer()">
           <v-icon class="mr-2" style="color: white;">mdi-plus</v-icon>
           <p class="mt-2 payment-p">New</p>
@@ -85,18 +83,15 @@
 
     <v-row justify="center" class="pb-0">
       <v-col cols="12" md="12">
-        <v-card class="pa-3 mx-3 payment-card" elevation="0" style="background: #f4f4f4">
+        <v-card class="pa-4 mx-3 payment-card" elevation="0" style="background: #FAFAFA; border: 1px solid #EEEEEE;">
           <!-- Order Summary Header -->
-          <v-row justify="space-between" align="center" class="px-3 py-2">
+          <v-row justify="space-between" align="center" class="px-3 py-1">
             <v-col cols="6">
-              <strong>Order Summary</strong>
+              <span style="font-size: 14px; font-weight: 700; color: #333; letter-spacing: 0.3px;">Order Summary</span>
             </v-col>
-            <!-- <v-col cols="6" class="text-right">
-              <strong>#1200569C</strong>
-            </v-col> -->
           </v-row>
 
-          <v-divider class="mb-3"></v-divider>
+          <v-divider class="mb-2" style="border-color: #E0E0E0;"></v-divider>
 
           <!-- Order Details -->
           <!-- 
@@ -158,70 +153,74 @@
 
 
           <!-- Grand Total -->
-          <v-row justify="space-between" class="mt-4 px-6 pb-0">
-            <v-col cols="6">
-              <p class="font-20">Grand Total:</p>
-            </v-col>
-            <v-col cols="6" class="text-right total-amount">
-              <p class="total-p">QAR. {{ formatNumber(grandTotal) }}</p>
-            </v-col>
-          </v-row>
+          <div class="grand-total-bar mt-3 mx-3">
+            <span style="font-size: 15px; font-weight: 700; color: #333;">Grand Total</span>
+            <span class="total-p">QAR {{ formatNumber(grandTotal) }}</span>
+          </div>
 
-          <!-- Payment Button -->
-          <v-row class="mt-3 px-6 pb-1">
-            <v-col cols="12">
-              <v-btn
-                block
-                class="white--text font-weight-bold payment-button"
-                height="48"
-                color="#21A0A0"
-                @click="goForPayment"
-                :loading="loadingBtn"
-              >
-                <p class="mt-2 payment-p">PAYMENT</p>
-              </v-btn>
-            </v-col>
-          </v-row>
-          <v-row class="mt-3 px-6 pb-1">
-            <v-col :cols="
-              (!pos_profile.custom_allow_pre_invoice_print && !pos_profile.custom_allow_kot_print) ? 12 :
-              (pos_profile.custom_allow_pre_invoice_print !== pos_profile.custom_allow_kot_print) ? 6 : 4
-            ">
-              <v-btn
-                block
-                class="white--text font-weight-bold payment-button"
-                height="48"
-                color="#21A0A0"
-                @click="holdOrder()"
-                :loading="loadingBtn"
-              >
-                <p class="mt-2 payment-p">Hold</p>
-              </v-btn>
-            </v-col>
-            <v-col v-if="pos_profile.custom_allow_pre_invoice_print" :cols="(pos_profile.custom_allow_kot_print) ? 4 : 6">
-              <v-btn
-                block
-                class="white--text font-weight-bold payment-button"
-                height="48"
-                color="#F05D23"
-                @click="createPreInvoice()"
-                :disabled="screen != 0"
-              >
-                <p class="mt-2 print-p">Pre Invoice</p>
-              </v-btn>
-            </v-col>
-            <v-col v-if="pos_profile.custom_allow_kot_print" :cols="(pos_profile.custom_allow_pre_invoice_print) ? 4 : 6">
-              <v-btn
-                block
-                :class="{ 'printer-btn-disabled': printerDisabled[printer] }"
-                color="#F05D23"
-                @click="pos_profile.custom_allow_kot_multiple_prints == 1 ? openPrinterDialog() : generateKotPrint()"
-                :disabled="screen != 0"
-              >
-                <p class="mt-2 print-p">KOT Print</p>
-              </v-btn>
-            </v-col>
-          </v-row>
+          <!-- Action Buttons -->
+          <div class="px-3 pt-3 pb-1">
+            <v-btn
+              block
+              class="action-btn action-btn-primary mb-2"
+              height="44"
+              color="primary"
+              @click="goForPayment"
+              :loading="loadingBtn"
+            >
+              <v-icon size="18" class="mr-2">mdi-credit-card-outline</v-icon>
+              Payment
+            </v-btn>
+
+            <v-row dense class="mt-1">
+              <v-col :cols="
+                (!pos_profile.custom_allow_pre_invoice_print && !pos_profile.custom_allow_kot_print) ? 12 :
+                (pos_profile.custom_allow_pre_invoice_print !== pos_profile.custom_allow_kot_print) ? 6 : 4
+              ">
+                <v-btn
+                  block
+                  class="action-btn"
+                  height="40"
+                  color="primary"
+                  variant="outlined"
+                  @click="holdOrder()"
+                  :loading="loadingBtn"
+                >
+                  <v-icon size="16" class="mr-1">mdi-pause-circle-outline</v-icon>
+                  Hold
+                </v-btn>
+              </v-col>
+              <v-col v-if="pos_profile.custom_allow_pre_invoice_print" :cols="(pos_profile.custom_allow_kot_print) ? 4 : 6">
+                <v-btn
+                  block
+                  class="action-btn"
+                  height="40"
+                  color="secondary"
+                  variant="tonal"
+                  @click="createPreInvoice()"
+                  :disabled="screen != 0"
+                >
+                  <v-icon size="16" class="mr-1">mdi-receipt-text-outline</v-icon>
+                  Pre Invoice
+                </v-btn>
+              </v-col>
+              <v-col v-if="pos_profile.custom_allow_kot_print" :cols="(pos_profile.custom_allow_pre_invoice_print) ? 4 : 6">
+                <v-btn
+                  block
+                  class="action-btn"
+                  :class="{ 'printer-btn-disabled': printerDisabled[printer] }"
+                  height="40"
+                  color="secondary"
+                  variant="tonal"
+                  @click="pos_profile.custom_allow_kot_multiple_prints == 1 ? openPrinterDialog() : generateKotPrint()"
+                  :disabled="screen != 0"
+                >
+                  <v-icon size="16" class="mr-1">mdi-printer-outline</v-icon>
+                  KOT
+                </v-btn>
+              </v-col>
+            </v-row>
+          </div>
         </v-card>
       </v-col>
     </v-row>
@@ -238,7 +237,7 @@
         <v-card-title class="d-flex justify-space-between pt-1">
           <v-text-field v-model="search" label="Search" variant="outlined" clearable class="mx-4 my-2"
             append-inner-icon="mdi-magnify"></v-text-field>
-          <v-btn class="white--text font-weight-bold payment-button mt-3" height="48" color="#F05D23"
+          <v-btn class="white--text font-weight-bold payment-button mt-3" height="48" color="secondary"
             @click="searchReturnInvoice()" :loading="loadingBtn">
             <p class="mt-2 ">Search</p>
           </v-btn>
@@ -255,7 +254,7 @@
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn color="error" @click="dialog = false">Close</v-btn>
-          <v-btn v-if="returnItems.length > 0" color="#009688" @click="loadReturn()"
+          <v-btn v-if="returnItems.length > 0" color="primary" @click="loadReturn()"
             :loading="submitLoading">Submit</v-btn>
         </v-card-actions>
       </v-card>
@@ -275,7 +274,7 @@
             </v-col>
             <v-col cols="auto">
               <v-card-title class="d-flex justify-end">
-                <v-btn variant="text" size="x-small" density="default" color="white" style="background: #F05D23"
+                <v-btn variant="text" size="x-small" density="default" color="white" style="background: rgb(var(--v-theme-secondary))"
                   @click="closeReturnDialog()">
                   <v-icon>mdi-close</v-icon>
                 </v-btn>
@@ -285,7 +284,7 @@
         </v-card-title>
         <v-card-text>
           <v-row justify="center" class="" style="    padding-left: 100px;">
-            <v-radio-group v-model="returnType" color="#21A0A0" inline>
+            <v-radio-group v-model="returnType" color="primary" inline>
               <v-radio label="Exchange" value="exchange" @click.stop="returnType = 'exchange'"></v-radio>
               <v-radio label="Return" value="return" @click.stop="returnType = 'replace'"
                 style="    margin-left: 153px;"></v-radio>
@@ -303,7 +302,7 @@
                     <div class="dis-grid">
                       <div class="d-flex justify-space-between px-2">
                         <div class="" style="color: #666666;">{{ returnDoc.name }}</div>
-                        <v-chip color="#21A0A0" size="small">
+                        <v-chip color="primary" size="small">
                           Completed
                         </v-chip>
 
@@ -376,7 +375,7 @@
               </div>
 
               <div class="pt-5 d-flex justify-center">
-                <v-btn class="white--text font-weight-bold payment-button" height="52" color="#21A0A0"
+                <v-btn class="white--text font-weight-bold payment-button" height="52" color="primary"
                   @click="goForReturnProceed" :loading="submitLoading" style="width: 321px;">
                   <p class="mt-2 payment-p">Proceed</p>
                 </v-btn>
@@ -407,7 +406,7 @@
             <v-icon color="#3D464D">mdi-account-plus</v-icon>
             <span style="color: #3D464D; font-size: 15px;font-weight: 500;" class="ml-2">Add Customer</span>
           </div>
-          <div style="background: #F05D23;
+          <div style="background: rgb(var(--v-theme-secondary));
               height: 21px;
               border-radius: 15px;
               position: relative;
@@ -432,7 +431,7 @@
             <v-text-field v-model="formData.address" label="Postal Address" outlined></v-text-field>
 
             <!-- Submit Button -->
-            <v-btn block class="white--text font-weight-bold payment-button" height="45" color="#21A0A0"
+            <v-btn block class="white--text font-weight-bold payment-button" height="45" color="primary"
               @click="submitCustomerDialog" :disabled="!isFormValid" :loading="customerLoading">
               Add Customer
             </v-btn>
@@ -475,7 +474,7 @@
               <v-btn
                 block
                 :class="{ 'printer-btn-disabled': printerDisabled[printer] }"
-                color="#21A0A0"
+                color="primary"
                 @click="printerDisabled[printer] ? showAlreadyPrintedMessage() : handlePrinterSelect(printer)"
               >
                 {{ printerLabels[printer] }}
@@ -502,7 +501,7 @@ import {
   onBeforeUnmount,
 } from "vue";
 import eventBus from "../../bus.js";
-import indexedDBService from "../../indexedDB";
+import storageService from "../../storageService";
 import { printPreInvoice } from "../../preinvoice";
 import { printKot } from "../../kotPrint.js";
 
@@ -1772,27 +1771,11 @@ const update_invoice = (doc, key, print) => {
     doc.pos_referrence = randomReference;
 
     console.log("offline-invoice...doc", doc);
-    indexedDBService
-      .openDatabase()
-      // .then(() => {
-      //   return indexedDBService.getTableInfo("1");
-      // })
-      .then((tableInfo) => {
-        return indexedDBService.saveUpdateInvoice(JSON.stringify(doc));
-      })
-      .then(() => {
-        // evntBus.$emit("offline-invoice-doc",doc)
-        // console.log("Invoice Data saved successfully");
-        eventBus.emit("go-for-payment");
-        eventBus.emit("updated-invoice", doc);
-        eventBus.emit("punching-status", punching.value);
-
-        loadingBtn.value = false;
-      })
-      .catch((error) => {
-        loadingBtn.value = false;
-        console.error("Error with IndexedDB operation:", error);
-      });
+    storageService.saveUpdateInvoice(JSON.stringify(doc));
+    eventBus.emit("go-for-payment");
+    eventBus.emit("updated-invoice", doc);
+    eventBus.emit("punching-status", punching.value);
+    loadingBtn.value = false;
   }
 };
 const checkInternetSpeed = async (threshold = 2) => {
@@ -1943,10 +1926,7 @@ const toggleDelete = (index) => {
 
 const offlineProfileData = async () => {
   try {
-    // Wait for the IndexedDBService to open the database and get the pos_profile
-    const data = await indexedDBService
-      .openDatabase()
-      .then(() => indexedDBService.getPosProfile());
+    const data = await storageService.getPosProfile();
 
     // console.log("offline pos profile from order summary", data);
 
@@ -1971,10 +1951,10 @@ const offlineProfileData = async () => {
         }
       });
     } else {
-      console.error("No profile data found in IndexedDB.");
+      console.error("No profile data found in localStorage.");
     }
   } catch (error) {
-    console.error("Error with IndexedDB operation getting profile:", error);
+    console.error("Error getting profile:", error);
   }
 };
 const createSaleOrder = async (order) => {
@@ -2270,82 +2250,108 @@ const onCustomerSearchInput = (search) => {
   height: 80vh;
   overflow-x: hidden;
   overflow-y: auto;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
+  border-radius: 16px !important;
+  background: #fff;
 }
 
 .order-card {
-  border-radius: 16px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 12px !important;
   overflow-y: auto;
-  max-height: 360px;
-  height: 300px;
+  max-height: 340px;
+  height: 280px;
 }
 
 .table-header {
   font-weight: 400;
   font-size: 12px;
-  font-family: Noto Sans;
+  font-family: 'Inter', 'Noto Sans', sans-serif;
   color: grey;
+}
+
+.item-row {
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 6px;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+.item-row:hover {
+  background: rgba(var(--v-theme-primary), 0.04);
+}
+
+.delete-icon {
+  opacity: 0.6;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.delete-icon:hover {
+  opacity: 1;
+  transform: scale(1.15);
 }
 
 .v-divider {
   margin: 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.teal--text.text--accent-4 {
-  color: #009688 !important;
-}
-
-.text-caption {
-  font-size: 12px;
 }
 
 .payment-card {
-  border-radius: 16px !important;
+  border-radius: 12px !important;
 }
 
 .dotted-divider {
-  border-style: dotted !important;
-  border-color: black !important;
+  border-style: dashed !important;
+  border-color: #D5D5D5 !important;
 }
 
 .payment-text-color {
-  color: #626262;
+  color: #666;
+  font-size: 13px;
 }
 
 .font-20 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
+}
+
+.grand-total-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: rgba(var(--v-theme-primary), 0.06);
+  border-radius: 10px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.12);
 }
 
 .total-p {
-  color: orangered;
-  font-size: 20px;
-  font-weight: 700;
+  color: rgb(var(--v-theme-secondary));
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.action-btn {
+  border-radius: 10px !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.3px !important;
+}
+
+.action-btn-primary {
+  font-size: 15px !important;
+  font-weight: 700 !important;
 }
 
 .payment-button {
-  border-radius: 8px;
+  border-radius: 10px;
+}
+
+.payment-p {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Inter', 'Archivo', sans-serif;
 }
 
 .image-container {
   text-align: center;
-  /* Center the image */
-}
-
-.payment-p {
-  font-size: 20px;
-  font-weight: 700;
-  font-family: Archivo;
-}
-
-.animated-image {
-  width: 535px;
-  max-width: 600px;
-  position: relative;
-  animation: move 8s linear infinite;
-  /* Infinite left-to-right animation */
 }
 
 .text-decoration-underline {
@@ -2363,20 +2369,6 @@ const onCustomerSearchInput = (search) => {
 :deep(.v-select__selection-text) {
   position: relative !important;
   bottom: 8px !important;
-}
-
-@keyframes move {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  50% {
-    transform: translateX(100%);
-  }
-
-  100% {
-    transform: translateX(-100%);
-  }
 }
 
 @media (max-width: 600px) {

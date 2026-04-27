@@ -56,7 +56,7 @@
         <v-col cols="12" md="3">
           <v-card elevation="3" class="pa-3 d-flex align-center justify-center" style="height: 100%;">
             <v-btn
-              color="#21A0A0"
+              color="primary"
               size="default"
               prepend-icon="mdi-refresh"
               @click="refreshOrders()"

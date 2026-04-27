@@ -70,16 +70,16 @@
             <!-- Quantity selection and Add to Cart button -->
             <v-row class="my-4 align-center">
               <v-col cols="4" class="text-right">
-                <v-btn variant="outlined" size="x-large" class="text-capitalize" color="#21A0A0"
-                  style="background-color: #d3ecec; border-radius: 8px" @click="decreaseQuantity">-</v-btn>
+                <v-btn variant="outlined" size="x-large" class="text-capitalize" color="primary"
+                  style="background-color: rgba(var(--v-theme-primary), 0.15); border-radius: 8px" @click="decreaseQuantity">-</v-btn>
               </v-col>
               <v-col cols="4" class="text-center">
                 <div class="text-quantity black--text">{{ quantity }}</div>
                 <v-divider class="mx-7 border-opacity-75" :thickness="2" style="background-color: black"></v-divider>
               </v-col>
               <v-col cols="4" class="text-left">
-                <v-btn variant="outlined" size="x-large" class="text-capitalize" color="#21A0A0"
-                  style="background-color: #d3ecec; border-radius: 8px" @click="increaseQuantity">+</v-btn>
+                <v-btn variant="outlined" size="x-large" class="text-capitalize" color="primary"
+                  style="background-color: rgba(var(--v-theme-primary), 0.15); border-radius: 8px" @click="increaseQuantity">+</v-btn>
               </v-col>
             </v-row>
             <v-row class="my-4 align-center">
@@ -132,8 +132,8 @@
                   variant="outlined"
                   size="x-large"
                   class="text-capitalize"
-                  color="#21A0A0"
-                  style="background-color: #d3ecec; border-radius: 8px"
+                  color="primary"
+                  style="background-color: rgba(var(--v-theme-primary), 0.15); border-radius: 8px"
                   @click="increaseQuantity"
                   >+</v-btn
                 >
@@ -154,7 +154,7 @@
         </v-row>
       </v-card-text>
       <div style="padding: 24px 32px 24px 32px; background: #fff; box-shadow: 0 -2px 8px rgba(0,0,0,0.03); z-index: 2;">
-        <v-btn block size="x-large" color="#21A0A0" style="border-radius: 8px" @click="addToCart">
+        <v-btn block size="x-large" color="primary" style="border-radius: 8px" @click="addToCart">
           ADD
         </v-btn>
       </div>

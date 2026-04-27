@@ -1,11 +1,11 @@
 <template>
   <div>
-    <v-card elevation="2" class="border-16 product-main-card">
+    <v-card elevation="0" class="product-main-card" style="border: 1px solid #E8E8E8;">
       <!-- Categories Section -->
       <v-row>
         <v-col cols="12">
-          <p class="pt-6 pl-6 title-h">Categories</p>
-          <v-row class="px-4 ml-1 category-row" style="
+          <span class="pt-5 pl-6 section-title">Categories</span>
+          <v-row class="px-4 ml-1 mt-1 category-row" style="
             overflow-x: auto;
             white-space: nowrap;
             scrollbar-width: thin;
@@ -13,14 +13,12 @@
           ">
             <v-col v-for="category in categories" :key="category" cols="auto" class="px-0 py-1"
               style="display: inline-block">
-              <v-btn variant="outlined" size="large" class="ma-2 text-capitalize" :class="{
+              <v-btn size="small" class="ma-1 text-capitalize category-chip" :class="{
                 'active-catgory': selectedCategory === category,
                 'unactive-catgory': selectedCategory !== category,
-              }" :color="selectedCategory === category ? '#21a0a0' : '#D3ECEC'" @click="changeCategory(category)"
+              }" :color="selectedCategory === category ? 'primary' : 'primary'" :variant="selectedCategory === category ? 'flat' : 'outlined'" @click="changeCategory(category)"
                 style="white-space: normal">
-                <p class="black--text mt-2 category-p">
-                  {{ category.item_group }}
-                </p>
+                {{ category.item_group }}
               </v-btn>
             </v-col>
           </v-row>
@@ -28,47 +26,35 @@
       </v-row>
       <v-row class="px-2">
         <v-col cols="12">
-          <p class="pt-6 pl-5 title-h">Products</p>
+          <span class="pt-4 pl-5 section-title">Products</span>
         </v-col>
       </v-row>
-      <v-row class="px-10 pb-0" v-show="filteredProducts.length > 0">
+      <v-row class="px-6 pb-0" v-show="filteredProducts.length > 0">
         <!-- Product Cards -->
         <v-col v-for="product in filteredProducts" :key="product.item_code" cols="12" sm="6" md="4" lg="3" xl="3"
-          class="mb-4 pt-0">
+          class="mb-3 pt-0">
           <v-card class="hover-card" elevation="0" @click="openDialog(product)">
             <img :src="product.image ? product.image : defaultImg" class="white--text align-end item-img"
               v-show="!product.loading" />
-            <p class="stock-loading" v-show="product.loading">
-              <v-progress-circular indeterminate size="50" color="#21A0A0" class="mt-1" style=" width: 220px;
-  height: 120px;"></v-progress-circular>
-            </p>
+            <div class="stock-loading" v-show="product.loading">
+              <v-progress-circular indeterminate size="40" color="primary"></v-progress-circular>
+            </div>
 
-            <div style="display: flex; justify-content: space-between">
-              <div style="width: 180px; word-wrap: break-word;">
-                <v-card-title class="item-name py-0 mt-3" style="white-space: normal; word-break: break-word;">
-                  {{
-                  product.item_name
-                  }}</v-card-title>
-                <v-tooltip activator="parent" location="top">{{
-                  product.item_name
-                  }}</v-tooltip>
+            <div class="product-info">
+              <div class="product-details">
+                <span class="item-name">{{ product.item_name }}</span>
+                <v-tooltip activator="parent" location="top">{{ product.item_name }}</v-tooltip>
 
-                <v-card-subtitle v-if="product.custom_discounted_rate > 0" class="actual-item-price mb-2"
-                  style=" text-decoration: line-through!important;color: grey;font-size: 0.9em;margin-right: 5px;">Rs.{{
-                    formatNumber(product.rate) }}</v-card-subtitle>
-                <v-card-subtitle class="item-price mb-2" v-else>QAR.{{ formatNumber(product.rate) }}</v-card-subtitle>
-                <v-card-subtitle class="item-price mb-2" v-show="product.custom_discounted_rate > 0">QAR.{{
-                  formatNumber(product.custom_discounted_rate) }}</v-card-subtitle>
-
+                <span v-if="product.custom_discounted_rate > 0" class="actual-item-price">
+                  QAR {{ formatNumber(product.rate) }}
+                </span>
+                <span class="item-price" v-else>QAR {{ formatNumber(product.rate) }}</span>
+                <span class="item-price" v-show="product.custom_discounted_rate > 0">
+                  QAR {{ formatNumber(product.custom_discounted_rate) }}
+                </span>
               </div>
-              <div>
-
-                <div class="stock-div">
-
-                  <p class="stock-count" :class="{ 'negative-stock': product.actual_qty < 0 }">
-                    {{ product.actual_qty }}
-                  </p>
-                </div>
+              <div class="stock-badge" :class="{ 'stock-negative': product.actual_qty < 0 }">
+                {{ product.actual_qty }}
               </div>
             </div>
           </v-card>
@@ -81,7 +67,7 @@
       </v-row>
       <v-row v-show="itemloading">
         <v-col cols="12" style="display: flex; justify-content: center">
-          <v-progress-circular :size="100" :width="7" color="#21a0a0" indeterminate></v-progress-circular>
+          <v-progress-circular :size="100" :width="7" color="primary" indeterminate></v-progress-circular>
         </v-col>
       </v-row>
     </v-card>
@@ -112,7 +98,7 @@
 
                 <div class="d-flex flex-wrap justify-center gap-2 mt-10">
                   <v-btn v-for="(option, index) in item.values" :key="index"
-                    :color="variantRadio[i] === option ? 'rgb(240, 93, 35)' : '#21A0A0'" variant="tonal"
+                    :color="variantRadio[i] === option ? 'secondary' : 'primary'" variant="tonal"
                     class="mr-2 mt-2" @click="onOptionSelect(i, option)">
                     {{ option.doctype == 'Item Add Ons Child' ? option.display_name : option.abbr }}
                   </v-btn>
@@ -146,7 +132,7 @@
 import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 
 import eventBus from "../../bus";
-import indexedDBService from "../../indexedDB";
+import storageService from "../../storageService";
 
 // Reactive data
 const categories = ref([]);
@@ -386,7 +372,7 @@ const formatNumber = (num) => {
     maximumFractionDigits: 2,
   }).format(num);
 };
-const handleOffline = () => {
+const handleOffline = async () => {
   isOnline.value = false;
   console.log("Internet connection lost.");
   clearInterval(intervalId.value);
@@ -394,35 +380,24 @@ const handleOffline = () => {
   // products.value = [];
   // products.value = JSON.parse(localStorage.getItem("items_storage"));
   eventBus.emit("set_all_items", products.value);
-  // triggerOfflineFunction();  // Call your function to handle offline actions
-  indexedDBService
-    .openDatabase()
-    .then(() => {
-      return indexedDBService.getGroupItems();
-    })
-    .then((data) => {
-      categories.value = [];
-      categories.value = data;
-      selectedCategory.value = categories.value[0];
-      const allItems =
-        JSON.parse(localStorage.getItem("All-items_storage")) || [];
 
-      // Filter items based on the selected category
-      const filteredItems = allItems.filter(
-        (item) =>
-          item.item_group === selectedCategory.value.item_group &&
-          item.order_type == orderType.value
-      );
-      products.value = [];
-      // Store the filtered items in products
-      products.value = filteredItems;
-    })
-    .then(() => {
-      console.log("Customer Info Data extracted successfully");
-    })
-    .catch((error) => {
-      console.error("Error with IndexedDB operation:", error);
-    });
+  const data = await storageService.getGroupItems();
+  categories.value = [];
+  categories.value = data;
+  selectedCategory.value = categories.value[0];
+  const allItems =
+    JSON.parse(localStorage.getItem("All-items_storage")) || [];
+
+  // Filter items based on the selected category
+  const filteredItems = allItems.filter(
+    (item) =>
+      item.item_group === selectedCategory.value.item_group &&
+      item.order_type == orderType.value
+  );
+  products.value = [];
+  // Store the filtered items in products
+  products.value = filteredItems;
+  console.log("Customer Info Data extracted successfully");
 };
 const handleOnline = () => {
   isOnline.value = true;
@@ -445,18 +420,14 @@ const handleOnline = () => {
 // };
 const syncSalesInvoicesFromIndexedDB = async () => {
   /**
-   * This method executes the flow of synchronization of sales_invoice saved in indexedDB.
+   * This method executes the flow of synchronization of sales_invoice saved in localStorage.
    *
    * @param {None} -
    * @returns {None} - Gives a console log mentioning if the record synchronization is true.
    */
   try {
-    // Await the promise returned by openDatabase
-    const db = await indexedDBService.openDatabase();
-    //console.log("Database opened successfully.");
-
     // Fetch unsynced records
-    const allRecords = await fetchUnsyncedSalesInvoiceRecords(db);
+    const allRecords = storageService.getUnsyncedInvoices();
     console.log("Fetched unsynced records:", allRecords);
     console.log("Fetched unsynced records length:", allRecords.length);
     unsyncInvoice.value = allRecords.length;
@@ -464,54 +435,15 @@ const syncSalesInvoicesFromIndexedDB = async () => {
 
     if (allRecords.length == 0) {
       console.log("no data availabe for syning");
-      // indexedDBService
-      //   .openDatabase()
-      //   .then(() => {
-      //     return indexedDBService.clearCreateInvoice();
-      //   })
-      //   .then(() => {
-      //     console.log("get response create_invoice table cleared successfully");
-      //   })
-      //   .catch((error) => {
-      //     console.error("Error get offers:", error);
-      //   });
       clearInterval(intervalId.value);
       intervalId.value = null;
       return;
     }
 
-    // checkConnection();
-
     // Sync each record
     if (!requestComplete.value) {
       for (const record of allRecords) {
-        //console.log("Syncing record:", record);
-        // if (record.invoice.name) {
-        //   console.log("Invoice name", record.invoice.name);
-        //   // checkConnection();
-        //   await syncSalesInvoiceRecord(db, record); // Await each sync operation
-        // }
-        //  else {
-        //   // checkConnection();
-        //   record.invoice = await updateInvoice(record);
-
-        //   // try {
-        //   //   const db = await indexedDBService.openDatabase();
-        //   //   // Update the invoice with the provided invoice data (record.invoice)
-        //   //   record.invoice = await indexedDBService.updateSalesInvoice(
-        //   //     record.id,
-        //   //     record
-        //   //   );
-        //   //   console.log("Record ID after calling the update invoice:", record.id);
-        //   // } catch (error) {
-        //   //   console.error("Error updating or syncing invoice:", error);
-        //   // }
-
-        //   // checkConnection();
-        //   await syncSalesInvoiceRecord(db, record); // Await each sync operation
-        //   console.log("Sync Invoice Record ID:", record.id);
-        // }
-        await syncSalesInvoiceRecord(db, record); // Await each sync operation
+        await syncSalesInvoiceRecord(record); // Await each sync operation
         console.log("Sync Invoice Record ID:", record.id);
       }
     }
@@ -520,69 +452,9 @@ const syncSalesInvoicesFromIndexedDB = async () => {
   }
 };
 
-const fetchUnsyncedSalesInvoiceRecords = async (db) => {
-  /**
-   * Fetches unsynced sales invoice records from IndexedDB.
-   *
-   * @param {Object} db - The database instance.
-   * @returns {Promise<Array>} - A promise that resolves to an array of unsynced records.
-   */
-  try {
-    const transaction = db.transaction(["create_invoice"], "readonly");
-    const objectStore = transaction.objectStore("create_invoice");
-    const unsyncedRecords = [];
-
-    // Open a cursor to iterate over all records
-    return await new Promise((resolve, reject) => {
-      const request = objectStore.openCursor();
-
-      request.onsuccess = (event) => {
-        const cursor = event.target.result;
-        if (cursor) {
-          const record = cursor.value;
-
-          // Check if the record is unsynced
-          if (record.synced === false) {
-            unsyncedRecords.push(record);
-          }
-
-          // Move to the next record
-          cursor.continue();
-        } else {
-          // No more records, resolve with the filtered array
-          resolve(unsyncedRecords);
-        }
-      };
-
-      request.onerror = (event) => {
-        reject(event.target.error);
-      };
-    });
-  } catch (error) {
-    console.error("Error fetching unsynced records:", error);
-    throw error;
-  }
-};
-
-const syncSalesInvoiceRecord = async (db, record) => {
+const syncSalesInvoiceRecord = async (record) => {
   let load = JSON.parse(JSON.stringify(record));
-  // console.log("load offline invoice", load);
-
-  // Fetch the offline invoice log before submitting
-  // await getInvoiceLog();
-
-  // load.invoice.payments.forEach((payment) => {
-  //   if (payment.mode_of_payment === load.mode_of_payment) {
-  //     payment.amount = load.invoice.rounded_total;
-  //   }
-  //   // if (offlineModeOfPayment.value === "") {
-  //   //   load.invoice.payments[0].amount = load.invoice.rounded_total;
-  //   // }
-  // });
-
   try {
-    console.log("Making submit API call with payload:", load);
-    requestComplete.value = true;
     const response = await new Promise((resolve, reject) => {
       // console.log("inPromises", load);
       // checkConnection();
@@ -617,7 +489,7 @@ const syncSalesInvoiceRecord = async (db, record) => {
     });
 
     // console.log("Marking record as synced with ID:", load.id);
-    await markRecordAsSynced(db, load);
+    await markRecordAsSynced(load);
     console.log("Record marked as synced successfully.");
 
     return response;
@@ -670,60 +542,24 @@ const updateInvoice = async (doc) => {
 
 const getInvoiceLog = async () => {
   try {
-    await indexedDBService.openDatabase(); // Open the database
-
-    const data = await indexedDBService.getUpdateInvoice("Sales Invoice");
+    const data = await storageService.getUpdateInvoice("Sales Invoice");
     console.log("get-indexed-db-invoice", data);
-
-    // offlineInvoiceData.value = JSON.parse(JSON.stringify(data)); // Deep copy the data
-    // console.log("Invoice saved successfully");
-
-    // offlineTotalAmount.value = await offlineTotalPayment(); // Set offline total amount
   } catch (error) {
-    console.error("Error with IndexedDB operation:", error);
+    console.error("Error with storage operation:", error);
     throw error; // Propagate the error
   }
 };
 
-async function markRecordAsSynced(db, record) {
+async function markRecordAsSynced(record) {
   try {
-    // Assuming the record ID is stored as id, replace with actual key property if necessary
     const recordId = record.id || record.key || record.recordId;
 
     if (!recordId) {
       throw new Error("Record does not have a valid key or id");
     }
 
-    const transaction = db.transaction(["create_invoice"], "readwrite");
-    const objectStore = transaction.objectStore("create_invoice");
-
-    const request = objectStore.get(recordId);
-
-    request.onsuccess = () => {
-      const existingRecord = request.result;
-      if (existingRecord) {
-        existingRecord.synced = true; // Mark as synced
-
-        const updateRequest = objectStore.put(existingRecord);
-
-        updateRequest.onsuccess = () => {
-          console.log(`Record with ID ${recordId} marked as synced.`);
-        };
-
-        updateRequest.onerror = (event) => {
-          console.error("Error updating the record:", event.target.errorCode);
-        };
-      } else {
-        console.error(`Record with ID ${recordId} not found.`);
-      }
-    };
-
-    request.onerror = (event) => {
-      console.error(
-        "Error retrieving record for syncing:",
-        event.target.errorCode
-      );
-    };
+    await storageService.updateSalesInvoice(recordId, { synced: true });
+    console.log(`Record with ID ${recordId} marked as synced.`);
   } catch (error) {
     console.error("Error in markRecordAsSynced:", error);
   }
@@ -887,25 +723,9 @@ const get_items = async (pos_profile, groupItem) => {
         // Store in localStorage
         localStorage.setItem("items_storage", JSON.stringify(response.message));
 
-        // Save items in IndexedDB
-        indexedDBService
-          .openDatabase()
-          .then((db) => {
-            // Save POS Profile and POS Opening Shift in IndexedDB
-            return Promise.all([
-              indexedDBService.saveItems(JSON.stringify(products.value)),
-            ]);
-          })
-          .then(() => {
-            console.log("Product item saved successfully in Db");
-          })
-          .catch((error) => {
-            console.error("Error saving to IndexedDB:", error);
-          });
-        // await indexedDBService.openDatabase();
-        // await indexedDBService.saveItems(products.value);
-
-        console.log("Items saved successfully!");
+        // Save items in localStorage
+        storageService.saveItems(JSON.stringify(products.value));
+        console.log("Product item saved successfully!");
       }
     } catch (error) {
       console.error("Error saving Items:", error);
@@ -997,20 +817,15 @@ const loadAllItems = async (pos_profile) => {
 };
 const offlineProfileData = async () => {
   try {
-    // Wait for the IndexedDBService to open the database and get the pos_profile
-    const data = await indexedDBService
-      .openDatabase()
-      .then(() => indexedDBService.getPosProfile());
-
-    // console.log("offline pos profile from order summary", data);
+    const data = await storageService.getPosProfile();
 
     if (data && data.length > 0) {
       pos_profile.value = data[0];
     } else {
-      console.error("No profile data found in IndexedDB.");
+      console.error("No profile data found in localStorage.");
     }
   } catch (error) {
-    console.error("Error with IndexedDB operation getting profile:", error);
+    console.error("Error getting profile:", error);
   }
 };
 
@@ -1078,22 +893,8 @@ onMounted(() => {
       loadAllItems(pos_profile.value);
     }
     if (profile) {
-      await indexedDBService
-        .openDatabase()
-        .then((db) => {
-          // Save POS Profile and POS Opening Shift in IndexedDB
-          return Promise.all([
-            indexedDBService.saveItemGroups(
-              JSON.stringify(profile.item_groups)
-            ),
-          ]);
-        })
-        .then(() => {
-          console.log("In component Items Groups data saved to IndexedDB");
-        })
-        .catch((error) => {
-          console.error("Error saving to IndexedDB:", error);
-        });
+      storageService.saveItemGroups(JSON.stringify(profile.item_groups));
+      console.log("Items Groups data saved to localStorage");
     }
     // get_items(profile, selectedCategory.value);
     const complementryMode = pos_profile.value.payments
@@ -1146,118 +947,137 @@ onUnmounted(() => {
   flex-wrap: nowrap;
   overflow-x: auto;
   -ms-overflow-style: none;
-  /* Internet Explorer 10+ */
   scrollbar-width: none;
-  /* Firefox */
+}
+.category-row::-webkit-scrollbar {
+  display: none;
 }
 
 .product-main-card {
   max-height: 80vh;
   height: 80vh;
-  overflow-y: scroll;
+  overflow-y: auto;
   overflow-x: hidden;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
+  border-radius: 16px !important;
+  background: #fff;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: block;
+}
+
+.category-chip {
+  border-radius: 20px !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.3px !important;
+  padding: 0 14px !important;
 }
 
 .hover-card {
-  border-radius: 16px;
+  border-radius: 12px;
+  border: 1px solid #F0F0F0;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  overflow: hidden;
 }
 
 .hover-card:hover {
-  transform: translateY(-5px);
-  transition: transform 0.3s;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
 }
 
-.stock-div {
-  border: 1px solid #fcdfd3;
-  width: 26px;
-  border-radius: 4px;
-  height: 25px;
-  margin-top: 20px;
-  /* margin-right: 14px; */
-  padding-left: 8px;
-  padding-top: 1px;
-  background: #fcdfd3;
-  position: relative;
-  right: 7px;
+.product-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 12px 10px;
 }
 
-.stock-count {
-  color: black;
-  font-size: 12px;
-  width: 80px !important;
-  position: relative;
-  right: 0px;
+.product-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.stock-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 130px;
+}
+
+.stock-badge {
+  background: rgba(var(--v-theme-secondary), 0.1);
+  color: rgb(var(--v-theme-secondary));
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.stock-negative {
+  background: rgba(244, 67, 54, 0.1);
+  color: #F44336;
 }
 
 .item-img {
-  border-top-left-radius: 13px !important;
-  border-top-right-radius: 13px !important;
-  width: 350px;
-  height: 140px;
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 12px !important;
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
 }
 
 .item-name {
-  font-size: 14px;
-  font-weight: 400;
-  font-family: Noto Sans;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .item-price {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  color: #f05d23 !important;
-  font-family: Noto Sans;
+  color: rgb(var(--v-theme-secondary)) !important;
 }
 
 .actual-item-price {
-  font-size: 14px;
-  font-weight: 700;
-  color: #666666 !important;
-  font-family: Noto Sans;
-}
-
-.title-h {
-  font-size: 16px;
-  font-weight: 600;
-  font-family: Noto Sans;
-}
-
-.category-p {
-  color: black !important;
+  font-size: 12px;
+  font-weight: 500;
+  color: #999 !important;
+  text-decoration: line-through;
 }
 
 .unactive-catgory {
-  background-color: #d3ecec !important;
-  border-radius: 8px !important;
-  border: 1px solid #21a0a0 !important;
+  background-color: rgba(var(--v-theme-primary), 0.08) !important;
+  border: 1px solid rgba(var(--v-theme-primary), 0.3) !important;
 }
 
 .active-catgory {
-  background-color: #fcdfd3 !important;
-  border-radius: 8px !important;
-  border: 1px solid #f05d23 !important;
-}
-
-.negative-stock {
-  width: 60px;
-  position: relative;
-  right: 4px;
+  color: white !important;
 }
 
 .required-p {
-  /* position: relative;
-  top: 8px;
-  right: 8px; */
   color: red;
   font-size: 12px;
   text-transform: uppercase;
 }
 
 .added-p {
-  /* position: relative;
-  top: 8px;
-  right: 8px; */
   color: white;
   font-size: 14px;
   background: #8bc24a;

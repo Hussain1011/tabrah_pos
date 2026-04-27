@@ -20,7 +20,7 @@
                     class="mt-5 text-center"
                     style="font-size: 28px; font-weight: 600"
                   >
-                    Welcome to ZARA SHAHJAHAN 
+                    Welcome to Tabrah POS 
                   </p>
                 </div>
               </div>
@@ -93,7 +93,7 @@
                         Rs. {{ parseFloat(grandTotal).toFixed(2) }}
                       </h6>
                       <div
-                        style="width: 100%; height: 1px; background: #21a0a0"
+                        style="width: 100%; height: 1px; background: rgb(var(--v-theme-primary))"
                         class="mt-3"
                       ></div>
                     </div>
@@ -105,7 +105,7 @@
                         Rs. {{ parseFloat(gstAmount).toFixed(2) }}
                       </h6>
                       <div
-                        style="width: 100%; height: 1px; background: #21a0a0"
+                        style="width: 100%; height: 1px; background: rgb(var(--v-theme-primary))"
                         class="mt-3"
                       ></div>
                     </div>
@@ -117,7 +117,7 @@
                         Rs. {{ parseFloat(netTotal).toFixed(2) }}
                       </h6>
                       <div
-                        style="width: 100%; height: 1px; background: #21a0a0"
+                        style="width: 100%; height: 1px; background: rgb(var(--v-theme-primary))"
                         class="mt-3"
                       ></div>
                     </div>
@@ -127,7 +127,7 @@
                       <h5 class="title py-2">Discount</h5>
                       <h6 class="amount py-2" style="color: #818181">Rs. 0.00</h6>
                       <div
-                        style="width: 100%; height: 1px; background: #21a0a0"
+                        style="width: 100%; height: 1px; background: rgb(var(--v-theme-primary))"
                         class="mt-3"
                       ></div>
                     </div>
@@ -135,11 +135,11 @@
                   <v-col cols="6" md="2">
                     <div>
                       <h5 class="title py-2">Gross Total</h5>
-                      <h6 class="amount py-2" style="color: #f05d23">
+                      <h6 class="amount py-2" style="color: rgb(var(--v-theme-secondary))">
                         Rs. {{ parseFloat(grandTotal).toFixed(2) }}
                       </h6>
                       <div
-                        style="width: 100%; height: 1px; background: #f05d23"
+                        style="width: 100%; height: 1px; background: rgb(var(--v-theme-secondary))"
                         class="mt-3"
                       ></div>
                     </div>
@@ -153,7 +153,7 @@
                         Rs. {{ parseFloat(invoiceDoc.total).toFixed(2) }}
                       </h6>
                       <div
-                        style="width: 100%; height: 1px; background: #21a0a0"
+                        style="width: 100%; height: 1px; background: rgb(var(--v-theme-primary))"
                         class="mt-3"
                       ></div>
                     </div>
@@ -170,7 +170,7 @@
                         }}
                       </h6>
                       <div
-                        style="width: 100%; height: 1px; background: #21a0a0"
+                        style="width: 100%; height: 1px; background: rgb(var(--v-theme-primary))"
                         class="mt-3"
                       ></div>
                     </div>
@@ -182,7 +182,7 @@
                         Rs. {{ parseFloat(invoiceDoc.net_total).toFixed(2) }}
                       </h6>
                       <div
-                        style="width: 100%; height: 1px; background: #21a0a0"
+                        style="width: 100%; height: 1px; background: rgb(var(--v-theme-primary))"
                         class="mt-3"
                       ></div>
                     </div>
@@ -195,7 +195,7 @@
                         {{ parseFloat(invoiceDoc.discount_amount).toFixed(2) }}
                       </h6>
                       <div
-                        style="width: 100%; height: 1px; background: #21a0a0"
+                        style="width: 100%; height: 1px; background: rgb(var(--v-theme-primary))"
                         class="mt-3"
                       ></div>
                     </div>
@@ -207,7 +207,7 @@
                         Rs. {{ parseFloat(invoiceDoc.grand_total).toFixed(2) }}
                       </h6>
                       <div
-                        style="width: 100%; height: 1px; background: #f05d23"
+                        style="width: 100%; height: 1px; background: rgb(var(--v-theme-secondary))"
                         class="mt-3"
                       ></div>
                     </div>
@@ -237,7 +237,7 @@
                   class="mt-5 text-center"
                   style="font-size: 28px; font-weight: 600"
                 >
-                  Welcome to ZARA SHAHJAHAN 
+                  Welcome to Tabrah POS 
                 </p>
               </div>
             </div>
@@ -319,7 +319,7 @@
     margin-top: 60px;
   }
   
-  .zara-title {
+  .tabrah-title {
     font-family: Noto Sans;
     font-weight: 500;
     font: Noto Sans;

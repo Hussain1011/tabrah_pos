@@ -5,7 +5,7 @@
         <h3>POS Orders</h3>
       </v-col>
       <v-col cols="3" class="d-flex justify-end pr-11">
-        <v-btn variant="outlined" size="large" class="text-capitalize mr-2" color="#21A0A0" style="border-radius: 8px">
+        <v-btn variant="outlined" size="large" class="text-capitalize mr-2" color="primary" style="border-radius: 8px">
           <!-- <v-icon class="mr-2">mdi-plus</v-icon> -->
           <p class="mt-2 category-p">Completed</p>
         </v-btn>
@@ -13,7 +13,7 @@
               variant="outlined"
               size="large"
               class="text-capitalize mr-2"
-              color="#21A0A0"
+              color="primary"
               style="border-radius: 8px"
               @click="getHoldOrders()"
               width="300px"
@@ -40,7 +40,7 @@
                 <!-- <v-icon @click.stop="deleteItem(order.id)" color="red"
                     >mdi-delete</v-icon
                   > -->
-                <v-chip color="#21A0A0">
+                <v-chip color="primary">
                   Completed
                 </v-chip>
 
@@ -100,7 +100,7 @@
             </v-col>
             <v-col cols="auto">
               <v-card-title class="d-flex justify-end">
-                <v-btn variant="text" size="x-small" density="default" color="white" style="background: #F05D23"
+                <v-btn variant="text" size="x-small" density="default" color="white" style="background: rgb(var(--v-theme-secondary))"
                   @click="closeDialog()">
                   <v-icon>mdi-close</v-icon>
                 </v-btn>
@@ -125,7 +125,7 @@
                     <div class="dis-grid">
                       <div class="d-flex justify-space-between px-2">
                         <div class="" style="color: #666666;">#45211</div>
-                        <v-chip color="#21A0A0" size="small">
+                        <v-chip color="primary" size="small">
                           Completed
                         </v-chip>
 
@@ -157,7 +157,7 @@
                       .map((item) => item.item_name)
                       .join(", ")
                   }}<span v-if="order.items.length > 6">, +{{ order.items.length - 6 }} more</span> -->
-                        zara, gul Ahmed,
+                        tabrah,
                       </p>
                     </div>
 
@@ -202,7 +202,7 @@
               </div>
 
               <div class="pt-5 d-flex justify-center">
-                <v-btn class="white--text font-weight-bold payment-button" height="52" color="#21A0A0"
+                <v-btn class="white--text font-weight-bold payment-button" height="52" color="primary"
                   @click="goForPayment" :loading="loadingBtn" :disabled="loadingBtn" style="width: 321px;">
                   <p class="mt-2 payment-p">PAYMENT</p>
                 </v-btn>
@@ -353,7 +353,7 @@ onMounted(() => {
 }
 
 .selected-card {
-  background: #fcdfd3 !important;
+  background: rgba(var(--v-theme-secondary), 0.15) !important;
 }
 
 .dotted-divider {

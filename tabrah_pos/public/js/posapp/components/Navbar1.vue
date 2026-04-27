@@ -1,56 +1,58 @@
 <template>
-  <!-- <v-app> -->
-  <!-- App Bar (Navbar) -->
   <div>
-    <v-app-bar app color="white" height="55" class="elevation-0">
-      <!-- <v-app-bar-nav-icon @click="drawer = !drawer" /> -->
-      <p style="margin-left: 24px;
-    margin-top: 11px;
-    font-size: 18px;
-    font-weight: 600;
-    text-transform: uppercase;color: #21A0A0;" @click="go_desk">{{ pos_profile.company }}</p>
+    <!-- Modern App Bar -->
+    <v-app-bar app height="56" class="pos-top-bar elevation-0" style="background: white; border-bottom: 1px solid #DEE2E6;">
+      <!-- Left: Brand -->
+      <div class="d-flex align-center" style="margin-left: 20px;">
+        <div class="pos-brand-icon" @click="go_desk">
+          <v-icon size="24" color="primary">mdi-store</v-icon>
+        </div>
+        <span class="ml-3" @click="go_desk" style="cursor: pointer; font-size: 18px; font-weight: 700; text-transform: uppercase; color: rgb(var(--v-theme-primary));">{{ pos_profile.company || 'POS' }}</span>
+      </div>
 
-      <!-- <v-toolbar-title
-        style="cursor: pointer"
-        class="text-uppercase primary--text ml-1"
-        @click="go_desk"
-      >
-        <span class="font-weight-light primary--text"></span>
-        <span class="ml-2 primary--text"></span>
-      </v-toolbar-title> -->
+      <!-- Center: Navigation Buttons -->
+      <div class="d-flex align-center justify-center" style="position: absolute; left: 50%; transform: translateX(-50%); gap: 8px;">
+        <v-btn variant="tonal" color="primary" size="small" @click="goToDashboard()">
+          <v-icon size="18" class="mr-1">mdi-view-grid-outline</v-icon>
+          POS
+        </v-btn>
+        <v-btn variant="tonal" color="primary" size="small" @click="goToHoldOrder()">
+          <v-icon size="18" class="mr-1">mdi-clipboard-text-outline</v-icon>
+          Hold
+        </v-btn>
+      </div>
+
       <v-spacer></v-spacer>
-      <!-- <v-btn color="#21A0A0" class="mr-3" style="background-color: rgb(211, 236, 236);"  @click="openCustomerScreen">
-        Customer screen
-      </v-btn>
-      <v-switch
-        v-model="isInternet"
-        :label="isInternet ? 'System is Online' : 'System is Offline'"
-        hide-details
-        inset
-        class="switch-btn"
-        color="#21A0A0"
-        @click="isInternet=!isInternet"
-      ></v-switch> -->
-      <v-btn style="cursor: unset" text color="#21A0A0">
-        <span right>{{ pos_profile.name }}</span>
-      </v-btn>
-      <div class="text-center">
-        <v-menu transition="slide-x-transition">
+
+      <!-- Right: POS name, Close POS, Menu -->
+      <div class="d-flex align-center" style="gap: 8px; margin-right: 12px;">
+        <span style="font-size: 13px; font-weight: 600; color: #6C757D;">{{ pos_profile.name }}</span>
+
+        <v-btn variant="outlined" color="error" size="small" @click="go_desk()"
+          style="text-transform: none; font-weight: 600; border-radius: 10px;">
+          <v-icon size="16" class="mr-1">mdi-logout</v-icon>
+          Close POS
+        </v-btn>
+
+        <v-menu transition="slide-y-transition" offset-y>
           <template v-slot:activator="{ props }">
-            <v-btn color="#21A0A0" dark text v-bind="props"> Menu </v-btn>
+            <v-btn variant="tonal" color="primary" v-bind="props" size="small">
+              <v-icon size="18" class="mr-1">mdi-menu</v-icon>
+              Menu
+            </v-btn>
           </template>
 
-          <v-list>
-            <v-list-item class="d-flex" @click="closeShift()">
-              <div style="display: flex">
-                <v-icon class="mr-2 mt-1">mdi-content-save-move-outline</v-icon>
-                <v-list-item-title>Close Shift</v-list-item-title>
+          <v-list class="py-1" style="border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 180px;">
+            <v-list-item class="d-flex" @click="closeShift()" style="border-radius: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <v-icon size="20" color="primary">mdi-content-save-move-outline</v-icon>
+                <v-list-item-title style="font-size: 13px; font-weight: 500;">Close Shift</v-list-item-title>
               </div>
             </v-list-item>
-            <v-list-item class="d-flex" @click="logOut()">
-              <div style="display: flex">
-                <v-icon class="mr-2 mt-1">mdi-logout</v-icon>
-                <v-list-item-title>Logout</v-list-item-title>
+            <v-list-item class="d-flex" @click="logOut()" style="border-radius: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <v-icon size="20" color="error">mdi-logout</v-icon>
+                <v-list-item-title style="font-size: 13px; font-weight: 500;">Logout</v-list-item-title>
               </div>
             </v-list-item>
           </v-list>
@@ -58,122 +60,10 @@
       </div>
     </v-app-bar>
 
-    <!-- Navigation Drawer -->
-    <v-navigation-drawer style="background-color: #0d1821; width: 65px" permanent rail>
-      <v-list-item>
-        <!-- <v-img
-          src="/assets/tabrah_pos/js/posapp/components/"
-          alt="POS"
-          max-width="70"
-          @click="go_desk"
-          class="ml-1 pt-3"
-        ></v-img> -->
-      </v-list-item>
-
-      <v-divider></v-divider>
-
-      <v-list density="compact" nav class="px-0 curser-pointer" style="padding-top: 124px">
-        <v-list-item @click="goToDashboard()">
-          <v-img class="img pl-1" :src="`/assets/tabrah_pos/js/posapp/components/pos/dashboard.png`" alt="" cover
-            style="width: 38px; height: 40px"></v-img>
-          <p style="color: white" class="mb-0 pl-1">Dash</p>
-          <p style="color: white" class="pt-0">board</p>
-        </v-list-item>
-        <v-list-item class="mt-4" @click="goToHoldOrder()">
-          <v-img class="img pl-1" :src="`/assets/tabrah_pos/js/posapp/components/pos/receipt.png`" alt="" cover
-            style="width: 38px; height: 40px"></v-img>
-          <p style="color: white" class="ml-1 mb-0">Hold</p>
-          <p style="color: white" class="pt-0">Orders</p>
-        </v-list-item>
-        <!-- <v-list-item class="mt-4" @click="goToOrderHistory()">
-          <v-img
-            class="img pl-1"
-            src="/assets/tabrah_pos/js/posapp/components/pos/store.png"
-            alt=""
-            cover
-            style="width: 38px; height: 40px"
-          ></v-img>
-          <p style="color: white" class="ml-1 mb-0">Sale</p>
-          <p style="color: white" class="pt-0">Orders</p>
-        </v-list-item> -->
-      </v-list>
-      <!-- <div style="padding-top: 300px">
-        <v-tooltip bottom style="" theme="black">
-          <template #activator="{ props }">
-            <v-badge color="error" :content="unsyncInvoice" class="">
-              <v-icon
-                v-bind="props"
-                size="32"
-                color="white"
-                class="pl-7 curser-pointer"
-              >
-                mdi-sync-off
-              </v-icon>
-            </v-badge>
-          </template>
-          <span>Unsync Invoice: {{ unsyncInvoice }} </span>
-        </v-tooltip>
-      </div> -->
-    </v-navigation-drawer>
-
-    <!-- <v-navigation-drawer
-      app
-      expand-on-hover
-      rail
-      v-model="drawer"
-      temporary
-      style="background-color: #0d1821"
-    >
-      <div>
-        <v-list density="compact" nav>
-          <v-list-item
-            title="Dashboard"
-            value="Dashboard"
-            style="color: white"
-            @click="goToDashboard()"
-          >
-            <template v-slot:prepend>
-              <v-icon size="36" color="white" class="pr-3"
-                >mdi-view-dashboard</v-icon
-              >
-            </template>
-          </v-list-item>
-          <v-list-item
-            title="Order History"
-            value="Order history"
-            style="color: white"
-            @click="goToOrderHistory()"
-          >
-            <template v-slot:prepend>
-              <v-icon size="36" color="white" class="pr-3">mdi-receipt</v-icon>
-            </template>
-          </v-list-item>
-          <v-list-item
-            title="Hold Order"
-            value="Hold Order"
-            style="color: white"
-            @click="goToHoldOrder()"
-          >
-            <template v-slot:prepend>
-              <v-icon size="36" color="white" class="pr-3">mdi-receipt</v-icon>
-            </template>
-          </v-list-item>
-          <v-list-item style="color: white">
-            <template v-slot:prepend>
-              <v-icon size="36" color="white" class="pr-3">mdi-sync-off</v-icon>
-            </template>
-            <template v-slot:title>
-              Unsync Invoice: <span>{{ unsyncInvoice }}</span>
-            </template>
-          </v-list-item>
-        </v-list>
-    
-      </div>
-    </v-navigation-drawer> -->
-
+    <!-- Notification Snackbar -->
     <div>
-      <v-snackbar v-model="snack" top right :elevation="0" :timeout="5000" :color="snackColor"
-        class="snack custom-snackbar" :class="'snack-type-' + type">
+      <v-snackbar v-model="snack" location="top right" :elevation="0" :timeout="4000" :color="snackColor"
+        class="pos-snackbar" :class="'snack-type-' + type">
         <div class="notification-content">
           <div class="notification-icon" :class="type">
             <v-icon v-if="type === 'success'">mdi-check-bold</v-icon>
@@ -192,23 +82,14 @@
         </template>
       </v-snackbar>
     </div>
-
-    <!-- Main Content -->
-    <v-main>
-      <!-- <v-container>
-        <h1>Main Content Area</h1>
-        <p>This is where the content of your application will go.</p>
-      </v-container> -->
-      <!-- <POS/> -->
-    </v-main>
   </div>
-  <!-- </v-app> -->
 </template>
 
 <script>
 import { ref, onMounted, watch, onUnmounted } from "vue";
-import POS from "./zaraPos/Home.vue";
+import POS from "./tabrahPos/Home.vue";
 import eventBus from "../bus";
+import storageService from "../storageService";
 
 export default {
   name: "NavDrawer",
@@ -293,10 +174,7 @@ export default {
     };
     const syncSalesInvoicesFromIndexedDB = async () => {
       try {
-        // Await the promise returned by openDatabase
-        const db = await indexedDBService.openDatabase();
-        const allRecords = await fetchUnsyncedSalesInvoiceRecords(db);
-        // console.log("Fetched unsynced records length:", allRecords.length);
+        const allRecords = storageService.getUnsyncedInvoices();
         unsyncInvoice.value = allRecords.length;
       } catch (error) {
         console.error("Error during synchronization:", error);
@@ -413,6 +291,11 @@ export default {
       });
       eventBus.on("send_pos_profile", (profile) => {
         pos_profile.value = profile;
+        // Switch Vuetify theme based on company
+        if (window.__posVuetify && window.__posGetTheme) {
+          const themeName = window.__posGetTheme(profile.company);
+          window.__posVuetify.theme.global.name.value = themeName;
+        }
       });
       eventBus.on("show_mesage", (data) => {
         showNotification(data);
@@ -458,13 +341,30 @@ export default {
 </script>
 
 <style scoped>
-/* Add custom styling as necessary */
+.pos-top-bar {
+  z-index: 101 !important;
+}
+.pos-brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #F3EDF2;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.pos-brand-icon:hover {
+  background: #714B67;
+}
+.pos-brand-icon:hover .v-icon {
+  color: white !important;
+}
 .custom-snackbar {
   position: fixed !important;
   top: 40px !important;
   right: 20px;
   z-index: 9999;
-  /* Ensures it appears on top of other content */
   margin: 0;
 }
 </style>

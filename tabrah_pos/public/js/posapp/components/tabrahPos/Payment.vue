@@ -1,18 +1,20 @@
 <template>
   <div>
-    <v-card class="payment-card py-4 px-8">
+    <v-card class="payment-card py-4 px-6">
       <!-- Payment Method Selection -->
-      <p>Select Payment method</p>
+      <span style="font-size: 13px; font-weight: 600; color: #666; letter-spacing: 0.5px; text-transform: uppercase;">Payment Method</span>
 
-      <v-row>
+      <v-row class="mt-2">
         <v-col cols="12" md="7" class="d-flex">
           <div class="payment-container" :class="{
             'scrollable-container-horizontal': paymentModes.length > 3,
           }">
-            <v-btn v-for="category in paymentModes" :key="category.mode_type" variant="outlined" size="large"
-              class="text-capitalize b-radius-8 ml-2" :color="category.selected ? '#f05d23' : '#21A0A0'"
-              style="border-radius: 8px" @click="changePaymentType(category)">
-              <v-icon class="pr-2">{{
+            <v-btn v-for="category in paymentModes" :key="category.mode_type" size="large"
+              class="text-capitalize payment-mode-chip ml-2" 
+              :color="category.selected ? 'secondary' : 'primary'" 
+              :variant="category.selected ? 'flat' : 'outlined'"
+              @click="changePaymentType(category)">
+              <v-icon size="18" class="mr-2">{{
                 category.mode_type == "Cash" ? "mdi-cash" : "mdi-credit-card"
                 }}</v-icon>
               <p class="mt-2 category-p">{{ category.mode_of_payment }}</p>
@@ -21,14 +23,14 @@
         </v-col>
         <v-col cols="12" md="5" class="text-right d-flex align-center justify-end">
           
-          <v-divider vertical class="mx-2" style="height: 40px; background: #000; min-width: 2px;"></v-divider>
-          <v-btn class="mr-2 b-radius-8" color="#21A0A0" size="large" variant="outlined"
-            style="background-color: #d3ecec" @click="backToProductMenu()">
-            <v-icon left class="pr-2">mdi-arrow-left</v-icon> Back
+          <v-divider vertical class="mx-3" style="height: 36px; opacity: 0.3;"></v-divider>
+          <v-btn class="mr-2 action-btn-sm" color="primary" size="large" variant="tonal"
+            @click="backToProductMenu()">
+            <v-icon size="18" class="mr-1">mdi-arrow-left</v-icon> Back
           </v-btn>
-          <v-btn size="large" variant="outlined" color="#F05D23" class="b-radius-8" style="background-color: #fcdfd3"
+          <v-btn size="large" variant="tonal" color="error" class="action-btn-sm"
             @click="cancelOrder()" :disabled="punching == 'inprocess'">
-            <v-icon left class="pr-2">mdi-cancel</v-icon> Cancel Order
+            <v-icon size="18" class="mr-1">mdi-close-circle-outline</v-icon> Cancel
           </v-btn>
         </v-col>
       </v-row>
@@ -76,7 +78,7 @@
           <v-btn
             v-if="!selectedOffer"
             class="b-radius-8 offer-btn-style"
-            color="#21A0A0"
+            color="primary"
             @click="openOffersDialog"
             style="
               height: 56px; 
@@ -123,11 +125,11 @@
       <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
         <v-btn 
           class="b-radius-8 split-btn-style" 
-          :color="splitPayment ? '#F05D23' : '#21A0A0'" 
+          :color="splitPayment ? 'secondary' : 'primary'" 
           size="large" 
           variant="outlined"
           :style="{ 
-            backgroundColor: splitPayment ? '#fcdfd3' : '#d3ecec',
+            backgroundColor: splitPayment ? 'rgba(var(--v-theme-secondary), 0.15)' : 'rgba(var(--v-theme-primary), 0.15)',
             height: '56px',
             width: '100%'
           }" 
@@ -140,148 +142,123 @@
     </v-row>
 
       <!-- Paid Amount, To Be Paid, and Change Details -->
-      <v-row class="pt-0 mt-0">
+      <v-row class="pt-0 mt-0" dense>
         <v-col cols="2" class="pt-0">
-          <div class="amount-div paid-div">
-            <p class="py-0 amount-title mb-2">Paid Amount</p>
-            <p class="amount-pay">
-              QAR. {{ formatNumber(totalPaidAmount) || 0.0 }}
-            </p>
+          <div class="amount-card paid-card">
+            <span class="amount-label">Paid Amount</span>
+            <span class="amount-value">QAR {{ formatNumber(totalPaidAmount) || '0.00' }}</span>
           </div>
         </v-col>
         <v-col cols="2" class="pt-0">
-          <div class="amount-div to-paid-div">
-            <p class="py-0 amount-title mb-2">To Be Paid</p>
-            <p class="amount-pay">
-              QAR. {{ formatNumber(invoice_doc.grand_total) }}
-            </p>
+          <div class="amount-card topaid-card">
+            <span class="amount-label">To Be Paid</span>
+            <span class="amount-value">QAR {{ formatNumber(invoice_doc.grand_total) }}</span>
           </div>
         </v-col>
         <v-col cols="3" class="pt-0">
-          <div class="amount-div to-paid-div">
-            <p class="py-0 amount-title mb-2">Remaining paid amount</p>
-            <p class="amount-pay">
-              QAR. {{ formatNumber(invoice_doc.remaining_amount) || 0 }}
-            </p>
+          <div class="amount-card topaid-card">
+            <span class="amount-label">Remaining</span>
+            <span class="amount-value">QAR {{ formatNumber(invoice_doc.remaining_amount) || '0' }}</span>
           </div>
         </v-col>
         <v-col cols="2" class="pt-0">
-          <div class="amount-div change-div">
-            <p class="py-0 amount-title mb-2">Change</p>
-            <p class="amount-pay">QAR. -{{ formatNumber(changeAmount) }}</p>
+          <div class="amount-card change-card">
+            <span class="amount-label">Change</span>
+            <span class="amount-value">QAR -{{ formatNumber(changeAmount) }}</span>
           </div>
         </v-col>
         <v-col cols="3" class="pt-0" v-if="invoice_doc.exchangeItem">
-          <div class="amount-div change-div">
-            <p class="py-0 amount-title mb-2">Advance Amount</p>
-            <p class="amount-pay">QAR. {{ formatNumber(invoice_doc.advanceAmount) }}</p>
+          <div class="amount-card change-card">
+            <span class="amount-label">Advance Amount</span>
+            <span class="amount-value">QAR {{ formatNumber(invoice_doc.advanceAmount) }}</span>
           </div>
         </v-col>
-        <v-col class="flex-grow-1" style="min-width: 200px; max-width: 100%">
+        <v-col class="flex-grow-1 pt-0" style="min-width: 200px; max-width: 100%">
         <v-btn 
           class="b-radius-8" 
-          color="#21A0A0" 
+          color="primary" 
           size="large" 
-          variant="outlined"
+          variant="tonal"
           :style="{ 
-            backgroundColor: '#d3ecec',
             height: '56px',
             width: '100%'
           }" 
           @click="roundFloorCash()"
         >
-          <v-icon left>mdi-calculator</v-icon>
+          <v-icon size="18" class="mr-1">mdi-calculator</v-icon>
           Round Off
         </v-btn>
       </v-col>
       </v-row>
 
       <!-- Total, Tax, Net Total, Discount, Gross Total -->
-      <v-row class="my-4">
+      <v-row class="my-3" dense>
         <v-col cols="2">
-          <div class="amount-title">Total Amount</div>
-          <div class="grey--text amount-pay pt-2">
-            QAR. {{ invoice_doc.total ? formatNumber(invoice_doc.total) : 0 }}
+          <div class="summary-stat">
+            <span class="summary-stat-label">Total Amount</span>
+            <span class="summary-stat-value">QAR {{ invoice_doc.total ? formatNumber(invoice_doc.total) : '0.00' }}</span>
+            <div class="summary-stat-bar" style="background: rgb(var(--v-theme-primary));"></div>
           </div>
-          <v-divider :thickness="2" class="border-opacity-75" style="background-color: #21a0a0"></v-divider>
         </v-col>
         <v-col cols="2">
-          <div class="grey--text amount-title">
-            Tax (GST {{ paymentType.tax_rate }}%)
+          <div class="summary-stat">
+            <span class="summary-stat-label">Tax (GST {{ paymentType.tax_rate }}%)</span>
+            <span class="summary-stat-value" style="color: #333;">QAR {{ invoice_doc.total_taxes_and_charges ? formatNumber(invoice_doc.total_taxes_and_charges) : '0.00' }}</span>
+            <div class="summary-stat-bar" style="background: rgb(var(--v-theme-primary));"></div>
           </div>
-          <div class="black--text amount-pay-one pt-2">
-            QAR.
-            {{
-              invoice_doc.total_taxes_and_charges
-                ? formatNumber(invoice_doc.total_taxes_and_charges)
-                : 0
-            }}
-          </div>
-          <v-divider :thickness="2" class="border-opacity-75" style="background-color: #21a0a0"></v-divider>
         </v-col>
         <v-col cols="2">
-          <div class="grey--text amount-title">Net Total</div>
-          <div class="grey--text amount-pay pt-2">
-            QAR. {{ formatNumber(invoice_doc.net_total) }}
+          <div class="summary-stat">
+            <span class="summary-stat-label">Net Total</span>
+            <span class="summary-stat-value">QAR {{ formatNumber(invoice_doc.net_total) }}</span>
+            <div class="summary-stat-bar" style="background: rgb(var(--v-theme-primary));"></div>
           </div>
-          <v-divider :thickness="2" class="border-opacity-75" style="background-color: #21a0a0"></v-divider>
         </v-col>
         <v-col cols="2">
-          <div class="grey--text amount-title">Discount</div>
-          <div class="grey--text amount-pay pt-2">
-            QAR.{{ formatNumber(invoice_doc.discount_amount) }}
+          <div class="summary-stat">
+            <span class="summary-stat-label">Discount</span>
+            <span class="summary-stat-value">QAR {{ formatNumber(invoice_doc.discount_amount) }}</span>
+            <div class="summary-stat-bar" style="background: rgb(var(--v-theme-primary));"></div>
           </div>
-          <v-divider :thickness="2" class="border-opacity-75" style="background-color: #21a0a0"></v-divider>
         </v-col>
         <v-col cols="2">
-          <div class="grey--text amount-title">Gross Total</div>
-          <div class="black--text amount-pay-one pt-2">
-            QAR. {{ formatNumber(invoice_doc.grand_total) }}
+          <div class="summary-stat">
+            <span class="summary-stat-label">Gross Total</span>
+            <span class="summary-stat-value" style="color: #333; font-weight: 700;">QAR {{ formatNumber(invoice_doc.grand_total) }}</span>
+            <div class="summary-stat-bar" style="background: rgb(var(--v-theme-secondary));"></div>
           </div>
-          <v-divider :thickness="2" class="border-opacity-75" style="background-color: #f05d23"></v-divider>
         </v-col>
       </v-row>
     </v-card>
 
     <!-- Action Buttons -->
-    <v-row class="px-6 pt-6">
-      <v-col cols="2"></v-col>
-      <v-col cols="2">
-        <!-- <v-btn
-            size="x-large"
-            variant="outlined"
-            color="#21A0A0"
-            class="text-capitalize ml-2"
-            style="background-color: #d3ecec; border-radius: 8px"
-          >
-            <v-icon left class="pr-2">mdi-pause-circle</v-icon> Hold Order
-          </v-btn> -->
-      </v-col>
-      <v-col cols="2">
-        <v-btn size="x-large" variant="outlined" class="text-capitalize" color="#21A0A0"
-          style="background-color: #d3ecec; border-radius: 8px" :loading="btnLoading1"
+    <v-row class="px-6 pt-4" dense>
+      <v-col cols="4">
+        <v-btn block size="x-large" variant="tonal" class="text-capitalize action-btn-sm" color="primary"
+          :loading="btnLoading1"
           @click="submitSaleInvoice(undefined, false, true)">
-          <v-icon left>mdi-printer</v-icon> Print Receipt
+          <v-icon size="20" class="mr-2">mdi-printer-outline</v-icon> Print Receipt
         </v-btn>
       </v-col>
-      <v-col cols="6">
-        <v-btn block size="x-large" color="#21A0A0" style="border-radius: 8px" class="white--text checkout-p"
+      <v-col cols="8">
+        <v-btn block size="x-large" color="primary" class="checkout-btn"
           @click="submitSaleInvoice()" :loading="btnLoading">
-          <p class="checkout-p mt-3">CHECKOUT</p>
+          <v-icon size="22" class="mr-2">mdi-check-circle-outline</v-icon>
+          CHECKOUT
         </v-btn>
       </v-col>
     </v-row>
 
     <!-- Numpad Section (Keyboard) -->
-    <v-row>
+    <v-row class="px-4">
       <v-col cols="12">
-        <v-card class="keyboard-card">
+        <v-card class="keyboard-card" elevation="0" style="border: 1px solid #E8E8E8;">
           <div class="text-center">
-            <v-row>
+            <v-row dense>
               <v-col v-for="(button, index) in numpad" :key="index" cols="4" class="py-1">
-                <v-btn class="mx-2 text-capitalize b-radius-8" variant="outlined" color="#21A0A0" block
-                  style="background-color: #d3ecec" size="large" @click="handleNumpadClick(button)">
-                  <p class="mt-4 btn-p">{{ button }}</p>
+                <v-btn class="numpad-btn" variant="tonal" color="primary" block
+                  size="large" @click="handleNumpadClick(button)">
+                  {{ button }}
                 </v-btn>
               </v-col>
             </v-row>
@@ -374,9 +351,8 @@
 <script setup>
 import { ref, onMounted, watch, onUnmounted, computed } from "vue";
 import eventBus from "../../bus.js";
-import indexedDBService from "../../indexedDB";
+import storageService from "../../storageService";
 import { printInvoice } from "../../printing";
-import { sync_fbr } from "../../tax_integration";
 import { handlePaymentNetworkPrinting } from "../../qzTrayService";
 import { printKot } from "../../kotPrint.js";
 
@@ -432,8 +408,6 @@ const isCardAuto = computed(() =>
 const isPaidEditable = computed(() =>
   !isCardAuto.value && !splitPayment.value
 );
-
-const fbrResponse = ref("");
 
 const requiredOrderId = ref(false);
 
@@ -877,34 +851,28 @@ const set_full_amount = (idx) => {
   }
 };
 
-const offlineProfileData = () => {
-  indexedDBService
-    .openDatabase()
-    .then(() => {
-      return indexedDBService.getPosProfile();
-    })
-    .then((data) => {
-      console.log("offline pos profile from iindexed db", data[0]);
-      pos_profile.value = data[0];
-      employeesList.value = pos_profile.value.employee_list
+const offlineProfileData = async () => {
+  try {
+    const data = await storageService.getPosProfile();
+    console.log("offline pos profile from localStorage", data[0]);
+    pos_profile.value = data[0];
+    employeesList.value = pos_profile.value.employee_list
 
-      // paymentModes.value = pos_profile.value.payments;
-      paymentModes.value = pos_profile.value.payments.filter((payment) => {
-        return payment.custom_order_type == selectedOrderType.value;
-      });
-      paymentModes.value = uniqueByModeOfPayment(paymentModes.value);
-      paymentModes.value.forEach((item) => {
-        if (item.default) {
-          item.selected = true;
-          paymentType.value = item;
-        } else {
-          item.selected = false;
-        }
-      });
-    })
-    .catch((error) => {
-      console.error("Error with IndexedDB operation getting prfile:", error);
+    paymentModes.value = pos_profile.value.payments.filter((payment) => {
+      return payment.custom_order_type == selectedOrderType.value;
     });
+    paymentModes.value = uniqueByModeOfPayment(paymentModes.value);
+    paymentModes.value.forEach((item) => {
+      if (item.default) {
+        item.selected = true;
+        paymentType.value = item;
+      } else {
+        item.selected = false;
+      }
+    });
+  } catch (error) {
+    console.error("Error getting profile:", error);
+  }
 };
 
 const cancelOrder = () => {
@@ -1187,43 +1155,9 @@ const forExchangeSaleInvoice = async (event,
       eventBus.emit("punching-status", punching.value);
       console.log("submit-invoice Successfully", response.message);
       btnLoading1.value = false;
-      const hasBankPayment = invoice_doc.value.payments.some(
-        (payment) => payment.amount > 0 && payment.type === "Bank"
-      );
-      if (hasBankPayment && !print) {
-        try {
-          const responseCode = await sync_fbr(
-            invoice_doc.value,
-            pos_profile.value,
-            false
-          );
-          console.log("Response Code123:", responseCode);
-        } catch (error) {
-          console.error("Error syncing FBR:", error);
-        }
-      }
 
       if (print) {
-        try {
-          const responseCode = await sync_fbr(
-            invoice_doc.value,
-            pos_profile.value,
-            false
-          );
-          console.log("fbr-response", responseCode);
-          if (responseCode) {
-            await load_print_page(response.message.name);
-          } else {
-            console.error(
-              "FBR synchronization failed. Print page will not be loaded."
-            );
-          }
-        } catch (error) {
-          console.error(
-            "Error during FBR sync and print handling:",
-            error
-          );
-        }
+        await load_print_page(response.message.name);
       }
 
       eventBus.emit("show_mesage", {
@@ -1378,21 +1312,6 @@ const submitSaleInvoice = async (
             eventBus.emit("punching-status", punching.value);
             console.log("submit-invoice Successfully", response.message);
             btnLoading1.value = false;
-            const hasBankPayment = invoice_doc.value.payments.some(
-              (payment) => payment.amount > 0 && payment.type === "Bank"
-            );
-            if (hasBankPayment && !print) {
-              try {
-                const responseCode = await sync_fbr(
-                  invoice_doc.value,
-                  pos_profile.value,
-                  false
-                );
-                console.log("Response Code123:", responseCode);
-              } catch (error) {
-                console.error("Error syncing FBR:", error);
-              }
-            }
 
             if (print) {
               await load_print_page(response.message.name);
@@ -1436,124 +1355,66 @@ const submitSaleInvoice = async (
         let invoice_log = invoice_doc.value;
 
         // Get the sales invoice data payload saved to use it offline.
-        indexedDBService
-          .openDatabase()
-          .then(() => {
-            return indexedDBService.getUpdateInvoice("Sales Invoice");
-          })
-          .then(async (data) => {
-            console.log("offline-print-data", data);
-            punching.value = "completed";
-            eventBus.emit("punching-status", punching.value);
-            invoice_log.paid_change = changeAmount.value;
-            invoice_log.amount_paid = amountTake.value;
-            invoice_log.custom_invoice_status = "In Queue";
+        const data = await storageService.getUpdateInvoice("Sales Invoice");
+        console.log("offline-print-data", data);
+        punching.value = "completed";
+        eventBus.emit("punching-status", punching.value);
+        invoice_log.paid_change = changeAmount.value;
+        invoice_log.amount_paid = amountTake.value;
+        invoice_log.custom_invoice_status = "In Queue";
 
-            let dataObj = {};
-            let payload = {};
+        let dataObj = {};
+        let payload = {};
 
-            dataObj["total_change"] = changeAmount.value;
-            dataObj["paid_change"] = changeAmount.value;
-            dataObj["credit_change"] = 0;
-            dataObj["redeemed_customer_credit"] = 0;
-            dataObj["customer_credit_dict"] = [];
-            dataObj["is_cashback"] = true;
+        dataObj["total_change"] = changeAmount.value;
+        dataObj["paid_change"] = changeAmount.value;
+        dataObj["credit_change"] = 0;
+        dataObj["redeemed_customer_credit"] = 0;
+        dataObj["customer_credit_dict"] = [];
+        dataObj["is_cashback"] = true;
 
-            payload["data"] = dataObj;
-            // payload["invoice"] = invoice_log;
-            payload["taxvalue"] = pos_profile.value.posa_tax_inclusive
-              ? ""
-              : newTax.value.tax_and_charges;
-            const hasBankPayment = invoice_doc.value.payments.some(
-              (payment) => payment.amount > 0 && payment.type === "Bank"
+        payload["data"] = dataObj;
+        payload["taxvalue"] = pos_profile.value.posa_tax_inclusive
+          ? ""
+          : newTax.value.tax_and_charges;
+        payload["invoice"] = invoice_doc.value;
+
+        try {
+          const recordId = await storageService.saveSalesInvoice(JSON.stringify(payload));
+          if (print) {
+            printInvoice(
+              recordId,
+              invoice_doc.value.grand_total,
+              changeAmount.value,
+              invoice_doc.value
             );
-            if (hasBankPayment && !print) {
-              try {
-                const responseCode = await sync_fbr(
-                  invoice_doc.value,
-                  pos_profile.value,
-                  true
-                );
-                fbrResponse.value = responseCode;
+          }
+          if (invoice_doc.value.holdOrderId) {
+            const heldOrders =
+              JSON.parse(localStorage.getItem("heldOrders")) || [];
 
-                console.log("Response Code without print:", responseCode);
-              } catch (error) {
-                console.error("Error syncing FBR:", error);
-              }
-            }
+            const updatedHeldOrders = heldOrders.filter(
+              (order) => order.id !== invoice_doc.value.holdOrderId
+            );
+            localStorage.setItem(
+              "heldOrders",
+              JSON.stringify(updatedHeldOrders)
+            );
+          }
+          frappe.utils.play_sound("submit");
+          setDefaultValue();
+          eventBus.emit("sync-offline-invoice");
 
-            if (print) {
-              try {
-                const responseCode = await sync_fbr(
-                  invoice_doc.value,
-                  pos_profile.value,
-                  true
-                );
-                // const obj = {
-                //   fbrInvoiceId: "123",
-                //   qrCode:
-                //     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQgAAAEIAQAAAACLjVdSAAAA2klEQVR4nO2VUQ7DMAhDff9LMy2YkEzrdoAHrRCF1x/LIYp/oSGGGGKIZ0IZq8je7jCJkkaLeb9xD2mEsqumVRydWNUQ7i7/PCtGIZwNqDtMwvv1eB52MoOokG+hu0kkPHLqOwhKKIutWK1cKJE9NRiq1cskMvkKSjuVmYjEFirkkTWjErZLpjj+pBIf5tnrhUm0dXb9uXFRxFKoGvKXAkyY89GSayqhliiP02EgJFGlLyH5Ly5RepVYORecuIZDxJatjQQlOp9KiUrcR8iqCUv8jCGGGGKI7/ECbxLxUgrJEnIAAAAASUVORK5CYII=",
-                // };
-                fbrResponse.value = responseCode;
-                console.log("fbr-response", responseCode);
-              } catch (error) {
-                console.error(
-                  "Error during FBR sync and print handling:",
-                  error
-                );
-              }
-            }
-            if (fbrResponse.value) {
-              invoice_doc.value.fbr_invoice_id = fbrResponse.value.fbrInvoiceId;
-              invoice_doc.value.qr_code = fbrResponse.value.qrCode;
-            }
-            payload["invoice"] = invoice_doc.value;
-
-            indexedDBService
-              .openDatabase()
-              .then((db) => {
-                return Promise.all([
-                  indexedDBService.saveSalesInvoice(JSON.stringify(payload)),
-                ]);
-              })
-              .then(async (recordId) => {
-                if (print) {
-                  printInvoice(
-                    recordId,
-                    invoice_doc.value.grand_total,
-                    changeAmount.value,
-                    invoice_doc.value,
-                    fbrResponse.value
-                  );
-                }
-                if (invoice_doc.value.holdOrderId) {
-                  const heldOrders =
-                    JSON.parse(localStorage.getItem("heldOrders")) || [];
-
-                  const updatedHeldOrders = heldOrders.filter(
-                    (order) => order.id !== invoice_doc.value.holdOrderId
-                  );
-                  localStorage.setItem(
-                    "heldOrders",
-                    JSON.stringify(updatedHeldOrders)
-                  );
-                }
-                frappe.utils.play_sound("submit");
-                setDefaultValue();
-                eventBus.emit("sync-offline-invoice");
-
-                eventBus.emit("open-product-menu");
-                eventBus.emit("set-default-value");
-                amountTake.value = "";
-                eventBus.emit("show_mesage", {
-                  text: `Invoice is Submitted`,
-                  color: "success",
-                });
-              })
-              .catch((error) => {
-                console.error("Error saving to IndexedDB:", error);
-              });
+          eventBus.emit("open-product-menu");
+          eventBus.emit("set-default-value");
+          amountTake.value = "";
+          eventBus.emit("show_mesage", {
+            text: `Invoice is Submitted`,
+            color: "success",
           });
+        } catch (error) {
+          console.error("Error saving invoice:", error);
+        }
       }
     }
     localStorage.setItem("order-items", JSON.stringify([]));
@@ -2450,22 +2311,108 @@ onUnmounted(() => {
 
 .payment-card {
   border-radius: 16px !important;
+  border: 1px solid #E8E8E8 !important;
+  box-shadow: none !important;
+}
+
+.payment-mode-chip {
+  border-radius: 10px !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.3px !important;
+}
+
+.action-btn-sm {
+  border-radius: 10px !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.amount-card {
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.amount-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.amount-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+}
+.paid-card {
+  background: rgba(var(--v-theme-primary), 0.06);
+  border: 1px solid rgba(var(--v-theme-primary), 0.2);
+  border-bottom: 3px solid rgb(var(--v-theme-primary));
+}
+.topaid-card {
+  background: rgba(var(--v-theme-secondary), 0.06);
+  border: 1px solid rgba(var(--v-theme-secondary), 0.2);
+  border-bottom: 3px solid rgb(var(--v-theme-secondary));
+}
+.change-card {
+  background: #F8F8F8;
+  border: 1px solid #E0E0E0;
+  border-bottom: 3px solid #999;
+}
+
+.summary-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.summary-stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+}
+.summary-stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #666;
+}
+.summary-stat-bar {
+  height: 3px;
+  border-radius: 2px;
+  margin-top: 4px;
+}
+
+.checkout-btn {
+  border-radius: 10px !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+}
+
+.numpad-btn {
+  border-radius: 10px !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
 }
 
 .amount-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #818181;
 }
 
 .amount-pay {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: #818181;
 }
 
 .amount-pay-one {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -2480,43 +2427,21 @@ onUnmounted(() => {
 }
 
 .keyboard-card {
-  border-radius: 12px;
-  padding: 20px;
-  border-radius: 16px !important;
+  border-radius: 12px !important;
+  padding: 16px;
 }
 
 .b-radius-8 {
-  border-radius: 8px !important;
-}
-
-.amount-div {
-  border-radius: 8px;
-  padding-left: 20px;
-  padding-top: 8px;
-}
-
-.paid-div {
-  border: 1px solid #21a0a0;
-  box-shadow: 0 4px 0 #21a0a0;
-}
-
-.to-paid-div {
-  border: 1px solid #f05d23;
-  box-shadow: 0 4px 0 #f05d23;
-}
-
-.change-div {
-  border: 1px solid #0d1821;
-  box-shadow: 0 4px 0 #0d1821;
+  border-radius: 10px !important;
 }
 
 .checkout-p {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
 }
 
 .btn-p {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
 }
 
@@ -2538,8 +2463,8 @@ onUnmounted(() => {
 /* Offer Button Styles */
 .offer-btn {
   background: #f5f5f5 !important;
-  border: 2px solid #21a0a0 !important;
-  color: #21a0a0 !important;
+  border: 2px solid rgb(var(--v-theme-primary)) !important;
+  color: rgb(var(--v-theme-primary)) !important;
   font-weight: bold;
   display: flex !important;
   flex-direction: column !important;
@@ -2559,7 +2484,7 @@ onUnmounted(() => {
   overflow: hidden !important;
 }
 .offer-btn:hover {
-  background: #21a0a0 !important;
+  background: rgb(var(--v-theme-primary)) !important;
   color: #fff !important;
 }
 
@@ -2569,7 +2494,7 @@ onUnmounted(() => {
   text-align: center;
   font-weight: 400;
   font-size: 13px;
-  color: #21a0a0;
+  color: rgb(var(--v-theme-primary));
   white-space: normal;
   word-break: break-word;
   margin-bottom: 4px;
@@ -2598,9 +2523,9 @@ onUnmounted(() => {
   align-items: center !important;
   justify-content: center !important;
   border-radius: 8px !important;
-  background: #d3ecec !important;
-  color: #21a0a0 !important;
-  border: 1.5px solid #21a0a0 !important;
+  background: rgba(var(--v-theme-primary), 0.15) !important;
+  color: rgb(var(--v-theme-primary)) !important;
+  border: 1.5px solid rgb(var(--v-theme-primary)) !important;
   box-shadow: none !important;
   padding: 0 24px !important;
 }
@@ -2611,7 +2536,7 @@ onUnmounted(() => {
   align-items: center !important;
 }
 .offer-chip-style .v-chip__close {
-  color: #21a0a0 !important;
+  color: rgb(var(--v-theme-primary)) !important;
   font-size: 20px !important;
   height: 56px !important;
   display: flex !important;

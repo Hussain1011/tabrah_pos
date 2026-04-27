@@ -7,7 +7,7 @@
         <h3>Hold Orders</h3>
       </v-col>
       <v-col cols="9" class="d-flex justify-end pr-11">
-        <v-btn variant="outlined" size="large" class="text-capitalize mr-2" color="#21A0A0" style="border-radius: 8px"
+        <v-btn variant="outlined" size="large" class="text-capitalize mr-2" color="primary" style="border-radius: 8px"
           @click="addItem()" width="300px">
           <v-icon class="mr-2">mdi-plus</v-icon>
           <p class="mt-2 category-p">Add Item</p>
@@ -16,7 +16,7 @@
             variant="outlined"
             size="large"
             class="text-capitalize mr-2"
-            color="#21A0A0"
+            color="primary"
             style="border-radius: 8px"
             @click="getHoldOrders()"
             width="300px"
@@ -100,7 +100,7 @@
               ></v-select>
 
               <v-btn
-                color="#21A0A0"
+                color="primary"
                 variant="flat"
                 class="text-white text-capitalize"
                 style="border-radius: 8px; height: 40px; min-width: 30px;"
@@ -293,7 +293,7 @@ onMounted(() => {
 }
 
 .selected-card {
-  background: #fcdfd3 !important;
+  background: rgba(var(--v-theme-secondary), 0.15) !important;
 }
 
 .dotted-divider {

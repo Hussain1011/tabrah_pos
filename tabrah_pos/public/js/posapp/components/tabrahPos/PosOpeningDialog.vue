@@ -73,7 +73,7 @@
 <script>
 import { ref, onMounted, watch } from "vue";
 import eventBus from "../../bus";
-import indexedDBService from "../../indexedDB";
+import storageService from "../../storageService";
 
 export default {
   props: ["dialog"],
@@ -174,19 +174,7 @@ export default {
       )
         .then((r) => {
           if (r.message) {
-            indexedDBService
-              .openDatabase()
-              .then(() => {
-                return indexedDBService.deleteAllPosProfiles();
-              })
-              .then(() => {
-                console.log(
-                  "get response All POS Profiles deleted from IndexedDB"
-                );
-              })
-              .catch((error) => {
-                console.error("Error get offers:", error);
-              });
+            storageService.deleteAllPosProfiles();
             eventBus.emit("current-screen", 0);
             setTimeout(() => {
               eventBus.emit("register_pos_profile", r.message);
@@ -195,35 +183,19 @@ export default {
               eventBus.emit("current-screen", 0);
             }, 100);
 
-            // Save emitted values in localStorage
-            // localStorage.setItem(
-            //   "pos_profile",
-            //   JSON.stringify(r.message.pos_profile)
-            // );
             localStorage.setItem("company", r.message.company);
             localStorage.setItem(
               "pos_opening_shift",
               JSON.stringify(r.message.pos_opening_shift)
             );
-            indexedDBService
-              .openDatabase()
-              .then((db) => {
-                // Save POS Profile and POS Opening Shift in IndexedDB
-                return Promise.all([
-                  indexedDBService.savePosItems(
-                    JSON.stringify(r.message.pos_profile)
-                  ),
-                  indexedDBService.savePosOpeningShift(
-                    JSON.stringify(r.message.pos_opening_shift)
-                  ),
-                ]);
-              })
-              .then(() => {
-                console.log("POS items and opening shift saved successfully!");
-              })
-              .catch((error) => {
-                console.error("Error saving to IndexedDB:", error);
-              });
+            // Save POS Profile and POS Opening Shift in localStorage
+            storageService.savePosItems(
+              JSON.stringify(r.message.pos_profile)
+            );
+            storageService.savePosOpeningShift(
+              JSON.stringify(r.message.pos_opening_shift)
+            );
+            console.log("POS items and opening shift saved successfully!");
             closeOpeningDialog();
           } else {
             eventBus.emit("show_message", {

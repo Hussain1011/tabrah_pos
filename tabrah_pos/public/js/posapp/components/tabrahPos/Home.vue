@@ -1,20 +1,20 @@
 <template>
-  <div fluid class="mt-4" style="background: #f4f4f4">
-    <Header v-if="!dialog" />
+  <div class="mt-4" style="background: #F4F4F4; padding: 8px 24px 24px 24px;">
     <ProductDialog />
     <PosOpeningDialog v-if="dialog" :dialog="dialog" />
     <PosClosingDialog />
-    <!-- product Items row -->
+    <!-- Main content area -->
     <v-row class="px-2" v-show="!dialog">
+      <v-col cols="4">
+        <OrderSummary />
+      </v-col>
       <v-col cols="8">
+        <Header />
         <ProductList v-show="screen === 0" />
         <Payment v-show="screen === 1" />
         <OrderHistory v-if="screen === 2" />
         <HoldOrder v-show="screen === 3" />
         <PosOrders v-show="screen === 4" />
-      </v-col>
-      <v-col cols="4">
-        <OrderSummary />
       </v-col>
     </v-row>
   </div>
@@ -34,7 +34,7 @@ import ProductDialog from "./ProductDialog.vue";
 import eventBus from "../../bus.js";
 import PosOpeningDialog from "./PosOpeningDialog.vue";
 import PosClosingDialog from "./PosClosingDialog.vue";
-import indexedDBService from "../../indexedDB";
+import storageService from "../../storageService";
 
 const screen = ref(null);
 const dialog = ref(false);
@@ -53,17 +53,7 @@ const check_opening_entry = async () => {
     );
 
     if (r.message) {
-      indexedDBService
-          .openDatabase()
-          .then(() => {
-            return indexedDBService.deleteAllPosProfiles();
-          })
-          .then(() => {
-        // console.log('In start All POS Profiles deleted from IndexedDB');
-          })
-          .catch((error) => {
-            console.error("Error get offers:", error);
-          });
+      storageService.deleteAllPosProfiles();
       pos_profile.value = r.message.pos_profile;
       pos_opening_shift.value = r.message.pos_opening_shift;
       eventBus.emit("register_pos_profile", r.message);
@@ -80,25 +70,10 @@ const check_opening_entry = async () => {
         JSON.stringify(r.message.pos_opening_shift)
       );
 
-      // get_offers(pos_profile.value.name);
-      // Open the IndexedDB once and then perform all operations within the chain
-      indexedDBService
-        .openDatabase()
-        .then((db) => {
-          // Save POS Profile and POS Opening Shift in IndexedDB
-          return Promise.all([
-            indexedDBService.savePosItems(JSON.stringify(pos_profile.value)),
-            indexedDBService.savePosOpeningShift(
-              JSON.stringify(pos_opening_shift.value)
-            ),
-          ]);
-        })
-        .then(() => {
-          console.log("POS items and opening shift saved successfully!");
-        })
-        .catch((error) => {
-          console.error("Error saving to IndexedDB:", error);
-        });
+      // Save POS Profile and POS Opening Shift in localStorage
+      storageService.savePosItems(JSON.stringify(pos_profile.value));
+      storageService.savePosOpeningShift(JSON.stringify(pos_opening_shift.value));
+      console.log("POS items and opening shift saved successfully!");
     } else {
       create_opening_voucher();
     }
@@ -123,17 +98,7 @@ const get_offers = async (pos_profile_name) => {
     if (r.message) {
       eventBus.emit("set_offers", r.message);
       if (r.message.length > 0) {
-        indexedDBService
-          .openDatabase()
-          .then(() => {
-            return indexedDBService.saveOffers(JSON.stringify(r.message));
-          })
-          .then(() => {
-            // console.log("get offers saved successfully!");
-          })
-          .catch((error) => {
-            console.error("Error get offers:", error);
-          });
+        storageService.saveOffers(JSON.stringify(r.message));
       }
     }
   } catch (error) {
@@ -182,17 +147,7 @@ const submit_closing_pos = async (data) => {
       );
       localStorage.setItem("get-all-item-status", false);
       localStorage.setItem("All-items_storage", []);
-      indexedDBService
-          .openDatabase()
-          .then(() => {
-            return indexedDBService.deleteAllPosProfiles();
-          })
-          .then(() => {
-        // console.log('get response All POS Profiles deleted from IndexedDB');
-          })
-          .catch((error) => {
-            console.error("Error get offers:", error);
-          });
+      storageService.deleteAllPosProfiles();
 
       check_opening_entry();
     }
@@ -205,18 +160,9 @@ const get_pos_setting = async () => {
   try {
     const doc = await frappe.db.get_doc("POS Settings", undefined);
     eventBus.emit("set_pos_settings", doc);
-    // Save POS settings in IndexedDB
-    indexedDBService
-      .openDatabase()
-      .then(() => {
-        return indexedDBService.savePosSettings(JSON.stringify(doc));
-      })
-      .then(() => {
-        console.log("POS settings saved successfully!");
-      })
-      .catch((error) => {
-        console.error("Error saving POS settings:", error);
-      });
+    // Save POS settings in localStorage
+    storageService.savePosSettings(JSON.stringify(doc));
+    console.log("POS settings saved successfully!");
   } catch (error) {
     console.error("Error getting POS settings", error);
   }
@@ -319,12 +265,5 @@ onBeforeUnmount(() => {
 .v-application {
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
 }
-
-.zara-title {
-  font-family: Noto Sans;
-  font-weight: 500;
-  font: Noto Sans;
-  font-size: 20px;
-  margin-left: 14px;
-}
+</style>
 </style>

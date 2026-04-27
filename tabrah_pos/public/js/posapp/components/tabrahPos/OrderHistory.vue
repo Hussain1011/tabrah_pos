@@ -9,7 +9,7 @@
           variant="outlined"
           size="large"
           class="text-capitalize mr-2"
-          color="#21A0A0"
+          color="primary"
           style="border-radius: 8px"
           @click="changePaymentMode(category)"
           width="300px"
@@ -190,7 +190,7 @@ onMounted(() => {
   display: grid;
 }
 .selected-card {
-  background: #fcdfd3 !important;
+  background: rgba(var(--v-theme-secondary), 0.15) !important;
 }
 .dotted-divider {
   border-style: dotted !important;

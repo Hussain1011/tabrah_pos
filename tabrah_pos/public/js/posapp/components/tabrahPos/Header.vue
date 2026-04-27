@@ -1,51 +1,38 @@
 <template>
-  <v-row class="pt-0 px-2">
-    <v-col cols="12" md="8">
-      <v-card elevation="1" class="border-16 title-card d-flex">
-        <img :src="`/assets/tabrah_pos/js/posapp/components/pos/${pos_profile.company}.png`" alt="" class="ml-5"
-          style="max-width: 235px;height: 75px;" />
-        <v-spacer></v-spacer>
-        <v-spacer></v-spacer>
-        <div class="">
-          <v-select v-model="selectedOrderType" :items="orderTypes" label="Order Type" class="order-type-select mr-3"
-            density="compact" variant="outlined" item-title="order_type" :disabled="currentScreen !== 0" />
-        </div>
-        <div class="">
-          <v-select v-model="orderBy" :items="employeesList" label="Order By" class="order-type-select mr-3"
-            density="compact" variant="outlined" item-title="employee_name" item-value="employee" />
-        </div>
-        <div class="">
-          <v-select v-if="pos_profile.allow_table_no" v-model="selectedTable" :items="tableOptions" label="Select table" class="order-type-select mr-3"
-            density="compact" variant="outlined" item-title="table_no" item-value="table_no" />
-        </div>
-        <div class="search-div ">
-          <v-text-field variant="outlined" append-inner-icon="mdi-magnify" placeholder="Find your item"
-            class="mt-1 mr-4" density="compact" style="height: 83px; border-radius: 6px" v-model="searchItem"
-            clearable />
-        </div>
-      </v-card>
-    </v-col>
+  <div class="pos-header-bar">
+    <div class="d-flex align-center" style="padding: 8px 0; gap: 8px; flex-wrap: wrap;">
+      <!-- Order Type -->
+      <v-select v-model="selectedOrderType" :items="orderTypes" label="Order Type" 
+        class="order-type-select" density="compact" variant="outlined" item-title="order_type" 
+        :disabled="currentScreen !== 0" hide-details
+        style="max-width: 160px; flex-shrink: 0;" />
 
-    <v-col cols="12" md="4" class="p-4">
-      <div class="d-flex">
-        <div class="d-flex">
-          <p class="mt-4 pos-p">POS:</p>
-          <div class="pos-id">{{ pos_profile.name }}</div>
-        </div>
-        <v-spacer></v-spacer>
-        <div class="pos-close d-flex" @click="go_desk()">
-          <v-icon color="black" class="pt-6">mdi-logout</v-icon>
-          <p class="pt-3 ml-1">Close POS</p>
-        </div>
-      </div>
-    </v-col>
-  </v-row>
+      <!-- Order By -->
+      <v-select v-model="orderBy" :items="employeesList" label="Order By" 
+        class="order-type-select" density="compact" variant="outlined" 
+        item-title="employee_name" item-value="employee" hide-details
+        style="max-width: 160px; flex-shrink: 0;" />
+
+      <!-- Table Select -->
+      <v-select v-if="pos_profile.allow_table_no" v-model="selectedTable" :items="tableOptions" 
+        label="Table" class="order-type-select" density="compact" variant="outlined" 
+        item-title="table_no" item-value="table_no" hide-details
+        style="max-width: 140px; flex-shrink: 0;" />
+
+      <v-spacer></v-spacer>
+
+      <!-- Search -->
+      <v-text-field variant="outlined" append-inner-icon="mdi-magnify" placeholder="Find your item"
+        density="compact" v-model="searchItem" clearable hide-details
+        style="max-width: 280px; flex-shrink: 0;" />
+    </div>
+  </div>
 </template>
 
 <script setup>
 import eventBus from "../../bus";
 import { ref, onMounted, watch, onBeforeUnmount } from "vue";
-import indexedDBService from "../../indexedDB";
+import storageService from "../../storageService";
 
 const searchValue = ref("");
 const pos_profile = ref("");
@@ -115,12 +102,9 @@ const emitSearchItemEvent = debounce((value) => {
 
 const offlineProfileData = async () => {
   try {
-    // Wait for the IndexedDBService to open the database and get the pos_profile
-    const data = await indexedDBService
-      .openDatabase()
-      .then(() => indexedDBService.getPosProfile());
+    const data = await storageService.getPosProfile();
 
-    console.log("offline pos profile from IndexedDB ..", data);
+    console.log("offline pos profile from localStorage ..", data);
 
     if (data && data.length > 0) {
       pos_profile.value = data[0]; // Assuming pos_profile is in the first index
@@ -137,10 +121,10 @@ const offlineProfileData = async () => {
       // Emit event if the order is required
       eventBus.emit("required-order-id", orderRequired.order_required);
     } else {
-      console.error("No profile data found in IndexedDB.");
+      console.error("No profile data found in localStorage.");
     }
   } catch (error) {
-    console.error("Error with IndexedDB operation getting profile:", error);
+    console.error("Error getting profile:", error);
   }
 };
 
@@ -224,52 +208,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.title-card {
-  padding: 9px 0px 9px 0px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
-  border-radius: 12px;
+.pos-header-bar {
+  margin-bottom: 0;
 }
-
-.search-div {
-  height: 60px;
-  width: 50%;
-  max-width: 190px;
-}
-
-.v-text-field--outlined {
-  border-radius: 16px !important;
-}
-
-.pos-id {
-  border: 1px solid;
-  border-radius: 6px;
-  width: 195px;
-  height: 48px;
-  padding-top: 15px;
-  padding-left: 8px;
-  margin-left: 14px;
-  background: white;
-}
-
-.pos-close {
-  border: 1px solid #f05d23;
-  border-radius: 6px;
-  width: 195px;
-  height: 48px;
-  padding-left: 8px;
-  margin-left: 14px;
-  background: #fcdfd3;
-}
-
-.pos-p {
-  font-size: 16px;
-  font-weight: 600;
-}
-
 .order-type-select {
   padding-top: 3px;
-  height: 86px;
-  width: 150px;
 }
 </style>
 <style>

@@ -1,14 +1,82 @@
 import { createApp, h } from 'vue';
 import Home from './main.vue';
 
-// import Vuetify from 'vuetify';
-import 'vuetify/styles'; // If using Vuetify 3
+import 'vuetify/styles';
 import { createVuetify } from 'vuetify';
-import 'vuetify/styles'
-import * as components from 'vuetify/components'
-import * as directives from 'vuetify/directives'
+import * as components from 'vuetify/components';
+import * as directives from 'vuetify/directives';
 
+// Minor UI tweaks (font, buttons, selects)
+import './pos-tweaks.css';
 
+// Company color palettes
+const companyThemes = {
+    // Demo 1 — Royal purple & gold
+    'Demo 1': {
+        dark: false,
+        colors: {
+            background: '#F7F5FF',
+            surface: '#FFFFFF',
+            primary: '#5A189A',
+            secondary: '#F9C74F',
+            accent: '#9D4EDD',
+            success: '#43AA8B',
+            info: '#277DA1',
+            warning: '#F8961E',
+            error: '#D00000',
+            'on-primary': '#FFFFFF',
+            'on-secondary': '#1A1A1A',
+            'on-surface': '#222222',
+            'on-background': '#222222',
+        },
+    },
+
+    // Demo 2 — Sunset orange & navy
+    'Demo 2': {
+        dark: false,
+        colors: {
+            background: '#FFF4EF',
+            surface: '#FFFFFF',
+            primary: '#0B3C5D',
+            secondary: '#FF7F50',
+            accent: '#FFB703',
+            success: '#2A9D8F',
+            info: '#3A86FF',
+            warning: '#FB8500',
+            error: '#D90429',
+            'on-primary': '#FFFFFF',
+            'on-secondary': '#FFFFFF',
+            'on-surface': '#1C1C1C',
+            'on-background': '#1C1C1C',
+        },
+    },
+
+    // Demo 3 — Dark slate & neon mint
+    'Demo 3': {
+        dark: false,
+        colors: {
+            background: '#F4FAF8',
+            surface: '#FFFFFF',
+            primary: '#264653',
+            secondary: '#06D6A0',
+            accent: '#118AB2',
+            success: '#2EC4B6',
+            info: '#3A86FF',
+            warning: '#FFBE0B',
+            error: '#E63946',
+            'on-primary': '#FFFFFF',
+            'on-secondary': '#003B2F',
+            'on-surface': '#202020',
+            'on-background': '#202020',
+        },
+    },
+};
+
+// Map company names to theme keys
+function getThemeForCompany(companyName) {
+    if (companyThemes[companyName]) return companyName;
+    return 'Demo 1'; // fallback default
+}
 
 frappe.provide('frappe.PosApp');
 
@@ -21,47 +89,34 @@ frappe.PosApp.posapp = class {
     
     make_body () {
         this.$el = this.$parent.find('.main-section');
-        // const vuetify = createVuetify(); // Vuetify 3
+
+        // Build themes object for Vuetify
+        const themes = {};
+        for (const [name, theme] of Object.entries(companyThemes)) {
+            themes[name] = theme;
+        }
+
         const vuetify = createVuetify({
             components,
             directives,
-          })
-        console.log("vuetify",vuetify)
-
-        
-        // Create Vuetify instance
-         // Vuetify 3 setup (if using Vuetify 3)
-        //  const vuetify = new Vuetify({
-        //     theme: {
-        //         themes: {
-        //             light: {
-        //                 background: '#FFFFFF',
-        //                 primary: '#0097A7',
-        //                 secondary: '#00BCD4',
-        //                 accent: '#9575CD',
-        //                 success: '#66BB6A',
-        //                 info: '#2196F3',
-        //                 warning: '#FF9800',
-        //                 error: '#E86674',
-        //                 orange: '#E65100',
-        //                 golden: '#A68C59',
-        //                 badge: '#F5528C',
-        //                 customPrimary: '#085294',
-        //             },
-        //         },
-        //     },
-        // });
-        
-        // Create Vue 3 app
-        const app = createApp({
-            render: () => h(Home),  // Use the render function
+            theme: {
+                defaultTheme: 'Demo 1',
+                themes,
+            },
         });
 
-        // Mount the app
-        app.use(vuetify);
+        // Expose for theme switching
+        window.__posVuetify = vuetify;
+        window.__posGetTheme = getThemeForCompany;
 
-        // Mount the app to the DOM element
-        app.mount(this.$el[0]);    }
+        // Create Vue 3 app
+        const app = createApp({
+            render: () => h(Home),
+        });
+
+        app.use(vuetify);
+        app.mount(this.$el[0]);
+    }
 
     setup_header () {
         // Optional setup logic

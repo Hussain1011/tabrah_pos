@@ -5,145 +5,13 @@ let pos_profile = null;
 let pos_setting = null;
 let pos_opening_shift = null;
 
-
-
-// Method to fetch invoice data from IndexedDB
-async function fetchInvoiceData(invoiceId) {
-  return new Promise((resolve, reject) => {
-    let dbRequest = indexedDB.open('OfflineDB', 1); // Use your actual DB name
-
-    dbRequest.onsuccess = (event) => {
-      let db = event.target.result;
-      let transaction = db.transaction(['create_invoice'], 'readonly'); // Replace 'create_invoice' with your store name
-      let store = transaction.objectStore('create_invoice');
-      let request = store.get(invoiceId);
-      console.log("get-request",request)
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject('Error fetching invoice data');
-    };
-
-    dbRequest.onerror = () => reject('Error opening IndexedDB');
-  });
-}
-
-// Method to fetch pos_profile data from IndexedDB
-async function fetchPosProfile(pos_profile) {
-  return new Promise((resolve, reject) => {
-    let dbRequest = indexedDB.open('OfflineDB', 1); // Use your actual DB name
-
-    dbRequest.onsuccess = (event) => {
-      let db = event.target.result;
-      let transaction = db.transaction(['pos_profile'], 'readonly'); // Replace 'create_invoice' with your store name
-      let store = transaction.objectStore('pos_profile');
-      let request = store.get(pos_profile);
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject('Error fetching pos_profile data');
-    };
-
-    dbRequest.onerror = () => reject('Error opening IndexedDB');
-  });
-}
-
-// Method to fetch pos_settings data from IndexedDB
-async function fetchPosSetting() {
-  return new Promise((resolve, reject) => {
-    let dbRequest = indexedDB.open('OfflineDB', 1); // Use your actual DB name
-
-    dbRequest.onsuccess = (event) => {
-      let db = event.target.result;
-      let transaction = db.transaction(['pos_settings'], 'readonly'); // Replace 'create_invoice' with your store name
-      let store = transaction.objectStore('pos_settings');
-      let request = store.getAll();
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject('Error fetching pos_setting data');
-    };
-
-    dbRequest.onerror = () => reject('Error opening IndexedDB');
-  });
-}
-
-// Method to fetch pos_opening_shift data from IndexedDB
-async function fetchPosOpeningShift(data) {
-  return new Promise((resolve, reject) => {
-    let dbRequest = indexedDB.open('OfflineDB', 1); // Use your actual DB name
-
-    dbRequest.onsuccess = (event) => {
-      let db = event.target.result;
-      let transaction = db.transaction(['pos_opening_shift'], 'readonly'); // Replace 'create_invoice' with your store name
-      let store = transaction.objectStore('pos_opening_shift');
-      let request = store.get(data);
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject('Error fetching pos_opening_shift data');
-    };
-
-    dbRequest.onerror = () => reject('Error opening IndexedDB');
-  });
-}
-
-// Method to items data from IndexedDB
-async function fetchitems(data) {
-  return new Promise((resolve, reject) => {
-    let dbRequest = indexedDB.open('OfflineDB', 1); // Use your actual DB name
-
-    dbRequest.onsuccess = (event) => {
-      let db = event.target.result;
-      let transaction = db.transaction(['items'], 'readonly');
-      let store = transaction.objectStore('items');
-      let request = store.get(data);
-
-      request.onsuccess = () => {
-        const item = request.result;
-        if (item && item.item_name) {
-          resolve(item.item_name); // Return the item's name if it exists
-        } else {
-          reject(`Item with ID ${data} not found`);
-        }
-      };
-
-      request.onerror = () => reject('Error fetching item data');
-    };
-
-    dbRequest.onerror = () => reject('Error opening IndexedDB');
-  });
-}
-
-// Method to fetch user data
-async function fetchUserData(userId) {
-  return new Promise((resolve, reject) => {
-    // Replace with actual logic to fetch user data from IndexedDB or an API
-    resolve({
-      full_name: userId // Replace with actual data from IndexedDB or API
-    });
-  });
-}
-
-async function getAllItems(items) {
-  // Assuming items is an array of itemId objects
-  let itemPromises = items.map(item => fetchitems(item.item_code)); // Collect all item promises
-  let itemNames = await Promise.all(itemPromises); // Await for all item names
-  return itemNames; // Return an array of item names
-}
-
 // Method to open a new window and print the invoice
-export async function printInvoice(invoiceId, offline_paid_amount, offline_paid_change,offlineData,fbr) {
+export async function printInvoice(invoiceId, offline_paid_amount, offline_paid_change,offlineData) {
   try {
-    // Fetch the document and user data from IndexedDB
     console.log("invoiceId",invoiceId)
-        console.log("offline_paid_amount",offline_paid_amount)
-
-    // doc = await fetchInvoiceData(invoiceId[0]);    
+    console.log("offline_paid_amount",offline_paid_amount)
     console.log("offline-print doc data.....",doc)
-    console.log("offline-print fbr.....",fbr)
 
-    // pos_profile = await fetchPosProfile(doc.invoice.pos_profile);
-    // pos_setting = await fetchPosSetting();
-    // pos_opening_shift = await fetchPosOpeningShift(doc.invoice.posa_pos_opening_shift);
-    // usr = await fetchUserData(pos_opening_shift.user);
-    // let itemNames = await getAllItems(doc.invoice.items);
     let now = new Date();
 
 
@@ -266,7 +134,7 @@ export async function printInvoice(invoiceId, offline_paid_amount, offline_paid_
        <div style="line-height: 1.5; text-align: center;">
     <div style="text-align: center;">
             <img src="https://cdn.shopify.com/s/files/1/0290/8123/9612/files/LOGO_packinng.jpg?height=628&pad_color=ffffff&v=1614755406&width=1200" alt="Random Image"/>
-        <p style="margin: 0; font-size: 16px; font-weight: bold;">Layers Bakeshop</p>
+        <p style="margin: 0; font-size: 16px; font-weight: bold;">Tabrah POS</p>
         <div style="width: 28%; margin: 10px auto;">
         </div>
     </div>
@@ -306,12 +174,8 @@ export async function printInvoice(invoiceId, offline_paid_amount, offline_paid_
                 `).join("")} 
         </div>
         </div>
-        <p style="margin-top:30px;" >FBR id # ${fbr.fbrInvoiceId}</p>
-                <img id="qrCodeImg" src="${fbr.qrCode}" alt="FBR QR Code" style="height: 90px;"/>
-
-
         <p style="margin-top:30px;" >Thank you for your visit!
-        <br>Prepared by LucrumERP
+        <br>Prepared by Tabrah POS
         </p>
 
 </div>
@@ -322,20 +186,9 @@ export async function printInvoice(invoiceId, offline_paid_amount, offline_paid_
     `);
 
     // Close the document to trigger rendering in the new window
-    const qrCodeImg = newWindow.document.getElementById("qrCodeImg");
-
-    qrCodeImg.onload = () => {
-      newWindow.document.close();
-      newWindow.focus();
-      newWindow.print();
-    };
-
-    qrCodeImg.onerror = () => {
-      console.error("Error loading QR code image.");
-      newWindow.document.close();
-      newWindow.focus();
-      newWindow.print(); // Optionally print without the QR code
-    };
+    newWindow.document.close();
+    newWindow.focus();
+    newWindow.print();
   } catch (error) {
     console.error("Error printing invoice:", error);
   }
