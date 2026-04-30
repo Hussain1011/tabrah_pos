@@ -1,0 +1,86 @@
+/* POS Minor UI Tweaks — Font, Buttons, Selects */
+
+/* Font: Inter for clean modern look */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.v-application {
+  font-family: 'Inter', 'Noto Sans', sans-serif !important;
+}
+
+/* ── Buttons ── */
+.v-btn {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
+}
+.v-btn--size-small {
+  font-size: 13px !important;
+  min-height: 34px !important;
+  padding: 0 14px !important;
+}
+.v-btn--variant-tonal:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+}
+.v-btn--variant-elevated,
+.v-btn--variant-flat {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.10) !important;
+}
+.v-btn--variant-elevated:hover,
+.v-btn--variant-flat:hover {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ── Selects & Text Fields ── */
+.v-field--variant-outlined .v-field__outline {
+  --v-field-border-opacity: 0.6;
+}
+.v-field--variant-outlined:hover .v-field__outline {
+  --v-field-border-opacity: 1;
+}
+.v-field--variant-outlined.v-field--focused .v-field__outline {
+  --v-field-border-opacity: 1;
+}
+.v-field {
+  border-radius: 10px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+.v-label {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px !important;
+}
+.v-select__selection,
+.v-field__input {
+  font-size: 13px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* ── Cards ── */
+.v-card {
+  border-radius: 14px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* ── Data Tables ── */
+.v-data-table {
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* ── Chips ── */
+.v-chip {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+}
+
+/* ── Lists ── */
+.v-list-item-title {
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* ── Dialogs ── */
+.v-dialog .v-card {
+  border-radius: 16px !important;
+}
