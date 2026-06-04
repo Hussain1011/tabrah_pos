@@ -13,7 +13,8 @@
         <ProductList v-show="screen === 0" />
         <Payment v-show="screen === 1" />
         <OrderHistory v-if="screen === 2" />
-        <HoldOrder v-show="screen === 3" />
+        <HoldOrder v-show="screen === 3"
+        :pos_profile="pos_profile" />
         <PosOrders v-show="screen === 4" />
       </v-col>
     </v-row>
