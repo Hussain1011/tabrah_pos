@@ -1659,6 +1659,7 @@ const get_invoice_doc = () => {
   doc.posa_delivery_charges_rate = 0;
   doc.posting_date = getCurrentDate();
   doc.table_no = selectedTable.value || "";
+  doc.order_by = orderBy.value || "";
   doc.resturent_type = selectedOrderType.value;
   // doc.order_summery_for_pos = orderItems.value;
   doc.cost_center = pos_profile.value.cost_center;

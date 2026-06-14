@@ -96,6 +96,7 @@
                 variant="outlined"
                 hide-details
                 density="comfortable"
+                clearable
                 style="flex: 1;"
               ></v-select>
 
@@ -117,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import eventBus from "../../bus";
 import { printKotAway } from "../../kotPrint.js";
 
@@ -131,29 +132,40 @@ const orders = ref([
   // },
 ]);
 
-// dropdown options
-const instructionOptions = ref([
-  "Fire Starters",
-  "Fire Breakfast",
-  "Fire Main Course",
-  "Fire Desert",
-  "Fire Sides",
-]);
-
-// Assuming you already have "orders" array somewhere
-// Just make sure each order has its own "instruction" property
-// Example initialization:
-orders.value = orders.value.map(o => ({ ...o, instruction: "" }));
-
-// selected value
-const selectedInstruction = ref("");
 
 const pos_profile = ref("");
+const instructionOptions = ref("");
 const selectedOrder = ref("");
 const showOrderDetail = (order) => {
   selectedOrder.value = order;
   eventBus.emit("load-hold-order", order);
 };
+
+const props = defineProps({
+  pos_profile: {
+    type: Object,
+    default: () => ({}),
+  },
+});
+const setInstructions = (profile) => {
+  instructionOptions.value = (profile?.kot_instruction || [])
+    .filter(row => row.enable == 1)
+    .sort((a, b) => a.order - b.order)
+    .map(row => row.instruction);
+};
+watch(
+  () => props.pos_profile,
+  (profile) => {
+    console.log("HoldOrders received pos_profile:", profile);
+
+    pos_profile.value = profile;
+
+    setInstructions(profile);
+
+    console.log("Instruction Options:", instructionOptions.value);
+  },
+  { immediate: true }
+);
 const formatDeliveryDate = (date) => {
   const options = {
     year: "numeric",
@@ -235,13 +247,24 @@ const ordersaway = (order) => {
 };
 
 onMounted(() => {
-  // eventBus.on("send_pos_profile", async (profile) => {
-  //   pos_profile.value = profile;
-  //   getHoldOrders();
-  // });
+  const savedProfile = JSON.parse(localStorage.getItem("pos_profile") || "{}");
+
+  pos_profile.value = savedProfile;
+
+  console.log("Hold Orders POS Profile:", pos_profile.value);
+
+  instructionOptions.value = (pos_profile.value.kot_instruction || [])
+
+    .filter(row => row.enable == 1)
+
+    .sort((a, b) => a.order - b.order)
+
+    .map(row => row.instruction);
+
+  console.log("instructionOptions:", instructionOptions.value);
+
   eventBus.on("go-to-hold-order", (data) => {
     // getHoldOrders();
-
     orders.value = data.reverse();
   });
   eventBus.on("update-hold-order",(id)=>{
