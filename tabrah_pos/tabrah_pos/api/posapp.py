@@ -1171,8 +1171,8 @@ def sales_invoice(data, invoice=None, taxvalue=None):
         invoice = json.loads(invoice)
         invoice_doc.update(invoice)
 
-        if invoice.get("posa_delivery_date"):
-            invoice_doc.update_stock = 0
+        
+        invoice_doc.update_stock = 1
 
         mop_cash_list = [
             i.mode_of_payment
