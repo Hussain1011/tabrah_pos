@@ -10,13 +10,15 @@ def get_data(data=None):
     data["transactions"].append({
         "label": _("Reference"),
         "items": [
-            "Automated BOM Manufacturing"
+            "Automated BOM Manufacturing",
+            "Stock Entry"
         ],
     })
 
     data.setdefault("non_standard_fieldnames", {})
     data["non_standard_fieldnames"].update({
-        "Automated BOM Manufacturing": "reference_name"
+        "Automated BOM Manufacturing": "reference_name",
+        "Stock Entry": "sales_invoice"
     })
 
     return data
